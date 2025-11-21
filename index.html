@@ -5,7 +5,7 @@
 
 <style>
 /* -----------------------
-    背景（以前の画像そのまま復活）
+    背景（復元）
 ------------------------ */
 body::before {
   content: "";
@@ -28,16 +28,16 @@ body {
 }
 
 /* -----------------------
-    メインページ構造
+    ページ構造
 ------------------------ */
 #container {
   max-width: 500px;
   margin: auto;
-  padding-bottom: 120px; /* 下タブ分 */
+  padding-bottom: 120px; /* タブの高さ */
 }
 
 /* -----------------------
-    最初の4つのメニュー画面
+    ▼ 最初のメニュー画面
 ------------------------ */
 #menuScreen {
   padding: 20px;
@@ -62,14 +62,14 @@ body {
   box-shadow: 0 3px 6px rgba(0,0,0,0.15);
 }
 
-/* テーマAの色設定 */
+/* ▼4つの色（テーマA） */
 .btn-shipment { background: linear-gradient(135deg,#ffecb3,#ffcc80); }
 .btn-history  { background: linear-gradient(135deg,#b3e5fc,#81d4fa); }
 .btn-summary  { background: linear-gradient(135deg,#c8e6c9,#a5d6a7); }
 .btn-sales    { background: linear-gradient(135deg,#ffcdd2,#ef9a9a); }
 
 /* -----------------------
-    タブ（常時下に固定）
+    ▼ 下タブ（常時固定）
 ------------------------ */
 #bottomTabs {
   position: fixed;
@@ -80,7 +80,7 @@ body {
   background: #ffffffdd;
   backdrop-filter: blur(5px);
   padding: 8px 10px;
-  display: flex;
+  display: none;
   gap: 8px;
   justify-content: space-between;
   border-top: 2px solid #ffcc80;
@@ -89,23 +89,28 @@ body {
 
 .tab-btn {
   flex: 1;
-  padding: 10px 0;
-  border-radius: 50px;
+  padding: 12px 0;
+  border-radius: 40px;
   font-weight: bold;
   text-align: center;
   border: none;
   cursor: pointer;
-  background: #ffe082;
-  color: #5d4037;
+  font-size: 0.9em;
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
+/* ▼ 下タブの4色（メニューと完全連動） */
+.tab-btn.shipment { background: linear-gradient(135deg,#ffecb3,#ffcc80); color:#5d4037; }
+.tab-btn.history  { background: linear-gradient(135deg,#b3e5fc,#81d4fa); color:#0277bd; }
+.tab-btn.summary  { background: linear-gradient(135deg,#c8e6c9,#a5d6a7); color:#33691e; }
+.tab-btn.sales    { background: linear-gradient(135deg,#ffcdd2,#ef9a9a); color:#b71c1c; }
+
 .tab-btn.active {
-  background: linear-gradient(135deg,#ffecb3,#ffcc80);
+  filter: brightness(1.15);
 }
 
 /* -----------------------
-    出荷管理フォーム（デザイン復元）
+    ▼ 出荷管理フォーム
 ------------------------ */
 h2 {
   text-align: center;
@@ -130,37 +135,50 @@ input, select {
   font-size: 1em;
 }
 
-/* 品目ボタン */
-#itemContainer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 5px;
-}
+/* -----------------------
+    ▼ 品目ボタン
+------------------------ */
 
+/* 初期色：全品目共通の薄い色 */
 .item-button {
   flex: 1 1 45%;
   padding: 10px;
   text-align: center;
-  background-color: #e0f0b8;
+  background: #e8f5e9;
   border: 2px solid #3b7d32;
   border-radius: 8px;
   cursor: pointer;
+  transition: 0.25s;
   user-select: none;
 }
 
-.item-button.selected {
-  box-shadow: 0 0 10px rgba(255,180,0,0.7);
+/* 白菜 ・ 白菜カット */
+.item-button.selected.hakusai {
+  background: linear-gradient(135deg,#d4ff8a,#a7ff4d);
+  box-shadow: 0 0 12px rgba(170,255,120,0.9);
+  transform: scale(1.05);
+  border-color: #5bbf00;
+}
+
+/* キャベツ ・ キャベツカット */
+.item-button.selected.cabbage {
+  background: linear-gradient(135deg,#66bb6a,#388e3c);
+  color: white;
+  border-color: #1b5e20;
+  box-shadow: inset 0 3px 5px rgba(0,0,0,0.3), 0 2px 8px rgba(0,50,0,0.4);
+  transform: scale(1.03);
+}
+
+/* トウモロコシ */
+.item-button.selected.corn {
+  background: linear-gradient(135deg,#fff59d,#fffde7);
+  border-color: #fbc02d;
+  box-shadow: 0 0 10px rgba(255,235,59,0.9);
   transform: scale(1.05);
 }
 
-/* 店舗行 */
-.store-row {
-  display: flex;
-  gap: 6px;
-  margin-top: 5px;
-}
 
+/* 店舗追加・登録ボタン */
 .add-btn {
   margin-top: 15px;
   background: #a6d854;
@@ -181,6 +199,11 @@ input, select {
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 
+.store-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 5px;
+}
 </style>
 </head>
 
@@ -200,37 +223,38 @@ input, select {
     </div>
   </div>
 
-  <!-- ▼ タブ切替後の中身 -->
+  <!-- ▼ 画面切替先 -->
   <div id="tabContent" style="display:none;"></div>
 </div>
 
 <!-- ▼ 下タブ -->
-<div id="bottomTabs" style="display:none;">
-  <button class="tab-btn" onclick="openTab('shipment')">出荷</button>
-  <button class="tab-btn" onclick="openTab('history')">履歴</button>
-  <button class="tab-btn" onclick="openTab('summary')">集計</button>
-  <button class="tab-btn" onclick="openTab('sales')">売上</button>
+<div id="bottomTabs">
+  <button class="tab-btn shipment" onclick="openTab('shipment')">出荷</button>
+  <button class="tab-btn history"  onclick="openTab('history')">履歴</button>
+  <button class="tab-btn summary"  onclick="openTab('summary')">集計</button>
+  <button class="tab-btn sales"    onclick="openTab('sales')">売上</button>
 </div>
 
 <script>
 
 /* -----------------------
-    出荷画面構築関数
+    出荷画面テンプレート
 ------------------------ */
 function renderShipment() {
   return `
     <h2>出荷管理</h2>
     <form id="shipmentForm">
+
       <label>日付</label>
       <input type="date" id="dateInput" required>
 
       <label>品目</label>
       <div id="itemContainer">
-        <div class="item-button" data-value="白菜">白菜</div>
-        <div class="item-button" data-value="白菜カット">白菜カット</div>
-        <div class="item-button" data-value="キャベツ">キャベツ</div>
-        <div class="item-button" data-value="キャベツカット">キャベツカット</div>
-        <div class="item-button" data-value="トウモロコシ">トウモロコシ</div>
+        <div class="item-button hakusai" data-value="白菜">白菜</div>
+        <div class="item-button hakusai" data-value="白菜カット">白菜カット</div>
+        <div class="item-button cabbage" data-value="キャベツ">キャベツ</div>
+        <div class="item-button cabbage" data-value="キャベツカット">キャベツカット</div>
+        <div class="item-button corn" data-value="トウモロコシ">トウモロコシ</div>
       </div>
 
       <label>値段</label>
@@ -255,12 +279,12 @@ function renderShipment() {
 }
 
 /* -----------------------
-    店舗追加機能
+    店舗追加
 ------------------------ */
 function addStore() {
   const container = document.getElementById("storesContainer");
   const d = document.createElement("div");
-  d.className = "store-row";
+  d.classList.add("store-row");
   d.innerHTML = `
     <select>
       <option>連島</option><option>津高</option><option>茶屋町</option>
@@ -273,12 +297,19 @@ function addStore() {
 }
 
 /* -----------------------
-    画面遷移
+    タブ切替
 ------------------------ */
 function openTab(tab) {
   document.getElementById("menuScreen").style.display = "none";
   document.getElementById("tabContent").style.display = "block";
-  document.getElementById("bottomTabs").style.display = "flex";
+
+  const bottomTabs = document.getElementById("bottomTabs");
+  bottomTabs.style.display = "flex";
+
+  document.querySelectorAll(".tab-btn")
+    .forEach(t => t.classList.remove("active"));
+
+  document.querySelector(`.tab-btn.${tab}`)?.classList.add("active");
 
   const tabContent = document.getElementById("tabContent");
 
@@ -292,11 +323,10 @@ function openTab(tab) {
 }
 
 /* -----------------------
-    出荷画面のイベント設定
+    出荷画面：機能付与
 ------------------------ */
 function activateShipmentFeatures() {
 
-  /* 初期日付設定 */
   const today = new Date();
   document.getElementById("dateInput").value =
     today.toISOString().slice(0,10);
@@ -307,7 +337,8 @@ function activateShipmentFeatures() {
   document.querySelectorAll(".item-button").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".item-button")
-        .forEach(b=>b.classList.remove("selected"));
+        .forEach(b => b.classList.remove("selected"));
+
       btn.classList.add("selected");
       selectedItem = btn.dataset.value;
     });
@@ -332,7 +363,7 @@ function activateShipmentFeatures() {
       }))
     };
 
-    /* ▼▼▼ GAS の URL をここに入れる ▼▼▼ */
+    /* ▼▼▼ あなたの GAS /exec URL をここへ ▼▼▼ */
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyHoiECC4pJ6_hfQySGA8P7XkIa1qFwDc5Yz6byN9d3rrNdjtphQK365xEypa0TCbVGFg/exec";
 
     fetch(SCRIPT_URL, {
@@ -343,8 +374,7 @@ function activateShipmentFeatures() {
     });
 
     alert("登録しました！");
-
-    openTab("shipment");  
+    openTab("shipment");
   });
 }
 
