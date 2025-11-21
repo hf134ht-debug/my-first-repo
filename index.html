@@ -25,7 +25,7 @@ body {
   background: linear-gradient(to bottom right, #e6f7d6, #f9ffd6);
 }
 
-/* 全体コンテナ */
+/* コンテナ */
 #container {
   max-width: 500px;
   margin: auto;
@@ -56,7 +56,6 @@ body {
   box-shadow: 0 3px 6px rgba(0,0,0,0.15);
 }
 
-/* テーマ4色 */
 .btn-shipment { background: linear-gradient(135deg,#ffecb3,#ffcc80); }
 .btn-history  { background: linear-gradient(135deg,#b3e5fc,#81d4fa); }
 .btn-sales    { background: linear-gradient(135deg,#ffcdd2,#ef9a9a); }
@@ -100,7 +99,7 @@ body {
   filter: brightness(1.15);
 }
 
-/* ===== 出荷管理（既存のまま） ===== */
+/* ===== 出荷画面（既存） ===== */
 h2 {
   text-align: center;
   font-size: 1.8em;
@@ -124,7 +123,6 @@ input, select {
   font-size: 1em;
 }
 
-/* 品目ボタン */
 #itemContainer {
   display: flex;
   flex-wrap: wrap;
@@ -149,17 +147,22 @@ input, select {
   box-shadow: 0 0 12px rgba(170,255,120,0.9);
   transform: scale(1.05);
 }
+
 /* キャベツ */
 .item-button.selected.cabbage {
   background: linear-gradient(135deg,#66bb6a,#388e3c);
   color: white;
   border-color: #1b5e20;
   box-shadow: inset 0 3px 5px rgba(0,0,0,0.3);
+  transform: scale(1.03);
 }
+
 /* コーン */
-$item-button.selected.corn {
+.item-button.selected.corn {
   background: linear-gradient(135deg,#fff59d,#fffde7);
   border-color: #fbc02d;
+  box-shadow: 0 0 10px rgba(255,235,59,0.9);
+  transform: scale(1.05);
 }
 
 /* 店舗行 */
@@ -188,15 +191,30 @@ $item-button.selected.corn {
   font-weight: bold;
 }
 
-/* ====== 和紙風カレンダー ====== */
+/* =========================================================
+      和紙風カレンダー（中くらい）＋曜日色＋アニメ付き
+========================================================= */
 
 .calendar-wrapper {
   background: #f3f5e9;
-  padding: 8px;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  background-image: 
+     radial-gradient(#e8ecd8 2px, transparent 2px),
+     radial-gradient(#e8ecd8 2px, transparent 2px),
+     linear-gradient(135deg, #f8faef, #eef3da);
+  background-size: 12px 12px, 12px 12px, 100% 100%;
+  background-position: 0 0, 6px 6px, 0 0;
+  padding: 10px;
+  border-radius: 14px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.18);
   margin-bottom: 14px;
-  border: 1px solid #d9e2c2;
+  border: 1px solid #cdd8b4;
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* 出現アニメーション */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .calendar-header {
@@ -208,10 +226,11 @@ $item-button.selected.corn {
 .cal-btn {
   background: #cbe3a7;
   border: none;
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
 .calendar-grid {
@@ -221,12 +240,15 @@ $item-button.selected.corn {
   gap: 4px;
 }
 
+/* 曜日（日赤 / 土青） */
 .calendar-day {
   text-align: center;
   font-weight: bold;
   padding: 4px 0;
-  color: #607d3b;
 }
+
+.calendar-day:nth-child(1) { color: #e53935; } /* 日曜 */
+.calendar-day:nth-child(7) { color: #1e88e5; } /* 土曜 */
 
 .calendar-date {
   background: white;
@@ -234,25 +256,30 @@ $item-button.selected.corn {
   padding: 8px 0;
   text-align: center;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  transition: 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  transition: 0.15s;
 }
 
+/* ホバー（軽量） */
 .calendar-date:hover {
   transform: scale(1.06);
+  background: #f7ffe1;
 }
 
+/* 今日 */
 .calendar-date.today {
   background: #e7f7b3;
   border: 1px solid #c5db6e;
   font-weight: bold;
 }
 
+/* 選択日 */
 .calendar-date.selected {
   background: #a5d6a7;
   color: white;
   font-weight: bold;
   border: 1px solid #4caf50;
+  transform: scale(1.1);
 }
 
 /* ===== 履歴カード ===== */
@@ -301,7 +328,6 @@ $item-button.selected.corn {
     </div>
   </div>
 
-  <!-- タブ内容 -->
   <div id="tabContent" style="display:none;"></div>
 </div>
 
@@ -314,31 +340,28 @@ $item-button.selected.corn {
 </div>
 
 <script>
-/* ★ あなたの exec URL をここに入れてください ★ */
+/* ★ あなたの exec URL ★ */
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
 
-/* ===== 出荷（省略：あなたのバージョンのまま） ===== */
-/* ※ 文字数の都合で出荷部分はそのまま貼ると長すぎるので、
-   変更なし → 上のバージョンをそのまま使ってください。
-*/
+/* ======= 出荷画面（省略：あなたの前バージョンのまま） ======= */
+/* ※ 変更なしのため既存のコードをそのまま残してください */
 
 /* =========================================================
-      ここから和紙風カレンダー付き「履歴画面」
-   ========================================================= */
+   和紙風カレンダー + 履歴
+========================================================= */
 
 function renderHistoryScreen() {
   return `
     <h2>履歴</h2>
-    <div class="history-container">
-      <div id="calendarArea"></div>
-      <div id="historyResult"></div>
-    </div>
+    <div id="calendarArea"></div>
+    <div id="historyResult"></div>
   `;
 }
 
-/* 和紙風カレンダーを生成 */
+/* カレンダー生成 */
 function drawCalendar(year, month, selectedDate=null) {
   const today = new Date();
+
   const first = new Date(year, month, 1);
   const last = new Date(year, month + 1, 0);
 
@@ -369,18 +392,18 @@ function drawCalendar(year, month, selectedDate=null) {
         <button class="cal-btn" onclick="changeMonth(1)">＞</button>
       </div>
       <div class="calendar-grid">
-        ${days.map(d => `<div class="calendar-day">${d}</div>`).join('')}
+        ${days.map(d => `<div class="calendar-day">${d}</div>`).join("")}
       </div>
+      <div class="calendar-grid">
   `;
 
-  html += `<div class="calendar-grid">`;
-
-  weeks.forEach(week=>{
-    week.forEach(day=>{
+  weeks.forEach(week => {
+    week.forEach(day => {
       if (!day) {
         html += `<div></div>`;
         return;
       }
+
       const isToday =
         today.getFullYear() === day.getFullYear() &&
         today.getMonth() === day.getMonth() &&
@@ -393,7 +416,7 @@ function drawCalendar(year, month, selectedDate=null) {
         selectedDate.getDate() === day.getDate();
 
       html += `
-        <div class="calendar-date ${isToday?'today':''} ${isSelected?'selected':''}"
+        <div class="calendar-date ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}"
              onclick="selectHistoryDate(${day.getFullYear()},${day.getMonth()},${day.getDate()})">
           ${day.getDate()}
         </div>`;
@@ -401,13 +424,14 @@ function drawCalendar(year, month, selectedDate=null) {
   });
 
   html += `</div></div>`;
+
   return html;
 }
 
-/* カレンダー状態 */
+/* カレンダーの状態 */
 let calYear, calMonth;
 
-/* カレンダーを初期化 */
+/* 履歴画面表示時 */
 function activateHistoryFeatures() {
   const now = new Date();
   calYear = now.getFullYear();
@@ -419,6 +443,7 @@ function activateHistoryFeatures() {
   selectHistoryDate(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
+/* 月移動 */
 function changeMonth(offset) {
   calMonth += offset;
   if (calMonth < 0) { calMonth = 11; calYear--; }
@@ -428,18 +453,17 @@ function changeMonth(offset) {
     drawCalendar(calYear, calMonth);
 }
 
-/* 日付選択時の処理 */
+/* 日クリック → 履歴読み込み */
 async function selectHistoryDate(y,m,d) {
   const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 
-  /* カレンダー再描画（選択反映） */
   document.getElementById("calendarArea").innerHTML =
     drawCalendar(y,m,new Date(y,m,d));
 
   loadHistory(dateStr);
 }
 
-/* 履歴を読み込み */
+/* 履歴取得 */
 async function loadHistory(dateStr) {
   const resultDiv = document.getElementById("historyResult");
   resultDiv.innerHTML = `<p>読み込み中…</p>`;
@@ -455,7 +479,7 @@ async function loadHistory(dateStr) {
 
     let html = `<h3>${dateStr} の履歴</h3>`;
 
-    data.items.forEach(item=>{
+    data.items.forEach(item => {
       let cls = "";
       if (item.item.includes("白菜")) cls = "hakusai";
       else if (item.item.includes("キャベツ")) cls = "cabbage";
@@ -464,7 +488,7 @@ async function loadHistory(dateStr) {
       html += `
         <div class="history-card ${cls}">
           <div class="history-title">${item.item}（${item.price}円）</div>
-          ${item.stores.map(s=>`<div>・${s.name}：${s.quantity}</div>`).join("")}
+          ${item.stores.map(s => `<div>・${s.name}：${s.quantity}</div>`).join("")}
           <div class="history-total">合計：${item.total}個</div>
         </div>
       `;
@@ -472,7 +496,7 @@ async function loadHistory(dateStr) {
 
     resultDiv.innerHTML = html;
 
-  } catch(err) {
+  } catch (err) {
     resultDiv.innerHTML = `<p>エラー：${err}</p>`;
   }
 }
@@ -483,7 +507,7 @@ function openTab(tab) {
   const tc = document.getElementById("tabContent");
   tc.style.display = "block";
 
-  document.querySelectorAll(".tab-btn").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
   document.querySelector(`.tab-btn.${tab}`)?.classList.add("active");
 
   if (tab === "history") {
