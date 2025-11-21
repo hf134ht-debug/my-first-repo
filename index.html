@@ -1,73 +1,82 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>出荷管理PWA</title>
-  <style>
-    body {
-      font-family: 'Comic Sans MS','Arial',sans-serif;
-      margin:0; padding:0;
-      background: linear-gradient(to bottom right,#e6f7d6,#f9ffd6);
-    }
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      /* 背景画像 */
+      body::before {
+        content: "";
+        position: fixed;
+        top:0; left:0;
+        width:100%; height:100%;
+        background-image: url('https://takatanouen.com/wp-content/uploads/2021/11/6f139b5aff6b0b56ebea56609d4ca516.png');
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 0.25;
+        z-index: -1;
+      }
 
-    /* 背景画像 */
-    body::before {
-      content:"";
-      position: fixed; top:0; left:0;
-      width:100%; height:100%;
-      background-image: url('https://takatanouen.com/wp-content/uploads/2021/11/6f139b5aff6b0b56ebea56609d4ca516.png');
-      background-size:contain;
-      background-position:center;
-      background-repeat:no-repeat;
-      opacity:0.25;
-      z-index:-1;
-    }
+      body {
+        font-family: 'Comic Sans MS','Arial',sans-serif;
+        padding: 20px;
+        max-width: 500px;
+        margin: auto;
+        font-size: 1.8em;
+        min-height:100vh;
+        background: linear-gradient(to bottom right, #e6f7d6, #f9ffd6);
+        background-attachment: fixed;
+      }
 
-    h2 {
-      text-align:center; color:#3b7d32; text-shadow:2px 2px 5px rgba(255,255,255,0.8);
-      animation: floatUp 4s ease-in-out infinite alternate;
-    }
-    @keyframes floatUp {0%{transform:translateY(0);}100%{transform:translateY(-12px);}}
+      h2 {
+        text-align:center;
+        font-size:2.5em;
+        color:#3b7d32;
+        text-shadow:2px 2px 5px rgba(255,255,255,0.8);
+        animation: floatUp 4s ease-in-out infinite alternate;
+      }
 
-    .screen { display:none; padding:20px; max-width:500px; margin:auto; font-size:1.6em;}
-    .active { display:block; }
+      @keyframes floatUp {0%{transform:translateY(0);}100%{transform:translateY(-12px);}}
 
-    .home-buttons { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:50px; }
-    .home-buttons button { padding:40px 0; font-size:1.5em; border-radius:12px; border:none; cursor:pointer; background:#a6d854; color:white; font-weight:bold;}
-    .home-buttons button:hover { background:#8bc34a;}
+      label {display:block; margin-top:12px; font-weight:bold; font-size:1.3em;}
+      input, select, button {
+        width:100%; padding:10px; margin-top:5px;
+        box-sizing:border-box; font-size:1.2em; border-radius:8px; border:1px solid #aaa;
+      }
+      button {
+        margin-top:15px; background-color:#a6d854; color:#fff; font-weight:bold; border:none; cursor:pointer;
+      }
+      button:hover {background-color:#8bc34a;}
 
-    #tabs { position:fixed; bottom:0; left:0; width:100%; display:flex; border-top:1px solid #ccc; background:#fff; }
-    #tabs button { flex:1; padding:12px; font-size:1.1em; border:none; background:none; cursor:pointer;}
-    #tabs button.activeTab { background:#e0f0b8;}
+      .store-row {
+        display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; align-items:center;
+      }
+      .store-row select, .store-row input {flex:1; min-width:120px;}
+      @media (min-width:700px){.store-row select,.store-row input{flex:1;}}
 
-    label {display:block; margin-top:12px; font-weight:bold;}
-    input, select, button.formBtn {width:100%; padding:10px; margin-top:5px; border-radius:8px; border:1px solid #aaa; font-size:1em;}
-    button.formBtn {background:#a6d854; color:white; font-weight:bold; border:none; cursor:pointer;}
-    button.formBtn:hover {background:#8bc34a;}
+      /* 品目ボタン */
+      #itemContainer {
+        display:flex; flex-wrap:wrap; gap:10px; margin-top:5px;
+      }
+      .item-button {
+        flex:1 1 45%; padding:10px; font-size:1.2em; border:2px solid #3b7d32;
+        border-radius:8px; cursor:pointer; text-align:center; user-select:none;
+        transition: background 0.3s;
+      }
+      /* 初期色 */
+      .item-白菜, .item-白菜カット { background-color:#d4f1a0; } /* 黄緑 */
+      .item-キャベツ, .item-キャベツカット { background-color:#7ec850; } /* 緑 */
+      .item-トウモロコシ { background: linear-gradient(to bottom, #fff86d, #ffffff); } /* 黄色→白 */
 
-    .store-row { display:flex; gap:5px; margin-top:5px; align-items:center;}
-    .store-row select, .store-row input {flex:1; min-width:120px;}
-
-    #itemContainer { display:flex; flex-wrap:wrap; gap:10px; margin-top:5px;}
-    .item-button { flex:1 1 45%; padding:10px; font-size:1em; background:#e0f0b8; border:2px solid #3b7d32; border-radius:8px; text-align:center; cursor:pointer; user-select:none;}
-    .item-button.selected {background:#3b7d32; color:white; font-weight:bold;}
-  </style>
-</head>
-<body>
-
-  <!-- ホーム画面 -->
-  <div id="homeScreen" class="screen active">
-    <h2>メニュー</h2>
-    <div class="home-buttons">
-      <button onclick="showScreen('shipmentScreen')">出荷管理</button>
-      <button onclick="showScreen('historyScreen')">履歴</button>
-      <button onclick="showScreen('summaryScreen')">集計</button>
-      <button onclick="showScreen('salesScreen')">売上</button>
-    </div>
-  </div>
-
-  <!-- 出荷管理画面 -->
-  <div id="shipmentScreen" class="screen">
+      /* 選択時 */
+      .item-button.selected {
+        background-color:#3b7d32 !important;
+        color:white;
+        font-weight:bold;
+      }
+    </style>
+  </head>
+  <body>
     <h2>出荷管理</h2>
     <form id="shipmentForm">
       <label>日付</label>
@@ -75,11 +84,11 @@
 
       <label>品目</label>
       <div id="itemContainer">
-        <div class="item-button" data-value="白菜">白菜</div>
-        <div class="item-button" data-value="白菜カット">白菜カット</div>
-        <div class="item-button" data-value="キャベツ">キャベツ</div>
-        <div class="item-button" data-value="キャベツカット">キャベツカット</div>
-        <div class="item-button" data-value="トウモロコシ">トウモロコシ</div>
+        <div class="item-button item-白菜" data-value="白菜">白菜</div>
+        <div class="item-button item-白菜カット" data-value="白菜カット">白菜カット</div>
+        <div class="item-button item-キャベツ" data-value="キャベツ">キャベツ</div>
+        <div class="item-button item-キャベツカット" data-value="キャベツカット">キャベツカット</div>
+        <div class="item-button item-トウモロコシ" data-value="トウモロコシ">トウモロコシ</div>
       </div>
 
       <label>値段</label>
@@ -102,146 +111,96 @@
         </div>
       </div>
 
-      <button type="button" onclick="addStore()" class="formBtn">+ 店舗追加</button>
-      <button type="submit" class="formBtn">登録</button>
+      <button type="button" onclick="addStore()">+ 店舗追加</button>
+      <button type="submit">登録</button>
     </form>
-  </div>
 
-  <!-- 履歴画面 -->
-  <div id="historyScreen" class="screen">
-    <h2>履歴</h2>
-    <p>ここに履歴表示</p>
-  </div>
+    <script>
+      const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzK497D-jhTqBKZs07bpcU1-DC4y5jmZIpYhFlfK9MXuvOrhz2jGuGppSNqxSNvwsWdNg/exec";
 
-  <!-- 集計画面 -->
-  <div id="summaryScreen" class="screen">
-    <h2>集計</h2>
-    <p>ここに集計表示</p>
-  </div>
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth()+1).padStart(2,'0');
+      const dd = String(today.getDate()).padStart(2,'0');
+      document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
 
-  <!-- 売上画面 -->
-  <div id="salesScreen" class="screen">
-    <h2>売上</h2>
-    <p>ここに売上表示</p>
-  </div>
-
-  <!-- 下部タブ -->
-  <div id="tabs">
-    <button onclick="showScreen('shipmentScreen')" id="tabShipment">出荷</button>
-    <button onclick="showScreen('historyScreen')" id="tabHistory">履歴</button>
-    <button onclick="showScreen('summaryScreen')" id="tabSummary">集計</button>
-    <button onclick="showScreen('salesScreen')" id="tabSales">売上</button>
-  </div>
-
-  <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzK497D-jhTqBKZs07bpcU1-DC4y5jmZIpYhFlfK9MXuvOrhz2jGuGppSNqxSNvwsWdNg/exec";
-
-    // SPA画面切替
-    const screens = ['homeScreen','shipmentScreen','historyScreen','summaryScreen','salesScreen'];
-    function showScreen(screenId){
-      screens.forEach(id=>{
-        document.getElementById(id).classList.remove('active');
-      });
-      document.getElementById(screenId).classList.add('active');
-
-      // タブの強調
-      ['tabShipment','tabHistory','tabSummary','tabSales'].forEach(tab=>{
-        document.getElementById(tab).classList.remove('activeTab');
-      });
-      if(screenId==='shipmentScreen') document.getElementById('tabShipment').classList.add('activeTab');
-      if(screenId==='historyScreen') document.getElementById('tabHistory').classList.add('activeTab');
-      if(screenId==='summaryScreen') document.getElementById('tabSummary').classList.add('activeTab');
-      if(screenId==='salesScreen') document.getElementById('tabSales').classList.add('activeTab');
-    }
-
-    // 日付初期化
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth()+1).padStart(2,'0');
-    const dd = String(today.getDate()).padStart(2,'0');
-    document.getElementById('dateInput').value=`${yyyy}-${mm}-${dd}`;
-
-    // 品目選択
-    const itemButtons = document.querySelectorAll('.item-button');
-    let selectedItem = null;
-    itemButtons.forEach(btn=>{
-      btn.addEventListener('click',function(){
-        itemButtons.forEach(b=>b.classList.remove('selected'));
-        this.classList.add('selected');
-        selectedItem = this.getAttribute('data-value');
-      });
-    });
-
-    // 店舗行追加
-    function addStore(){
-      const container = document.getElementById('storesContainer');
-      const div = document.createElement('div');
-      div.className='store-row';
-      div.innerHTML=`
-        <select name="store">
-          <option value="連島">連島</option>
-          <option value="津高">津高</option>
-          <option value="茶屋町">茶屋町</option>
-          <option value="大安寺">大安寺</option>
-          <option value="中庄">中庄</option>
-          <option value="総社南">総社南</option>
-          <option value="円山">円山</option>
-          <option value="児島">児島</option>
-        </select>
-        <input type="number" name="quantity" min="1" placeholder="個数" required>
-      `;
-      container.appendChild(div);
-    }
-
-    // フォーム送信
-    document.getElementById('shipmentForm').addEventListener('submit',async function(e){
-      e.preventDefault();
-      if(!selectedItem){ alert('品目を選択してください'); return; }
-
-      const form = e.target;
-      const data = {
-        date: form.date.value,
-        item: selectedItem,
-        price: form.price.value,
-        stores: Array.from(form.querySelectorAll('.store-row')).map(row=>({
-          name: row.querySelector('select[name="store"]').value,
-          quantity: row.querySelector('input[name="quantity"]').value
-        }))
-      };
-
-      try{
-        await fetch(SCRIPT_URL,{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify(data),
-          mode:'no-cors'
+      const itemButtons = document.querySelectorAll('.item-button');
+      let selectedItem = null;
+      itemButtons.forEach(btn=>{
+        btn.addEventListener('click', function(){
+          itemButtons.forEach(b => b.classList.remove('selected'));
+          this.classList.add('selected');
+          selectedItem = this.getAttribute('data-value');
         });
-        alert('登録完了！');
-        form.reset();
-        document.getElementById('storesContainer').innerHTML=`
-          <label>店舗・個数</label>
-          <div class="store-row">
-            <select name="store">
-              <option value="連島">連島</option>
-              <option value="津高">津高</option>
-              <option value="茶屋町">茶屋町</option>
-              <option value="大安寺">大安寺</option>
-              <option value="中庄">中庄</option>
-              <option value="総社南">総社南</option>
-              <option value="円山">円山</option>
-              <option value="児島">児島</option>
-            </select>
-            <input type="number" name="quantity" min="1" placeholder="個数" required>
-          </div>
-        `;
-        itemButtons.forEach(b=>b.classList.remove('selected'));
-        selectedItem=null;
-        document.getElementById('dateInput').value=`${yyyy}-${mm}-${dd}`;
-      }catch(err){
-        alert('通信エラー: '+err);
-      }
-    });
-  </script>
+      });
 
-</body>
+      function addStore(){
+        const container = document.getElementById('storesContainer');
+        const div = document.createElement('div');
+        div.className='store-row';
+        div.innerHTML=`
+          <select name="store">
+            <option value="連島">連島</option>
+            <option value="津高">津高</option>
+            <option value="茶屋町">茶屋町</option>
+            <option value="大安寺">大安寺</option>
+            <option value="中庄">中庄</option>
+            <option value="総社南">総社南</option>
+            <option value="円山">円山</option>
+            <option value="児島">児島</option>
+          </select>
+          <input type="number" name="quantity" min="1" placeholder="個数" required>
+        `;
+        container.appendChild(div);
+      }
+
+      document.getElementById('shipmentForm').addEventListener('submit', async function(e){
+        e.preventDefault();
+        if(!selectedItem){ alert('品目を選択してください'); return; }
+
+        const form = e.target;
+        const data = {
+          date: form.date.value,
+          item: selectedItem,
+          price: form.price.value,
+          stores: Array.from(form.querySelectorAll('.store-row')).map(row=>({
+            name: row.querySelector('select[name="store"]').value,
+            quantity: row.querySelector('input[name="quantity"]').value
+          }))
+        };
+
+        try{
+          await fetch(SCRIPT_URL,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(data),
+            mode:'no-cors'
+          });
+          alert('登録完了！');
+          form.reset();
+          document.getElementById('storesContainer').innerHTML=`
+            <label>店舗・個数</label>
+            <div class="store-row">
+              <select name="store">
+                <option value="連島">連島</option>
+                <option value="津高">津高</option>
+                <option value="茶屋町">茶屋町</option>
+                <option value="大安寺">大安寺</option>
+                <option value="中庄">中庄</option>
+                <option value="総社南">総社南</option>
+                <option value="円山">円山</option>
+                <option value="児島">児島</option>
+              </select>
+              <input type="number" name="quantity" min="1" placeholder="個数" required>
+            </div>
+          `;
+          itemButtons.forEach(b=>b.classList.remove('selected'));
+          selectedItem = null;
+          document.getElementById('dateInput').value=`${yyyy}-${mm}-${dd}`;
+        }catch(err){
+          alert('通信エラー: '+err);
+        }
+      });
+    </script>
+  </body>
 </html>
