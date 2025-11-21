@@ -1,70 +1,71 @@
 /* =========================================================
-   history.js（履歴画面 + カレンダーのデータ判定）
+   sales.js（売上カレンダー + 売上表示 + データあり日強調）
 ========================================================= */
 
-const HISTORY_SCRIPT_URL =
+const SALES_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
 
-/* ------- 履歴画面 HTML ------- */
-function renderHistoryScreen() {
+/* ===== 売上画面 HTML ===== */
+function renderSalesScreen() {
   return `
-    <h2>履歴</h2>
-    <div id="calendarArea"></div>
-    <div id="historyResult"></div>
+    <h2>売上</h2>
+    <div id="salesCalendarArea"></div>
+    <div id="salesSummary"></div>
+    <div id="salesResult"></div>
   `;
 }
 
 /* ===== カレンダー状態 ===== */
-let calYear;
-let calMonth;
+let salesCalYear;
+let salesCalMonth;
 
 /* =========================================================
-   履歴画面を開くと「未選択のカレンダー」を表示する
+   売上画面を開いた時点では「未選択」
 ========================================================= */
-async function activateHistoryFeatures() {
+async function activateSalesFeatures() {
   const now = new Date();
-  calYear = now.getFullYear();
-  calMonth = now.getMonth();
+  salesCalYear  = now.getFullYear();
+  salesCalMonth = now.getMonth();
 
-  await renderCalendarWithData(calYear, calMonth, null);
-  document.getElementById("historyResult").innerHTML =
+  await renderSalesCalendarWithData(salesCalYear, salesCalMonth, null);
+
+  document.getElementById("salesSummary").innerHTML = "";
+  document.getElementById("salesResult").innerHTML =
     `<p>日付を選択してください</p>`;
 }
 
 /* =========================================================
-   月のデータを GAS に問い合わせてカレンダーに反映
+   月のデータを GAS に問い合わせる
 ========================================================= */
-async function renderCalendarWithData(year, month, selectedDate) {
+async function renderSalesCalendarWithData(year, month, selectedDate) {
   const ym = `${year}-${String(month + 1).padStart(2, '0')}`;
 
-  // GAS から「データがある日一覧」を取得
-  const res = await fetch(`${HISTORY_SCRIPT_URL}?checkMonth=${ym}`);
+  // GAS: "?checkSalesMonth=YYYY-MM"
+  const res = await fetch(`${SALES_SCRIPT_URL}?checkSalesMonth=${ym}`);
   const monthInfo = await res.json();
   const daysWithData = monthInfo.days || [];
 
-  // カレンダー描画
-  document.getElementById("calendarArea").innerHTML =
-    drawCalendar(year, month, selectedDate, daysWithData);
+  document.getElementById("salesCalendarArea").innerHTML =
+    drawSalesCalendar(year, month, selectedDate, daysWithData);
 }
 
 /* =========================================================
-   カレンダー生成
-   ※ daysWithData[] = ["01","05","22"] のようにデータあり日
+   カレンダー描画
 ========================================================= */
-function drawCalendar(year, month, selectedDate = null, daysWithData = []) {
+function drawSalesCalendar(year, month, selectedDate = null, daysWithData = []) {
   const today = new Date();
 
   const first = new Date(year, month, 1);
-  const last = new Date(year, month + 1, 0);
+  const last  = new Date(year, month + 1, 0);
 
-  const days = ["日", "月", "火", "水", "木", "金", "土"];
+  const days = ["日","月","火","水","木","金","土"];
 
   let html = `
     <div class="calendar-wrapper">
       <div class="calendar-header">
-        <button class="cal-btn" onclick="changeMonth(-1)">＜</button>
-        <div><b>${year}年 ${month+1}月</b></div>
-        <button class="cal-btn" onclick="changeMonth(1)">＞</button>
+        <button class="cal-btn" onclick="changeSalesMonth(-1)">＜</button>
+        <div><b>${year}年 ${month + 1}月</b></div>
+        <button class="cal-btn" onclick="changeSalesMonth(1)">＞</button>
       </div>
 
       <div class="calendar-grid">
@@ -74,14 +75,13 @@ function drawCalendar(year, month, selectedDate = null, daysWithData = []) {
       <div class="calendar-grid">
   `;
 
-  // 最初の空白
+  /* 空白 */
   for (let i = 0; i < first.getDay(); i++) {
     html += `<div></div>`;
   }
 
-  // 日付
+  /* 日付 */
   for (let d = 1; d <= last.getDate(); d++) {
-    const dateObj = new Date(year, month, d);
     const dd = String(d).padStart(2, '0');
 
     const isToday =
@@ -103,10 +103,8 @@ function drawCalendar(year, month, selectedDate = null, daysWithData = []) {
           ${isToday ? "today" : ""}
           ${isSelected ? "selected" : ""}
           ${hasData ? "has-data" : ""}"
-        onclick="selectHistoryDate(${year},${month},${d})"
-      >
-        ${d}
-      </div>
+        onclick="selectSalesDate(${year},${month},${d})"
+      >${d}</div>
     `;
   }
 
@@ -117,45 +115,73 @@ function drawCalendar(year, month, selectedDate = null, daysWithData = []) {
 /* =========================================================
    月移動
 ========================================================= */
-async function changeMonth(offset) {
-  calMonth += offset;
-  if (calMonth < 0) { calMonth = 11; calYear--; }
-  if (calMonth > 11) { calMonth = 0; calYear++; }
+async function changeSalesMonth(offset) {
+  salesCalMonth += offset;
 
-  await renderCalendarWithData(calYear, calMonth, null);
-  document.getElementById("historyResult").innerHTML =
+  if (salesCalMonth < 0) {
+    salesCalMonth = 11;
+    salesCalYear--;
+  }
+  if (salesCalMonth > 11) {
+    salesCalMonth = 0;
+    salesCalYear++;
+  }
+
+  await renderSalesCalendarWithData(salesCalYear, salesCalMonth, null);
+
+  document.getElementById("salesSummary").innerHTML = "";
+  document.getElementById("salesResult").innerHTML =
     `<p>日付を選択してください</p>`;
 }
 
 /* =========================================================
-   日付クリック → 履歴データ読み込み
+   日付選択 → 売上読み込み
 ========================================================= */
-async function selectHistoryDate(y, m, d) {
+async function selectSalesDate(y, m, d) {
   const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 
-  await renderCalendarWithData(y, m, new Date(y, m, d));
-  loadHistory(dateStr);
+  await renderSalesCalendarWithData(y, m, new Date(y, m, d));
+
+  loadDailySales(dateStr);
 }
 
 /* =========================================================
-   履歴データ取得
+   GAS から売上データ取得
 ========================================================= */
-async function loadHistory(dateStr) {
-  const resultDiv = document.getElementById("historyResult");
-  resultDiv.innerHTML = `<p>読み込み中…</p>`;
+async function loadDailySales(dateStr) {
+  const summaryDiv = document.getElementById("salesSummary");
+  const resultDiv  = document.getElementById("salesResult");
+
+  summaryDiv.innerHTML = "";
+  resultDiv.innerHTML  = `<p>読み込み中…</p>`;
 
   try {
-    const res = await fetch(`${HISTORY_SCRIPT_URL}?date=${dateStr}`);
+    const res = await fetch(`${SALES_SCRIPT_URL}?sales=${dateStr}`);
     const data = await res.json();
 
     if (!data.found) {
-      resultDiv.innerHTML = `<p>${dateStr} の記録はありません。</p>`;
+      summaryDiv.innerHTML = "";
+      resultDiv.innerHTML  = `<p>${dateStr} の売上データはありません。</p>`;
       return;
     }
 
-    let html = `<h3>${dateStr} の履歴</h3>`;
+    /* ====== 全店計 ====== */
+    const totalAmount = data.summary.totalAmount || 0;
+    const totalQty    = data.summary.totalQuantity || 0;
 
-    data.items.forEach(item => {
+    summaryDiv.innerHTML = `
+      <div class="history-card cabbage">
+        <div class="history-title">📊 全店計</div>
+        <div>売上合計：<b>${totalAmount.toLocaleString()} 円</b></div>
+        <div>個数合計：<b>${totalQty.toLocaleString()} 個</b></div>
+      </div>
+    `;
+
+    /* ===== 品目ごと ===== */
+    const items = data.items || [];
+
+    let html = "";
+    items.forEach(item => {
       let cls = "";
       if (item.item.includes("白菜")) cls = "hakusai";
       else if (item.item.includes("キャベツ")) cls = "cabbage";
@@ -163,9 +189,15 @@ async function loadHistory(dateStr) {
 
       html += `
         <div class="history-card ${cls}">
-          <div class="history-title">${item.item}（${item.price}円）</div>
-          ${item.stores.map(s => `<div>・${s.name}：${s.quantity}</div>`).join("")}
-          <div class="history-total">合計：${item.total}個</div>
+          <div class="history-title">
+            ${item.item}
+            <span style="float:right;">
+              合計：${item.itemTotalAmount.toLocaleString()}円 / ${item.itemTotalQuantity}個
+            </span>
+          </div>
+          ${item.stores.map(s => `
+            <div>・${s.name}：${s.quantity}個（${s.amount.toLocaleString()}円）</div>
+          `).join("")}
         </div>
       `;
     });
@@ -173,6 +205,7 @@ async function loadHistory(dateStr) {
     resultDiv.innerHTML = html;
 
   } catch (err) {
-    resultDiv.innerHTML = `<p>エラー：${err}</p>`;
+    summaryDiv.innerHTML = "";
+    resultDiv.innerHTML  = `<p>エラー：${err}</p>`;
   }
 }
