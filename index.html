@@ -99,7 +99,7 @@ body {
   filter: brightness(1.15);
 }
 
-/* ===== 出荷画面（既存） ===== */
+/* ===== 共通 ===== */
 h2 {
   text-align: center;
   font-size: 1.8em;
@@ -123,6 +123,7 @@ input, select {
   font-size: 1em;
 }
 
+/* ===== 出荷画面（品目ボタンなど） ===== */
 #itemContainer {
   display: flex;
   flex-wrap: wrap;
@@ -343,8 +344,136 @@ input, select {
 /* ★ あなたの exec URL ★ */
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
 
-/* ======= 出荷画面（省略：あなたの前バージョンのまま） ======= */
-/* ※ 変更なしのため既存のコードをそのまま残してください */
+/* =========================================================
+   出荷画面（PWA版）
+========================================================= */
+
+function renderShipmentScreen() {
+  return `
+    <h2>出荷管理</h2>
+    <form id="shipmentForm">
+      <label>日付</label>
+      <input type="date" id="dateInput" required>
+
+      <label>品目</label>
+      <div id="itemContainer">
+        <div class="item-button hakusai" data-value="白菜">白菜</div>
+        <div class="item-button hakusai" data-value="白菜カット">白菜カット</div>
+        <div class="item-button cabbage" data-value="キャベツ">キャベツ</div>
+        <div class="item-button cabbage" data-value="キャベツカット">キャベツカット</div>
+        <div class="item-button corn" data-value="トウモロコシ">トウモロコシ</div>
+      </div>
+
+      <label>値段</label>
+      <input type="number" id="priceInput" min="0" required>
+
+      <label>店舗・個数</label>
+      <div id="storesContainer">
+        <div class="store-row">
+          <select>
+            <option value="連島">連島</option>
+            <option value="津高">津高</option>
+            <option value="茶屋町">茶屋町</option>
+            <option value="大安寺">大安寺</option>
+            <option value="中庄">中庄</option>
+            <option value="総社南">総社南</option>
+            <option value="円山">円山</option>
+            <option value="児島">児島</option>
+          </select>
+          <input type="number" min="1" placeholder="個数" required>
+        </div>
+      </div>
+
+      <button type="button" class="add-btn" id="addStoreBtn">＋ 店舗追加</button>
+      <button type="submit" class="submit-btn">登録</button>
+    </form>
+  `;
+}
+
+function activateShipmentFeatures() {
+  // 日付初期値：今日
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
+
+  // 品目ボタン選択
+  let selectedItem = null;
+  document.querySelectorAll(".item-button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".item-button").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      selectedItem = btn.getAttribute("data-value");
+    });
+  });
+
+  // 店舗行テンプレート
+  function storeRowHTML() {
+    return `
+      <div class="store-row">
+        <select>
+          <option value="連島">連島</option>
+          <option value="津高">津高</option>
+          <option value="茶屋町">茶屋町</option>
+          <option value="大安寺">大安寺</option>
+          <option value="中庄">中庄</option>
+          <option value="総社南">総社南</option>
+          <option value="円山">円山</option>
+          <option value="児島">児島</option>
+        </select>
+        <input type="number" min="1" placeholder="個数" required>
+      </div>
+    `;
+  }
+
+  const storesContainer = document.getElementById("storesContainer");
+  document.getElementById("addStoreBtn").addEventListener("click", () => {
+    storesContainer.insertAdjacentHTML("beforeend", storeRowHTML());
+  });
+
+  // 送信処理
+  document.getElementById("shipmentForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    if (!selectedItem) {
+      alert("品目を選択してください");
+      return;
+    }
+
+    const date = document.getElementById("dateInput").value;
+    const price = document.getElementById("priceInput").value;
+
+    const stores = Array.from(document.querySelectorAll(".store-row")).map(row => ({
+      name: row.querySelector("select").value,
+      quantity: row.querySelector("input").value
+    }));
+
+    const data = {
+      date,
+      item: selectedItem,
+      price,
+      stores
+    };
+
+    try {
+      // CORS回避のため no-cors、レスポンスは見ない
+      await fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+
+      alert("登録しました！");
+      // 画面リセット（同じタブを開き直す）
+      openTab('shipment');
+
+    } catch (err) {
+      alert("通信エラー: " + err);
+    }
+  });
+}
 
 /* =========================================================
    和紙風カレンダー + 履歴
@@ -510,11 +639,19 @@ function openTab(tab) {
   document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
   document.querySelector(`.tab-btn.${tab}`)?.classList.add("active");
 
-  if (tab === "history") {
+  if (tab === "shipment") {
+    tc.innerHTML = renderShipmentScreen();
+    activateShipmentFeatures();
+
+  } else if (tab === "history") {
     tc.innerHTML = renderHistoryScreen();
     activateHistoryFeatures();
-  } else {
-    tc.innerHTML = `<h2>${tab}（開発中）</h2>`;
+
+  } else if (tab === "sales") {
+    tc.innerHTML = `<h2>売上（開発中）</h2>`;
+
+  } else if (tab === "summary") {
+    tc.innerHTML = `<h2>集計（開発中）</h2>`;
   }
 }
 </script>
