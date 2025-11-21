@@ -1,103 +1,82 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>出荷管理 PWA</title>
-<style>
-/* 背景画像（元に戻す） */
-body::before {
-  content: "";
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background-image: url('https://takatanouen.com/wp-content/uploads/2021/11/6f139b5aff6b0b56ebea56609d4ca516.png');
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0.25;
-  z-index: -1;
-}
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      /* 背景 */
+      body::before {
+        content: "";
+        position: fixed;
+        top:0; left:0;
+        width:100%; height:100%;
+        background-image: url('https://takatanouen.com/wp-content/uploads/2021/11/6f139b5aff6b0b56ebea56609d4ca516.png');
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 0.25;
+        z-index: -1;
+      }
 
-body {
-  font-family: 'Comic Sans MS', 'Arial', sans-serif;
-  padding: 20px;
-  max-width: 500px;
-  margin: auto;
-  font-size: 1.8em;
-  min-height: 100vh;
-  background: linear-gradient(to bottom right, #e6f7d6, #f9ffd6);
-  background-attachment: fixed;
-}
+      body {
+        font-family: 'Comic Sans MS','Arial',sans-serif;
+        padding: 20px;
+        max-width: 500px;
+        margin: auto;
+        font-size: 1.8em;
+        min-height:100vh;
+        background: linear-gradient(to bottom right, #e6f7d6, #f9ffd6);
+        background-attachment: fixed;
+      }
 
-/* メニュー画面 */
-#menuScreen {
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  justify-content:center;
-  margin-top:50px;
-}
-.menu-btn {
-  flex:1 1 45%;
-  padding:20px;
-  font-size:1.2em;
-  border-radius:10px;
-  border:none;
-  background:#e0f0b8;
-  font-weight:bold;
-  color:#3b7d32;
-  cursor:pointer;
-  transition:0.2s;
-}
-.menu-btn:hover { opacity:0.8; }
+      h2 {
+        text-align:center;
+        font-size:2.5em;
+        color:#3b7d32;
+        text-shadow:2px 2px 5px rgba(255,255,255,0.8);
+        animation: floatUp 4s ease-in-out infinite alternate;
+      }
 
-/* 品目ボタン */
-#itemContainer { display:flex; flex-wrap:wrap; gap:10px; margin-top:5px; }
-.item-button { flex:1 1 45%; padding:10px; font-size:1em; border:2px solid #3b7d32; border-radius:8px; cursor:pointer; text-align:center; background-color:#e0f0b8; transition:0.3s; }
-.item-白菜.selected { background-color:#a3c940; color:white; }
-.item-白菜カット.selected { background-color:#b7d875; color:white; }
-.item-キャベツ.selected { background-color:#4caf50; color:white; }
-.item-キャベツカット.selected { background-color:#66bb6a; color:white; }
-.item-トウモロコシ.selected { background-color:#ffd700; color:white; }
+      @keyframes floatUp {0%{transform:translateY(0);}100%{transform:translateY(-12px);}}
 
-.store-row { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; align-items:center; }
-.store-row select, .store-row input { flex:1; min-width:120px; padding:5px; border-radius:6px; border:1px solid #aaa; }
-button { cursor:pointer; margin-top:10px; padding:10px; border-radius:8px; border:none; background:#a6d854; color:white; font-weight:bold; }
-button:hover { background-color:#8bc34a; }
-</style>
-</head>
-<body>
+      label {display:block; margin-top:12px; font-weight:bold; font-size:1.3em;}
+      input, select, button {
+        width:100%; padding:10px; margin-top:5px;
+        box-sizing:border-box; font-size:1.2em; border-radius:8px; border:1px solid #aaa;
+      }
+      button {
+        margin-top:15px; background-color:#a6d854; color:#fff; font-weight:bold; border:none; cursor:pointer;
+      }
+      button:hover {background-color:#8bc34a;}
 
-<h2 style="text-align:center; color:#3b7d32;">出荷管理</h2>
+      .store-row {
+        display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; align-items:center;
+      }
+      .store-row select, .store-row input {flex:1; min-width:120px;}
+      @media (min-width:700px){.store-row select,.store-row input{flex:1;}}
 
-<main id="tabContent">
-  <!-- 最初はメニュー画面 -->
-  <div id="menuScreen">
-    <button class="menu-btn" data-tab="shipment">出荷管理</button>
-    <button class="menu-btn" data-tab="history">履歴</button>
-    <button class="menu-btn" data-tab="summary">集計</button>
-    <button class="menu-btn" data-tab="sales">売上</button>
-  </div>
-</main>
-
-<script>
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbzK497D-jhTqBKZs07bpcU1-DC4y5jmZIpYhFlfK9MXuvOrhz2jGuGppSNqxSNvwsWdNg/exec";
-const today=new Date();
-
-// 出荷画面HTML生成
-function renderShipment(){
-  return `
+      #itemContainer {
+        display:flex; flex-wrap:wrap; gap:10px; margin-top:5px;
+      }
+      .item-button {
+        flex:1 1 45%; padding:10px; font-size:1.2em; background-color:#e0f0b8;
+        border:2px solid #3b7d32; border-radius:8px; cursor:pointer; text-align:center; user-select:none;
+      }
+      .item-button.selected {background-color:#3b7d32; color:white; font-weight:bold;}
+    </style>
+  </head>
+  <body>
+    <h2>出荷管理</h2>
     <form id="shipmentForm">
       <label>日付</label>
-      <input type="date" name="date" required value="${today.toISOString().slice(0,10)}">
+      <input type="date" name="date" required id="dateInput">
 
       <label>品目</label>
       <div id="itemContainer">
-        <div class="item-button item-白菜" data-value="白菜">白菜</div>
-        <div class="item-button item-白菜カット" data-value="白菜カット">白菜カット</div>
-        <div class="item-button item-キャベツ" data-value="キャベツ">キャベツ</div>
-        <div class="item-button item-キャベツカット" data-value="キャベツカット">キャベツカット</div>
-        <div class="item-button item-トウモロコシ" data-value="トウモロコシ">トウモロコシ</div>
+        <div class="item-button" data-value="白菜">白菜</div>
+        <div class="item-button" data-value="白菜カット">白菜カット</div>
+        <div class="item-button" data-value="キャベツ">キャベツ</div>
+        <div class="item-button" data-value="キャベツカット">キャベツカット</div>
+        <div class="item-button" data-value="トウモロコシ">トウモロコシ</div>
       </div>
 
       <label>値段</label>
@@ -119,44 +98,35 @@ function renderShipment(){
           <input type="number" name="quantity" min="1" placeholder="個数" required>
         </div>
       </div>
+
       <button type="button" onclick="addStore()">+ 店舗追加</button>
       <button type="submit">登録</button>
     </form>
-  `;
-}
 
-// 品目選択
-let selectedItem=null;
-function initShipmentForm(){
-  const itemButtons=document.querySelectorAll('.item-button');
-  itemButtons.forEach(btn=>{
-    btn.addEventListener('click',function(){
-      itemButtons.forEach(b=>b.classList.remove('selected'));
-      this.classList.add('selected');
-      selectedItem=this.dataset.value;
-    });
-  });
+    <script>
+      const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzK497D-jhTqBKZs07bpcU1-DC4y5jmZIpYhFlfK9MXuvOrhz2jGuGppSNqxSNvwsWdNg/exec";
 
-  document.getElementById('shipmentForm').addEventListener('submit',async function(e){
-    e.preventDefault();
-    if(!selectedItem){ alert('品目を選択してください'); return; }
-    const form=e.target;
-    const data={
-      date: form.date.value,
-      item: selectedItem,
-      price: form.price.value,
-      stores:Array.from(form.querySelectorAll('.store-row')).map(r=>({
-        name:r.querySelector('select[name="store"]').value,
-        quantity:r.querySelector('input[name="quantity"]').value
-      }))
-    };
-    try{
-      await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data),mode:'no-cors'});
-      alert('登録完了！');
-      form.reset();
-      document.getElementById('storesContainer').innerHTML=`
-        <label>店舗・個数</label>
-        <div class="store-row">
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth()+1).padStart(2,'0');
+      const dd = String(today.getDate()).padStart(2,'0');
+      document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
+
+      const itemButtons = document.querySelectorAll('.item-button');
+      let selectedItem = null;
+      itemButtons.forEach(btn=>{
+        btn.addEventListener('click', function(){
+          itemButtons.forEach(b=>b.classList.remove('selected'));
+          this.classList.add('selected');
+          selectedItem = this.getAttribute('data-value');
+        });
+      });
+
+      function addStore(){
+        const container = document.getElementById('storesContainer');
+        const div = document.createElement('div');
+        div.className='store-row';
+        div.innerHTML=`
           <select name="store">
             <option value="連島">連島</option>
             <option value="津高">津高</option>
@@ -168,46 +138,57 @@ function initShipmentForm(){
             <option value="児島">児島</option>
           </select>
           <input type="number" name="quantity" min="1" placeholder="個数" required>
-        </div>
-      `;
-      itemButtons.forEach(b=>b.classList.remove('selected'));
-      selectedItem=null;
-    }catch(err){ alert('通信エラー:'+err); }
-  });
-}
+        `;
+        container.appendChild(div);
+      }
 
-// 店舗追加
-function addStore(){
-  const container=document.getElementById('storesContainer');
-  const div=document.createElement('div');
-  div.className='store-row';
-  div.innerHTML=`
-    <select name="store">
-      <option value="連島">連島</option>
-      <option value="津高">津高</option>
-      <option value="茶屋町">茶屋町</option>
-      <option value="大安寺">大安寺</option>
-      <option value="中庄">中庄</option>
-      <option value="総社南">総社南</option>
-      <option value="円山">円山</option>
-      <option value="児島">児島</option>
-    </select>
-    <input type="number" name="quantity" min="1" placeholder="個数" required>
-  `;
-  container.appendChild(div);
-}
+      document.getElementById('shipmentForm').addEventListener('submit', async function(e){
+        e.preventDefault();
+        if(!selectedItem){ alert('品目を選択してください'); return; }
 
-// メニュー画面ボタン
-document.querySelectorAll('.menu-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.getElementById('menuScreen').style.display='none';
-    const tab=btn.dataset.tab;
-    const tabContent=document.getElementById('tabContent');
-    if(tab==='shipment'){ tabContent.innerHTML=renderShipment(); initShipmentForm(); }
-    else tabContent.innerHTML=`<h3>${tab}画面（開発中）</h3>`;
-  });
-});
-</script>
+        const form = e.target;
+        const data = {
+          date: form.date.value,
+          item: selectedItem,
+          price: form.price.value,
+          stores: Array.from(form.querySelectorAll('.store-row')).map(row=>({
+            name: row.querySelector('select[name="store"]').value,
+            quantity: row.querySelector('input[name="quantity"]').value
+          }))
+        };
 
-</body>
+        try{
+          await fetch(SCRIPT_URL,{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(data),
+            mode:'no-cors'
+          });
+          alert('登録完了！');
+          form.reset();
+          document.getElementById('storesContainer').innerHTML=`
+            <label>店舗・個数</label>
+            <div class="store-row">
+              <select name="store">
+                <option value="連島">連島</option>
+                <option value="津高">津高</option>
+                <option value="茶屋町">茶屋町</option>
+                <option value="大安寺">大安寺</option>
+                <option value="中庄">中庄</option>
+                <option value="総社南">総社南</option>
+                <option value="円山">円山</option>
+                <option value="児島">児島</option>
+              </select>
+              <input type="number" name="quantity" min="1" placeholder="個数" required>
+            </div>
+          `;
+          itemButtons.forEach(b=>b.classList.remove('selected'));
+          selectedItem = null;
+          document.getElementById('dateInput').value=`${yyyy}-${mm}-${dd}`;
+        }catch(err){
+          alert('通信エラー: '+err);
+        }
+      });
+    </script>
+  </body>
 </html>
