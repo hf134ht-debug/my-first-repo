@@ -54,15 +54,17 @@ footer button {
 
 footer button:hover { background: #2e5f24; }
 
-/* 各画面コンテンツ用 */
-.screen-content {
-  width: 100%;
-  flex: 1;
-  overflow-y: auto;
-  padding-bottom: 60px; /* タブの高さ確保 */
+/* 出荷管理画面用 */
+#shipmentForm label { font-weight: bold; margin-top: 12px; display: block; }
+#shipmentForm input, #shipmentForm select, #shipmentForm button { 
+  width: 100%; padding: 10px; margin-top: 5px; font-size: 1.2em; border-radius: 8px; border: 1px solid #aaa;
 }
+#shipmentForm button { margin-top: 15px; background-color: #a6d854; color: white; font-weight: bold; border:none; cursor:pointer;}
+#shipmentForm button:hover { background-color: #8bc34a; }
 
-.screen-content h2 {
-  text-align: center;
-  margin-bottom: 20px;
-}
+.store-row { display: flex; flex-wrap: wrap; gap:5px; margin-top:5px; align-items:center; }
+.store-row select, .store-row input { flex:1; min-width:120px; }
+
+#itemContainer { display:flex; flex-wrap:wrap; gap:10px; margin-top:5px; }
+.item-button { flex:1 1 45%; padding:10px; background:#e0f0b8; border:2px solid #3b7d32; border-radius:8px; cursor:pointer; text-align:center; user-select:none;}
+.item-button.selected { background:#3b7d32; color:white; font-weight:bold;}

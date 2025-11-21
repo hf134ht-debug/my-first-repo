@@ -3,15 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>出荷管理アプリ</title>
+  <title>出荷管理PWA</title>
   <link rel="stylesheet" href="style.css">
-
-  <!-- PWA用 -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#3b7d32">
 </head>
 <body>
-
   <!-- ホーム画面 -->
   <div id="home" class="screen">
     <div class="home-button" onclick="goTo('shipment')">出荷管理</div>
@@ -20,10 +17,10 @@
     <div class="home-button" onclick="goTo('sales')">売上</div>
   </div>
 
-  <!-- 各画面コンテンツ -->
+  <!-- コンテンツ切替 -->
   <div id="content" class="screen hidden"></div>
 
-  <!-- タブUI（下固定） -->
+  <!-- 下タブ -->
   <footer id="tabs" class="hidden">
     <button onclick="goTo('shipment')">出荷</button>
     <button onclick="goTo('history')">履歴</button>
@@ -34,3 +31,4 @@
   <script src="app.js"></script>
 </body>
 </html>
+
