@@ -4,9 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-/* -----------------------
-    背景（復元）
------------------------- */
+/* 背景 */
 body::before {
   content: "";
   position: fixed;
@@ -27,18 +25,14 @@ body {
   background: linear-gradient(to bottom right, #e6f7d6, #f9ffd6);
 }
 
-/* -----------------------
-    ページ構造
------------------------- */
+/* 全体コンテナ */
 #container {
   max-width: 500px;
   margin: auto;
-  padding-bottom: 120px; /* タブの高さ */
+  padding-bottom: 120px; /* 下タブ分 */
 }
 
-/* -----------------------
-    ▼ 最初のメニュー画面
------------------------- */
+/* ===== 最初のメニュー画面 ===== */
 #menuScreen {
   padding: 20px;
 }
@@ -62,15 +56,13 @@ body {
   box-shadow: 0 3px 6px rgba(0,0,0,0.15);
 }
 
-/* ▼4つの色（テーマA） */
+/* テーマAの4色 */
 .btn-shipment { background: linear-gradient(135deg,#ffecb3,#ffcc80); }
 .btn-history  { background: linear-gradient(135deg,#b3e5fc,#81d4fa); }
 .btn-summary  { background: linear-gradient(135deg,#c8e6c9,#a5d6a7); }
 .btn-sales    { background: linear-gradient(135deg,#ffcdd2,#ef9a9a); }
 
-/* -----------------------
-    ▼ 下タブ（常時固定）
------------------------- */
+/* ===== 下タブ（常時固定） ===== */
 #bottomTabs {
   position: fixed;
   bottom: 0;
@@ -80,7 +72,7 @@ body {
   background: #ffffffdd;
   backdrop-filter: blur(5px);
   padding: 8px 10px;
-  display: none;
+  display: flex;
   gap: 8px;
   justify-content: space-between;
   border-top: 2px solid #ffcc80;
@@ -99,7 +91,7 @@ body {
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
-/* ▼ 下タブの4色（メニューと完全連動） */
+/* メニューと連動した4色 */
 .tab-btn.shipment { background: linear-gradient(135deg,#ffecb3,#ffcc80); color:#5d4037; }
 .tab-btn.history  { background: linear-gradient(135deg,#b3e5fc,#81d4fa); color:#0277bd; }
 .tab-btn.summary  { background: linear-gradient(135deg,#c8e6c9,#a5d6a7); color:#33691e; }
@@ -109,9 +101,7 @@ body {
   filter: brightness(1.15);
 }
 
-/* -----------------------
-    ▼ 出荷管理フォーム
------------------------- */
+/* ===== 共通見出し ===== */
 h2 {
   text-align: center;
   font-size: 1.8em;
@@ -135,11 +125,15 @@ input, select {
   font-size: 1em;
 }
 
-/* -----------------------
-    ▼ 品目ボタン
------------------------- */
+/* ===== 出荷画面：品目ボタン ===== */
+#itemContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 5px;
+}
 
-/* 初期色：全品目共通の薄い色 */
+/* 初期色（全品目共通） */
 .item-button {
   flex: 1 1 45%;
   padding: 10px;
@@ -152,7 +146,7 @@ input, select {
   user-select: none;
 }
 
-/* 白菜 ・ 白菜カット */
+/* 白菜・白菜カット（ポップな黄緑＋光） */
 .item-button.selected.hakusai {
   background: linear-gradient(135deg,#d4ff8a,#a7ff4d);
   box-shadow: 0 0 12px rgba(170,255,120,0.9);
@@ -160,7 +154,7 @@ input, select {
   border-color: #5bbf00;
 }
 
-/* キャベツ ・ キャベツカット */
+/* キャベツ・キャベツカット（深緑＋影） */
 .item-button.selected.cabbage {
   background: linear-gradient(135deg,#66bb6a,#388e3c);
   color: white;
@@ -169,7 +163,7 @@ input, select {
   transform: scale(1.03);
 }
 
-/* トウモロコシ */
+/* トウモロコシ（黄色→白） */
 .item-button.selected.corn {
   background: linear-gradient(135deg,#fff59d,#fffde7);
   border-color: #fbc02d;
@@ -177,8 +171,13 @@ input, select {
   transform: scale(1.05);
 }
 
+/* 店舗行＋ボタン */
+.store-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 5px;
+}
 
-/* 店舗追加・登録ボタン */
 .add-btn {
   margin-top: 15px;
   background: #a6d854;
@@ -199,10 +198,61 @@ input, select {
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
 }
 
-.store-row {
-  display: flex;
-  gap: 6px;
-  margin-top: 5px;
+/* ===== 履歴画面 ===== */
+
+.history-container {
+  padding: 10px 16px 40px;
+}
+
+.history-date-row {
+  margin-bottom: 10px;
+}
+
+.history-result h3 {
+  font-size: 1.2em;
+  margin-top: 12px;
+}
+
+/* 履歴カードの基本 */
+.history-card {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #ffffffcc;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* 品目カラー連動 */
+.history-card.hakusai {
+  background: linear-gradient(135deg,#f1ffcf,#d4ff8a);
+  border: 1px solid #aeea00;
+}
+.history-card.cabbage {
+  background: linear-gradient(135deg,#e0f2f1,#a5d6a7);
+  border: 1px solid #4caf50;
+}
+.history-card.corn {
+  background: linear-gradient(135deg,#fff9c4,#fffde7);
+  border: 1px solid #fbc02d;
+}
+
+.history-title {
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.history-stores {
+  margin-left: 6px;
+}
+
+.history-store-row {
+  font-size: 0.95em;
+}
+
+.history-total {
+  margin-top: 6px;
+  text-align: right;
+  font-weight: bold;
 }
 </style>
 </head>
@@ -210,11 +260,9 @@ input, select {
 <body>
 
 <div id="container">
-
-  <!-- ▼ 最初のメニュー画面 -->
+  <!-- 最初のメニュー画面 -->
   <div id="menuScreen">
     <h2>メニュー</h2>
-
     <div class="menu-grid">
       <div class="menu-btn btn-shipment" onclick="openTab('shipment')">出荷管理</div>
       <div class="menu-btn btn-history"  onclick="openTab('history')">履歴</div>
@@ -223,11 +271,11 @@ input, select {
     </div>
   </div>
 
-  <!-- ▼ 画面切替先 -->
+  <!-- タブ中身 -->
   <div id="tabContent" style="display:none;"></div>
 </div>
 
-<!-- ▼ 下タブ -->
+<!-- 下タブ -->
 <div id="bottomTabs">
   <button class="tab-btn shipment" onclick="openTab('shipment')">出荷</button>
   <button class="tab-btn history"  onclick="openTab('history')">履歴</button>
@@ -236,15 +284,14 @@ input, select {
 </div>
 
 <script>
+// ★ここにあなたの Web アプリ /exec URL を入れてください ★
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
 
-/* -----------------------
-    出荷画面テンプレート
------------------------- */
+/* ===== 出荷画面 ===== */
 function renderShipment() {
   return `
     <h2>出荷管理</h2>
     <form id="shipmentForm">
-
       <label>日付</label>
       <input type="date" id="dateInput" required>
 
@@ -278,9 +325,6 @@ function renderShipment() {
   `;
 }
 
-/* -----------------------
-    店舗追加
------------------------- */
 function addStore() {
   const container = document.getElementById("storesContainer");
   const d = document.createElement("div");
@@ -296,55 +340,20 @@ function addStore() {
   container.appendChild(d);
 }
 
-/* -----------------------
-    タブ切替
------------------------- */
-function openTab(tab) {
-  document.getElementById("menuScreen").style.display = "none";
-  document.getElementById("tabContent").style.display = "block";
-
-  const bottomTabs = document.getElementById("bottomTabs");
-  bottomTabs.style.display = "flex";
-
-  document.querySelectorAll(".tab-btn")
-    .forEach(t => t.classList.remove("active"));
-
-  document.querySelector(`.tab-btn.${tab}`)?.classList.add("active");
-
-  const tabContent = document.getElementById("tabContent");
-
-  if (tab === "shipment") {
-    tabContent.innerHTML = renderShipment();
-    activateShipmentFeatures();
-  }
-  else {
-    tabContent.innerHTML = `<h2>${tab}（開発中）</h2>`;
-  }
-}
-
-/* -----------------------
-    出荷画面：機能付与
------------------------- */
 function activateShipmentFeatures() {
-
   const today = new Date();
-  document.getElementById("dateInput").value =
-    today.toISOString().slice(0,10);
+  document.getElementById("dateInput").value = today.toISOString().slice(0,10);
 
   let selectedItem = null;
 
-  /* 品目選択 */
   document.querySelectorAll(".item-button").forEach(btn => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll(".item-button")
-        .forEach(b => b.classList.remove("selected"));
-
+      document.querySelectorAll(".item-button").forEach(b => b.classList.remove("selected"));
       btn.classList.add("selected");
       selectedItem = btn.dataset.value;
     });
   });
 
-  /* フォーム送信 */
   document.getElementById("shipmentForm").addEventListener("submit", e => {
     e.preventDefault();
 
@@ -363,13 +372,10 @@ function activateShipmentFeatures() {
       }))
     };
 
-    /* ▼▼▼ あなたの GAS /exec URL をここへ ▼▼▼ */
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyHoiECC4pJ6_hfQySGA8P7XkIa1qFwDc5Yz6byN9d3rrNdjtphQK365xEypa0TCbVGFg/exec";
-
     fetch(SCRIPT_URL, {
       method: "POST",
       mode: "no-cors",
-      headers: { "Content-Type":"application/json" },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
     });
 
@@ -378,6 +384,106 @@ function activateShipmentFeatures() {
   });
 }
 
+/* ===== 履歴画面 ===== */
+function renderHistoryScreen() {
+  return `
+    <h2>履歴</h2>
+    <div class="history-container">
+      <div class="history-date-row">
+        <label>日付を選択</label>
+        <input type="date" id="historyDate">
+      </div>
+      <div id="historyResult" class="history-result">
+        <p>日付を選ぶと、その日の出荷履歴が表示されます。</p>
+      </div>
+    </div>
+  `;
+}
+
+function activateHistoryFeatures() {
+  const dateInput = document.getElementById("historyDate");
+  const resultDiv = document.getElementById("historyResult");
+
+  const today = new Date();
+  dateInput.value = today.toISOString().slice(0,10);
+
+  const load = () => loadHistory(dateInput.value, resultDiv);
+  dateInput.addEventListener("change", load);
+
+  // 初回表示
+  load();
+}
+
+async function loadHistory(dateStr, resultDiv) {
+  if (!dateStr) {
+    resultDiv.innerHTML = "<p>日付を選択してください。</p>";
+    return;
+  }
+
+  resultDiv.innerHTML = "<p>読み込み中...</p>";
+
+  try {
+    const res = await fetch(`${SCRIPT_URL}?date=${encodeURIComponent(dateStr)}`);
+    const data = await res.json();
+
+    if (!data.found) {
+      resultDiv.innerHTML = `<p>${dateStr} のデータはありません。</p>`;
+      return;
+    }
+
+    if (!data.items || data.items.length === 0) {
+      resultDiv.innerHTML = `<p>${dateStr} の出荷記録はありません。</p>`;
+      return;
+    }
+
+    const cardsHtml = data.items.map(item => {
+      let cls = "";
+      if (item.item === "白菜" || item.item === "白菜カット") cls = "hakusai";
+      else if (item.item === "キャベツ" || item.item === "キャベツカット") cls = "cabbage";
+      else if (item.item === "トウモロコシ") cls = "corn";
+
+      const storesHtml = item.stores.map(s =>
+        `<div class="history-store-row">・${s.name}：${s.quantity}</div>`
+      ).join("");
+
+      return `
+        <div class="history-card ${cls}">
+          <div class="history-title">${item.item}（${item.price}円）</div>
+          <div class="history-stores">
+            ${storesHtml}
+          </div>
+          <div class="history-total">合計：${item.total}個</div>
+        </div>
+      `;
+    }).join("");
+
+    resultDiv.innerHTML = `<h3>${dateStr} の履歴</h3>${cardsHtml}`;
+
+  } catch (err) {
+    console.error(err);
+    resultDiv.innerHTML = `<p>読み込みエラー：${err}</p>`;
+  }
+}
+
+/* ===== タブ切替 ===== */
+function openTab(tab) {
+  document.getElementById("menuScreen").style.display = "none";
+  const tabContent = document.getElementById("tabContent");
+  tabContent.style.display = "block";
+
+  document.querySelectorAll(".tab-btn").forEach(t => t.classList.remove("active"));
+  document.querySelector(`.tab-btn.${tab}`)?.classList.add("active");
+
+  if (tab === "shipment") {
+    tabContent.innerHTML = renderShipment();
+    activateShipmentFeatures();
+  } else if (tab === "history") {
+    tabContent.innerHTML = renderHistoryScreen();
+    activateHistoryFeatures();
+  } else {
+    tabContent.innerHTML = `<h2>${tab}（開発中）</h2>`;
+  }
+}
 </script>
 
 </body>
