@@ -3,44 +3,34 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- ⭐ PWA 必須：manifest 読み込み -->
-<link rel="manifest" href="manifest.json">
+<!-- manifest -->
+<link rel="manifest" href="/my-first-repo/manifest.json">
 
-<!-- ⭐ iOS 専用 PWA アイコン（iPhone ホーム画面対応） -->
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-
-<!-- ⭐ iOS Safari が PWA として表示するために必須 -->
+<!-- iOS PWA -->
+<link rel="apple-touch-icon" href="/my-first-repo/icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-<!-- ⭐ theme-color：タブ色 & アプリ起動画面の色 -->
-<meta name="theme-color" content="#ffcc80">
-
-<!-- ⭐ ここにあなたの CSS を読み込む -->
-<link rel="stylesheet" href="css/style.css">
-
 <title>出荷管理アプリ</title>
-</head>
 
+<link rel="stylesheet" href="/my-first-repo/css/style.css">
+
+</head>
 <body>
 
 <div id="container">
-  <!-- あなたの画面内容（メニューやタブなど）がここに入る -->
+  <div id="menuScreen"></div>
+  <div id="tabContent"></div>
 </div>
 
-<!-- ⭐ JSファイルの読み込み -->
-<script src="js/app.js"></script>
-<script src="js/shipment.js"></script>
-<script src="js/history.js"></script>
+<div id="bottomTabs"></div>
 
-<!-- ⭐ PWA 必須：service-worker の登録 -->
+<!-- JS -->
+<script src="/my-first-repo/js/app.js"></script>
+<script src="/my-first-repo/js/history.js"></script>
+<script src="/my-first-repo/js/shipment.js"></script>
+
+<!-- Service Worker 登録 -->
 <script>
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("service-worker.js")
-    .then(() => console.log("Service Worker registered"))
-    .catch(err => console.log("SW registration failed:", err));
-}
-</script>
-
-</body>
-</html>
+  navigator.serviceWorker.register("/my-first-repo/service-worker.
