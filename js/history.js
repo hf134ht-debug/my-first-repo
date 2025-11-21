@@ -1,15 +1,11 @@
 /* =========================================================
-   history.js
-   - 履歴（和紙カレンダー）
-   - 日付クリック → GASからデータ取得
+   history.js（履歴画面 + カレンダーのデータ判定）
 ========================================================= */
 
-/* ===== デプロイ URL ===== */
 const HISTORY_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
 
-
-/* ===== 履歴画面 HTML ===== */
+/* ------- 履歴画面 HTML ------- */
 function renderHistoryScreen() {
   return `
     <h2>履歴</h2>
@@ -18,31 +14,48 @@ function renderHistoryScreen() {
   `;
 }
 
+/* ===== カレンダー状態 ===== */
+let calYear;
+let calMonth;
 
-/* ===== カレンダー生成 ===== */
-function drawCalendar(year, month, selectedDate = null) {
+/* =========================================================
+   履歴画面を開くと「未選択のカレンダー」を表示する
+========================================================= */
+async function activateHistoryFeatures() {
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+
+  await renderCalendarWithData(calYear, calMonth, null);
+  document.getElementById("historyResult").innerHTML =
+    `<p>日付を選択してください</p>`;
+}
+
+/* =========================================================
+   月のデータを GAS に問い合わせてカレンダーに反映
+========================================================= */
+async function renderCalendarWithData(year, month, selectedDate) {
+  const ym = `${year}-${String(month + 1).padStart(2, '0')}`;
+
+  // GAS から「データがある日一覧」を取得
+  const res = await fetch(`${HISTORY_SCRIPT_URL}?checkMonth=${ym}`);
+  const monthInfo = await res.json();
+  const daysWithData = monthInfo.days || [];
+
+  // カレンダー描画
+  document.getElementById("calendarArea").innerHTML =
+    drawCalendar(year, month, selectedDate, daysWithData);
+}
+
+/* =========================================================
+   カレンダー生成
+   ※ daysWithData[] = ["01","05","22"] のようにデータあり日
+========================================================= */
+function drawCalendar(year, month, selectedDate = null, daysWithData = []) {
   const today = new Date();
 
   const first = new Date(year, month, 1);
   const last = new Date(year, month + 1, 0);
-
-  const weeks = [];
-  let row = [];
-
-  for (let i = 0; i < first.getDay(); i++) row.push(null);
-
-  for (let d = 1; d <= last.getDate(); d++) {
-    row.push(new Date(year, month, d));
-    if (row.length === 7) {
-      weeks.push(row);
-      row = [];
-    }
-  }
-
-  if (row.length > 0) {
-    while (row.length < 7) row.push(null);
-    weeks.push(row);
-  }
 
   const days = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -50,99 +63,83 @@ function drawCalendar(year, month, selectedDate = null) {
     <div class="calendar-wrapper">
       <div class="calendar-header">
         <button class="cal-btn" onclick="changeMonth(-1)">＜</button>
-        <div><b>${year}年 ${month + 1}月</b></div>
+        <div><b>${year}年 ${month+1}月</b></div>
         <button class="cal-btn" onclick="changeMonth(1)">＞</button>
       </div>
 
       <div class="calendar-grid">
-        ${days.map(d => `<div class="calendar-day">${d}</div>`).join("")}
+        ${days.map(d => `<div class="calendar-day">${d}</div>`).join('')}
       </div>
 
       <div class="calendar-grid">
   `;
 
-  weeks.forEach(week => {
-    week.forEach(day => {
-      if (!day) {
-        html += `<div></div>`;
-        return;
-      }
+  // 最初の空白
+  for (let i = 0; i < first.getDay(); i++) {
+    html += `<div></div>`;
+  }
 
-      const isToday =
-        today.getFullYear() === day.getFullYear() &&
-        today.getMonth() === day.getMonth() &&
-        today.getDate() === day.getDate();
+  // 日付
+  for (let d = 1; d <= last.getDate(); d++) {
+    const dateObj = new Date(year, month, d);
+    const dd = String(d).padStart(2, '0');
 
-      const isSelected =
-        selectedDate &&
-        selectedDate.getFullYear() === day.getFullYear() &&
-        selectedDate.getMonth() === day.getMonth() &&
-        selectedDate.getDate() === day.getDate();
+    const isToday =
+      today.getFullYear() === year &&
+      today.getMonth() === month &&
+      today.getDate() === d;
 
-      html += `
-        <div
-          class="calendar-date ${isToday ? "today" : ""} ${isSelected ? "selected" : ""}"
-          onclick="selectHistoryDate(${day.getFullYear()},${day.getMonth()},${day.getDate()})"
-        >
-          ${day.getDate()}
-        </div>
-      `;
-    });
-  });
+    const isSelected =
+      selectedDate &&
+      selectedDate.getFullYear() === year &&
+      selectedDate.getMonth() === month &&
+      selectedDate.getDate() === d;
+
+    const hasData = daysWithData.includes(dd);
+
+    html += `
+      <div
+        class="calendar-date
+          ${isToday ? "today" : ""}
+          ${isSelected ? "selected" : ""}
+          ${hasData ? "has-data" : ""}"
+        onclick="selectHistoryDate(${year},${month},${d})"
+      >
+        ${d}
+      </div>
+    `;
+  }
 
   html += `</div></div>`;
   return html;
 }
 
-
-/* ===== カレンダーの状態 ===== */
-let calYear;
-let calMonth;
-
-
-/* ===== 履歴画面を表示したタイミングで初期化 ===== */
-function activateHistoryFeatures() {
-  const now = new Date();
-  calYear = now.getFullYear();
-  calMonth = now.getMonth();
-
-  document.getElementById("calendarArea").innerHTML =
-    drawCalendar(calYear, calMonth, now);
-
-  selectHistoryDate(now.getFullYear(), now.getMonth(), now.getDate());
-}
-
-
-/* ===== 月移動 ===== */
-function changeMonth(offset) {
+/* =========================================================
+   月移動
+========================================================= */
+async function changeMonth(offset) {
   calMonth += offset;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
 
-  if (calMonth < 0) {
-    calMonth = 11;
-    calYear--;
-  }
-  if (calMonth > 11) {
-    calMonth = 0;
-    calYear++;
-  }
-
-  document.getElementById("calendarArea").innerHTML =
-    drawCalendar(calYear, calMonth);
+  await renderCalendarWithData(calYear, calMonth, null);
+  document.getElementById("historyResult").innerHTML =
+    `<p>日付を選択してください</p>`;
 }
 
+/* =========================================================
+   日付クリック → 履歴データ読み込み
+========================================================= */
+async function selectHistoryDate(y, m, d) {
+  const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 
-/* ===== 日付クリック → 履歴を読み込む ===== */
-function selectHistoryDate(y, m, d) {
-  const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-
-  document.getElementById("calendarArea").innerHTML =
-    drawCalendar(y, m, new Date(y, m, d));
-
+  await renderCalendarWithData(y, m, new Date(y, m, d));
   loadHistory(dateStr);
 }
 
-
-/* ===== GAS から履歴を取得 ===== */
+/* =========================================================
+   履歴データ取得
+========================================================= */
 async function loadHistory(dateStr) {
   const resultDiv = document.getElementById("historyResult");
   resultDiv.innerHTML = `<p>読み込み中…</p>`;
@@ -174,6 +171,7 @@ async function loadHistory(dateStr) {
     });
 
     resultDiv.innerHTML = html;
+
   } catch (err) {
     resultDiv.innerHTML = `<p>エラー：${err}</p>`;
   }
