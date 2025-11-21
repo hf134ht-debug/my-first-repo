@@ -1,4 +1,7 @@
-/* ===== 背景 ===== */
+/* =========================================================
+   全体背景
+========================================================= */
+
 body::before {
   content: "";
   position: fixed;
@@ -25,7 +28,10 @@ body {
   padding-bottom: 110px;
 }
 
-/* ===== メニュー画面 ===== */
+/* =========================================================
+   メニュー画面
+========================================================= */
+
 #menuScreen {
   padding: 20px;
 }
@@ -54,19 +60,22 @@ body {
 .btn-sales    { background: linear-gradient(135deg,#ffcdd2,#ef9a9a); }
 .btn-summary  { background: linear-gradient(135deg,#c8e6c9,#a5d6a7); }
 
-/* ===== 下タブ ===== */
+/* =========================================================
+   下タブ（常に固定）
+========================================================= */
+
 #bottomTabs {
   position: fixed;
-  bottom: 0; left: 0; right: 0;
+  bottom: 0;
+  left: 0; right: 0;
   margin: auto;
   max-width: 500px;
   background: #ffffffdd;
-  backdrop-filter: blur(5px);
   padding: 8px 10px;
   display: flex;
   gap: 8px;
   justify-content: space-between;
-  border-top: 2px solid #ccc;
+  border-top: 2px solid #ffcc80;
   z-index: 1000;
 }
 
@@ -82,7 +91,6 @@ body {
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
-/* 色はメニューと連動 */
 .tab-btn.shipment { background: linear-gradient(135deg,#ffecb3,#ffcc80); color:#5d4037; }
 .tab-btn.history  { background: linear-gradient(135deg,#b3e5fc,#81d4fa); color:#0277bd; }
 .tab-btn.sales    { background: linear-gradient(135deg,#ffcdd2,#ef9a9a); color:#b71c1c; }
@@ -92,12 +100,14 @@ body {
   filter: brightness(1.15);
 }
 
-/* ===== 出荷画面 ===== */
+/* =========================================================
+   共通：見出し・フォーム
+========================================================= */
 
 h2 {
   text-align: center;
   font-size: 1.8em;
-  margin-top: 14px;
+  margin-top: 10px;
   color: #3b7d32;
 }
 
@@ -117,7 +127,10 @@ input, select {
   font-size: 1em;
 }
 
-/* 品目ボタン */
+/* =========================================================
+   出荷管理（品目ボタン）
+========================================================= */
+
 #itemContainer {
   display: flex;
   flex-wrap: wrap;
@@ -136,18 +149,14 @@ input, select {
   transition: 0.25s;
 }
 
-.item-button:hover {
-  transform: scale(1.03);
-}
-
-/* 白菜 */
+/* 白菜（黄緑に発光） */
 .item-button.selected.hakusai {
   background: linear-gradient(135deg,#d4ff8a,#a7ff4d);
   box-shadow: 0 0 12px rgba(170,255,120,0.9);
   transform: scale(1.05);
 }
 
-/* キャベツ */
+/* キャベツ（深緑 + 影） */
 .item-button.selected.cabbage {
   background: linear-gradient(135deg,#66bb6a,#388e3c);
   color: white;
@@ -156,7 +165,7 @@ input, select {
   transform: scale(1.03);
 }
 
-/* コーン */
+/* トウモロコシ（黄色 → 白グラデ） */
 .item-button.selected.corn {
   background: linear-gradient(135deg,#fff59d,#fffde7);
   border-color: #fbc02d;
@@ -164,13 +173,7 @@ input, select {
   transform: scale(1.05);
 }
 
-/* 店舗行 */
-.store-row {
-  display: flex;
-  gap: 6px;
-  margin-top: 5px;
-}
-
+/* 店舗追加・送信 */
 .add-btn {
   margin-top: 15px;
   background: #a6d854;
@@ -190,13 +193,19 @@ input, select {
   font-weight: bold;
 }
 
+.store-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 5px;
+}
+
 /* =========================================================
-      履歴画面：和紙カレンダー（中くらい）＋曜日色＋アニメ
+   和紙カレンダー（履歴・売上共通）
 ========================================================= */
 
 .calendar-wrapper {
   background: #f3f5e9;
-  background-image:
+  background-image: 
      radial-gradient(#e8ecd8 2px, transparent 2px),
      radial-gradient(#e8ecd8 2px, transparent 2px),
      linear-gradient(135deg, #f8faef, #eef3da);
@@ -210,7 +219,6 @@ input, select {
   animation: fadeIn 0.4s ease-out;
 }
 
-/* 出現 */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -239,13 +247,6 @@ input, select {
   gap: 4px;
 }
 
-.calendar-day {
-  text-align: center;
-  font-weight: bold;
-  padding: 4px 0;
-}
-
-/* 日曜＝赤 / 土曜＝青 */
 .calendar-day:nth-child(1) { color: #e53935; }
 .calendar-day:nth-child(7) { color: #1e88e5; }
 
@@ -255,21 +256,24 @@ input, select {
   padding: 8px 0;
   text-align: center;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
   transition: 0.15s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
-.calendar-date:hover {
-  transform: scale(1.07);
-  background: #f7ffe1;
+/* データあり日（今回追加） */
+.calendar-date.has-data {
+  background: #fdf5cc !important;
+  border: 1px solid #e0c978;
 }
 
+/* 今日 */
 .calendar-date.today {
   background: #e7f7b3;
   border: 1px solid #c5db6e;
   font-weight: bold;
 }
 
+/* 選択日 */
 .calendar-date.selected {
   background: #a5d6a7;
   color: white;
@@ -278,7 +282,9 @@ input, select {
   transform: scale(1.1);
 }
 
-/* ===== 履歴カード ===== */
+/* =========================================================
+   履歴・売上カード
+========================================================= */
 
 .history-card {
   margin-top: 10px;
@@ -291,9 +297,11 @@ input, select {
 .history-card.hakusai {
   background: linear-gradient(135deg,#f1ffcf,#d4ff8a);
 }
+
 .history-card.cabbage {
   background: linear-gradient(135deg,#e0f2f1,#a5d6a7);
 }
+
 .history-card.corn {
   background: linear-gradient(135deg,#fff9c4,#fffde7);
 }
