@@ -3,10 +3,20 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- PWA manifest -->
+<!-- ⭐ PWA 必須：manifest 読み込み -->
 <link rel="manifest" href="manifest.json">
 
-<!-- メインCSS -->
+<!-- ⭐ iOS 専用 PWA アイコン（iPhone ホーム画面対応） -->
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+
+<!-- ⭐ iOS Safari が PWA として表示するために必須 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+<!-- ⭐ theme-color：タブ色 & アプリ起動画面の色 -->
+<meta name="theme-color" content="#ffcc80">
+
+<!-- ⭐ ここにあなたの CSS を読み込む -->
 <link rel="stylesheet" href="css/style.css">
 
 <title>出荷管理アプリ</title>
@@ -14,33 +24,21 @@
 
 <body>
 
-<!-- アプリ全体のコンテナ -->
 <div id="container">
-  
-  <!-- 初期メニュー画面（JSで生成） -->
-  <div id="menuScreen"></div>
-
-  <!-- タブ画面（出荷／履歴／売上／集計） -->
-  <div id="tabContent"></div>
-
+  <!-- あなたの画面内容（メニューやタブなど）がここに入る -->
 </div>
 
-<!-- 画面下のタブ（JSで生成） -->
-<div id="bottomTabs"></div>
-
-<!-- メインアプリのJS（タブ切替など） -->
+<!-- ⭐ JSファイルの読み込み -->
 <script src="js/app.js"></script>
-
-<!-- 出荷画面の制御 -->
 <script src="js/shipment.js"></script>
-
-<!-- 履歴（和紙カレンダー） -->
 <script src="js/history.js"></script>
 
-<!-- PWA service worker 登録 -->
+<!-- ⭐ PWA 必須：service-worker の登録 -->
 <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js');
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js")
+    .then(() => console.log("Service Worker registered"))
+    .catch(err => console.log("SW registration failed:", err));
 }
 </script>
 
