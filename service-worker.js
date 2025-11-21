@@ -1,9 +1,8 @@
 /* =========================================================
-   service-worker.js（GitHub Pages用・完全動作品）
+   service-worker.js（GitHub Pages用・sales.js対応 完全版）
 ========================================================= */
 
 const CACHE_NAME = "shukka-app-v2";
-
 const BASE = "/my-first-repo";
 
 const ASSETS = [
@@ -13,12 +12,13 @@ const ASSETS = [
   `${BASE}/js/app.js`,
   `${BASE}/js/shipment.js`,
   `${BASE}/js/history.js`,
+  `${BASE}/js/sales.js`,   // ★ 追加
   `${BASE}/manifest.json`,
   `${BASE}/icons/icon-192.png`,
   `${BASE}/icons/icon-512.png`
 ];
 
-/* ===== インストール（初回） ===== */
+/* ===== インストール ===== */
 self.addEventListener("install", e => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
@@ -26,7 +26,7 @@ self.addEventListener("install", e => {
   self.skipWaiting();
 });
 
-/* ===== アクティベート（古いキャッシュ削除） ===== */
+/* ===== アクティベート ===== */
 self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys().then(keys =>
@@ -40,5 +40,13 @@ self.addEventListener("activate", e => {
   self.clients.claim();
 });
 
+/* ===== fetch ===== */
+self.addEventListener("fetch", e => {
+  e.respondWith(
+    fetch(e.request).catch(() => caches.match(e.request))
+  );
+});
+
 /* ===== fetch（オンライン優先 + オフライン fallback） ===== */
 self.addEventListener("f
+
