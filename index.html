@@ -3,7 +3,6 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-      /* 背景画像 */
       body::before {
         content: "";
         position: fixed;
@@ -28,52 +27,35 @@
         background-attachment: fixed;
       }
 
-      h2 {
-        text-align:center;
-        font-size:2.5em;
-        color:#3b7d32;
-        text-shadow:2px 2px 5px rgba(255,255,255,0.8);
-        animation: floatUp 4s ease-in-out infinite alternate;
-      }
-
+      h2 {text-align:center;font-size:2.5em;color:#3b7d32;text-shadow:2px 2px 5px rgba(255,255,255,0.8);animation: floatUp 4s ease-in-out infinite alternate;}
       @keyframes floatUp {0%{transform:translateY(0);}100%{transform:translateY(-12px);}}
-
-      label {display:block; margin-top:12px; font-weight:bold; font-size:1.3em;}
-      input, select, button {
-        width:100%; padding:10px; margin-top:5px;
-        box-sizing:border-box; font-size:1.2em; border-radius:8px; border:1px solid #aaa;
-      }
-      button {
-        margin-top:15px; background-color:#a6d854; color:#fff; font-weight:bold; border:none; cursor:pointer;
-      }
+      label {display:block;margin-top:12px;font-weight:bold;font-size:1.3em;}
+      input, select, button {width:100%; padding:10px; margin-top:5px; box-sizing:border-box; font-size:1.2em; border-radius:8px; border:1px solid #aaa;}
+      button {margin-top:15px; background-color:#a6d854; color:#fff; font-weight:bold; border:none; cursor:pointer;}
       button:hover {background-color:#8bc34a;}
 
-      .store-row {
-        display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; align-items:center;
-      }
+      .store-row {display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; align-items:center;}
       .store-row select, .store-row input {flex:1; min-width:120px;}
-      @media (min-width:700px){.store-row select,.store-row input{flex:1;}}
+      @media(min-width:700px){.store-row select,.store-row input{flex:1;}}
 
       /* 品目ボタン */
-      #itemContainer {
-        display:flex; flex-wrap:wrap; gap:10px; margin-top:5px;
-      }
+      #itemContainer {display:flex; flex-wrap:wrap; gap:10px; margin-top:5px;}
       .item-button {
         flex:1 1 45%; padding:10px; font-size:1.2em; border:2px solid #3b7d32;
-        border-radius:8px; cursor:pointer; text-align:center; user-select:none;
-        transition: background 0.3s;
+        border-radius:8px; cursor:pointer; text-align:center; user-select:none; transition: background 0.3s;
       }
+
       /* 初期色 */
       .item-白菜, .item-白菜カット { background-color:#d4f1a0; } /* 黄緑 */
       .item-キャベツ, .item-キャベツカット { background-color:#7ec850; } /* 緑 */
       .item-トウモロコシ { background: linear-gradient(to bottom, #fff86d, #ffffff); } /* 黄色→白 */
 
-      /* 選択時 */
-      .item-button.selected {
-        background-color:#3b7d32 !important;
-        color:white;
-        font-weight:bold;
-      }
+      /* 選択時の色（品目ごとに違う） */
+      .item-白菜.selected { background-color:#a3c940; color:white; }
+      .item-白菜カット.selected { background-color:#b7d875; color:white; }
+      .item-キャベツ.selected { background-color:#4caf50; color:white; }
+      .item-キャベツカット.selected { background-color:#66bb6a; color:white; }
+      .item-トウモロコシ.selected { background-color:#ffd700; color:white; }
     </style>
   </head>
   <body>
@@ -204,3 +186,7 @@
     </script>
   </body>
 </html>
+
+  </body>
+</html>
+
