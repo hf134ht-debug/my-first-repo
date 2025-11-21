@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>出荷管理 PWA</title>
 <style>
-/* 背景画像（元に戻す） */
+/* 背景画像 */
 body::before {
   content: "";
   position: fixed;
@@ -20,36 +20,16 @@ body::before {
 
 body {
   font-family: 'Comic Sans MS', 'Arial', sans-serif;
-  padding: 20px;
+  padding: 10px;
   max-width: 500px;
   margin: auto;
-  font-size: 1.8em;
+  font-size: 1.5em;
   min-height: 100vh;
   background: linear-gradient(to bottom right, #e6f7d6, #f9ffd6);
   background-attachment: fixed;
 }
 
-/* メニュー画面 */
-#menuScreen {
-  display:flex;
-  flex-wrap:wrap;
-  gap:10px;
-  justify-content:center;
-  margin-top:50px;
-}
-.menu-btn {
-  flex:1 1 45%;
-  padding:20px;
-  font-size:1.2em;
-  border-radius:10px;
-  border:none;
-  background:#e0f0b8;
-  font-weight:bold;
-  color:#3b7d32;
-  cursor:pointer;
-  transition:0.2s;
-}
-.menu-btn:hover { opacity:0.8; }
+h2 { text-align:center; font-size:2em; color:#3b7d32; text-shadow: 1px 1px 3px rgba(255,255,255,0.8); }
 
 /* 品目ボタン */
 #itemContainer { display:flex; flex-wrap:wrap; gap:10px; margin-top:5px; }
@@ -60,25 +40,41 @@ body {
 .item-キャベツカット.selected { background-color:#66bb6a; color:white; }
 .item-トウモロコシ.selected { background-color:#ffd700; color:white; }
 
+/* 入力欄 */
+label { display:block; margin-top:10px; font-weight:bold; font-size:1em; }
+input, select, button { width:100%; padding:10px; margin-top:5px; box-sizing:border-box; font-size:1em; border-radius:8px; border:1px solid #aaa; }
+button { background-color:#a6d854; color:white; font-weight:bold; border:none; cursor:pointer; }
+button:hover { background-color:#8bc34a; }
+
 .store-row { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; align-items:center; }
 .store-row select, .store-row input { flex:1; min-width:120px; padding:5px; border-radius:6px; border:1px solid #aaa; }
-button { cursor:pointer; margin-top:10px; padding:10px; border-radius:8px; border:none; background:#a6d854; color:white; font-weight:bold; }
-button:hover { background-color:#8bc34a; }
+
+/* 下部タブ */
+#bottomTabs {
+  position:fixed;
+  bottom:0; left:0; width:100%;
+  display:flex; justify-content:space-around;
+  background:#ffffffcc; padding:5px 0; border-top:1px solid #aaa;
+}
+.tab-btn { flex:1; text-align:center; padding:10px 0; font-size:1em; color:#3b7d32; font-weight:bold; cursor:pointer; transition:0.2s; }
+.tab-btn.active { background:#a6d854; color:white; border-radius:5px; }
+
 </style>
 </head>
 <body>
 
-<h2 style="text-align:center; color:#3b7d32;">出荷管理</h2>
-
+<h2>出荷管理</h2>
 <main id="tabContent">
-  <!-- 最初はメニュー画面 -->
-  <div id="menuScreen">
-    <button class="menu-btn" data-tab="shipment">出荷管理</button>
-    <button class="menu-btn" data-tab="history">履歴</button>
-    <button class="menu-btn" data-tab="summary">集計</button>
-    <button class="menu-btn" data-tab="sales">売上</button>
-  </div>
+  <p>最初にタブを選択してください</p>
 </main>
+
+<!-- 下部タブ -->
+<div id="bottomTabs">
+  <div class="tab-btn" data-tab="shipment">出荷</div>
+  <div class="tab-btn" data-tab="history">履歴</div>
+  <div class="tab-btn" data-tab="summary">集計</div>
+  <div class="tab-btn" data-tab="sales">売上</div>
+</div>
 
 <script>
 const SCRIPT_URL="https://script.google.com/macros/s/AKfycbzK497D-jhTqBKZs07bpcU1-DC4y5jmZIpYhFlfK9MXuvOrhz2jGuGppSNqxSNvwsWdNg/exec";
@@ -197,15 +193,19 @@ function addStore(){
   container.appendChild(div);
 }
 
-// メニュー画面ボタン
-document.querySelectorAll('.menu-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.getElementById('menuScreen').style.display='none';
-    const tab=btn.dataset.tab;
-    const tabContent=document.getElementById('tabContent');
-    if(tab==='shipment'){ tabContent.innerHTML=renderShipment(); initShipmentForm(); }
-    else tabContent.innerHTML=`<h3>${tab}画面（開発中）</h3>`;
-  });
+// 下部タブクリック
+function showTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+  const tabContent=document.getElementById('tabContent');
+  if(tab==='shipment'){ tabContent.innerHTML=renderShipment(); initShipmentForm(); }
+  else tabContent.innerHTML=`<h3>${tab}画面（開発中）</h3>`;
+}
+
+// 初期表示
+showTab('shipment');
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>showTab(btn.dataset.tab));
 });
 </script>
 
