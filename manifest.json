@@ -1,10 +1,10 @@
 {
-  "name": "出荷管理アプリ",
-  "short_name": "出荷管理",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#f0f8e2",
-  "theme_color": "#3b7d32",
+  "name":"出荷管理アプリ",
+  "short_name":"出荷管理",
+  "start_url":"./index.html",
+  "display":"standalone",
+  "background_color":"#f0f8e2",
+  "theme_color":"#3b7d32",
   "icons":[
     {"src":"icon-192.png","sizes":"192x192","type":"image/png"},
     {"src":"icon-512.png","sizes":"512x512","type":"image/png"}

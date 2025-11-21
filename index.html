@@ -1,34 +1,30 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>出荷管理PWA</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#3b7d32">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出荷管理PWA</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- ホーム画面 -->
-  <div id="home" class="screen">
-    <div class="home-button" onclick="goTo('shipment')">出荷管理</div>
-    <div class="home-button" onclick="goTo('history')">履歴</div>
-    <div class="home-button" onclick="goTo('summary')">集計</div>
-    <div class="home-button" onclick="goTo('sales')">売上</div>
-  </div>
 
-  <!-- コンテンツ切替 -->
-  <div id="content" class="screen hidden"></div>
+<div id="home" class="screen">
+  <div class="home-button" onclick="goTo('shipment')">出荷管理</div>
+  <div class="home-button" onclick="goTo('history')">履歴</div>
+  <div class="home-button" onclick="goTo('summary')">集計</div>
+  <div class="home-button" onclick="goTo('sales')">売上</div>
+</div>
 
-  <!-- 下タブ -->
-  <footer id="tabs" class="hidden">
-    <button onclick="goTo('shipment')">出荷</button>
-    <button onclick="goTo('history')">履歴</button>
-    <button onclick="goTo('summary')">集計</button>
-    <button onclick="goTo('sales')">売上</button>
-  </footer>
+<div id="content" class="screen hidden"></div>
 
-  <script src="app.js"></script>
+<footer id="tabs" class="hidden">
+  <button onclick="goTo('shipment')">出荷</button>
+  <button onclick="goTo('history')">履歴</button>
+  <button onclick="goTo('summary')">集計</button>
+  <button onclick="goTo('sales')">売上</button>
+</footer>
+
+<script src="app.js"></script>
 </body>
 </html>
-
