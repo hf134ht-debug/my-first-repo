@@ -1,9 +1,8 @@
 /* =========================================================
    sales.js（完全版）
-   売上画面（カレンダー + 売上カード + 全店計）
+   rows を一切使わず、GAS の summary / items のみで処理
 ========================================================= */
 
-/* ★ あなたの GAS exec URL ★ */
 const SALES_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
 
@@ -24,7 +23,7 @@ function renderSalesScreen() {
 let salesCalYear;
 let salesCalMonth;
 
-/* カレンダー描画 */
+/* カレンダー生成 */
 function drawSalesCalendar(year, month, selectedDate = null) {
   const today = new Date();
 
@@ -67,7 +66,10 @@ function drawSalesCalendar(year, month, selectedDate = null) {
 
   weeks.forEach(week => {
     week.forEach(day => {
-      if (!day) { html += `<div></div>`; return; }
+      if (!day) {
+        html += `<div></div>`;
+        return;
+      }
 
       const isToday =
         today.getFullYear() === day.getFullYear() &&
@@ -95,7 +97,7 @@ function drawSalesCalendar(year, month, selectedDate = null) {
   return html;
 }
 
-/* 初期化 */
+/* 売上タブ初期化 */
 function activateSalesFeatures() {
   const now = new Date();
   salesCalYear  = now.getFullYear();
@@ -111,14 +113,20 @@ function activateSalesFeatures() {
 function changeSalesMonth(offset) {
   salesCalMonth += offset;
 
-  if (salesCalMonth < 0) { salesCalMonth = 11; salesCalYear--; }
-  if (salesCalMonth > 11) { salesCalMonth = 0; salesCalYear++; }
+  if (salesCalMonth < 0) {
+    salesCalMonth = 11;
+    salesCalYear--;
+  }
+  if (salesCalMonth > 11) {
+    salesCalMonth = 0;
+    salesCalYear++;
+  }
 
   document.getElementById("salesCalendarArea").innerHTML =
     drawSalesCalendar(salesCalYear, salesCalMonth);
 }
 
-/* 日付クリック */
+/* 日クリック */
 function selectSalesDate(y, m, d) {
   const dateStr = `${y}-${String(m + 1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 
@@ -129,8 +137,9 @@ function selectSalesDate(y, m, d) {
 }
 
 /* =========================================================
-   売上データ読み込み（GAS）
+   GAS から売上データ取得（完全版）
 ========================================================= */
+
 async function loadSales(dateStr) {
   const summaryDiv = document.getElementById("salesSummary");
   const resultDiv  = document.getElementById("salesResult");
@@ -144,28 +153,14 @@ async function loadSales(dateStr) {
 
     if (!data.found) {
       summaryDiv.innerHTML = "";
-      resultDiv.innerHTML = `<p>${dateStr} の売上データはありません。</p>`;
+      resultDiv.innerHTML  = `<p>${dateStr} の売上データはありません。</p>`;
       return;
     }
 
-    /* ============================================
-       ★ 全店計はスプレッドシートの最下行を採用
-       data.rows = [
-         { store, amount, qty },
-         ...
-         { store: "全店計 合計", amount: xxxx, qty: yyyy } ← 最後
-       ]
-    ============================================ */
-    let totalAmount = 0;
-    let totalQty = 0;
+    /* ===== 全店計（GAS の summary を正確に使用） ===== */
+    const totalAmount = Number(data.summary?.totalAmount || 0);
+    const totalQty    = Number(data.summary?.totalQuantity || 0);
 
-    if (data.rows.length > 0) {
-      const last = data.rows[data.rows.length - 1]; // 最下行
-      totalAmount = Number(last.amount);
-      totalQty = Number(last.qty);
-    }
-
-    /* ===== 上部：全店計カード ===== */
     summaryDiv.innerHTML = `
       <div class="history-card cabbage">
         <div class="history-title">📊 全店計</div>
@@ -174,12 +169,11 @@ async function loadSales(dateStr) {
       </div>
     `;
 
-    /* ===== 店舗・品目ごとのカード ===== */
+    /* ===== 各品目カード（items） ===== */
     const items = data.items || [];
 
-    // 表示順固定
     const order = ["白菜","白菜カット","キャベツ","キャベツカット","トウモロコシ"];
-    items.sort((a,b) => {
+    items.sort((a, b) => {
       const ai = order.findIndex(o => a.item.includes(o));
       const bi = order.findIndex(o => b.item.includes(o));
       return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
@@ -201,10 +195,9 @@ async function loadSales(dateStr) {
               合計：${item.itemTotalAmount.toLocaleString()}円 / ${item.itemTotalQuantity}個
             </span>
           </div>
-          ${item.stores
-            .map(s => `<div>・${s.name}：${s.quantity}個（${s.amount.toLocaleString()}円）</div>`)
-            .join("")
-          }
+          ${item.stores.map(s => `
+            <div>・${s.name}：${s.quantity}個（${s.amount.toLocaleString()}円）</div>
+          `).join("")}
         </div>
       `;
     });
@@ -213,6 +206,6 @@ async function loadSales(dateStr) {
 
   } catch (err) {
     summaryDiv.innerHTML = "";
-    resultDiv.innerHTML = `<p>エラー：${err}</p>`;
+    resultDiv.innerHTML  = `<p>エラー：${err}</p>`;
   }
 }
