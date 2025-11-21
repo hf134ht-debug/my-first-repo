@@ -1,28 +1,27 @@
 /* =========================================================
-   service-worker.js
-   - PWA キャッシュ制御
+   service-worker.js（GitHub Pages用・完全動作品）
 ========================================================= */
 
-const CACHE_NAME = "shukka-app-v1";
+const CACHE_NAME = "shukka-app-v2";
+
+const BASE = "/my-first-repo";
 
 const ASSETS = [
-  "./",
-  "./index.html",
-  "./css/style.css",
-  "./js/app.js",
-  "./js/shipment.js",
-  "./js/history.js",
-  "./manifest.json",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  `${BASE}/`,
+  `${BASE}/index.html`,
+  `${BASE}/css/style.css`,
+  `${BASE}/js/app.js`,
+  `${BASE}/js/shipment.js`,
+  `${BASE}/js/history.js`,
+  `${BASE}/manifest.json`,
+  `${BASE}/icons/icon-192.png`,
+  `${BASE}/icons/icon-512.png`
 ];
 
 /* ===== インストール（初回） ===== */
 self.addEventListener("install", e => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS);
-    })
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
   self.skipWaiting();
 });
@@ -42,8 +41,4 @@ self.addEventListener("activate", e => {
 });
 
 /* ===== fetch（オンライン優先 + オフライン fallback） ===== */
-self.addEventListener("fetch", e => {
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
-});
+self.addEventListener("f
