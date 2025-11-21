@@ -1,12 +1,8 @@
 /* =========================================================
-   app.js
-   - アプリ全体の管理
-   - タブ切替
-   - メニュー生成
-   - 初期表示
+   app.js（出荷・履歴・売上のタブ連動 完全版）
 ========================================================= */
 
-/* ===== メニュー（初期画面） ===== */
+/* ==== メニュー画面 ==== */
 function renderMenuScreen() {
   return `
     <h2>メニュー</h2>
@@ -19,7 +15,7 @@ function renderMenuScreen() {
   `;
 }
 
-/* ===== 下タブ生成 ===== */
+/* ==== 下タブ ==== */
 function renderBottomTabs() {
   return `
     <button class="tab-btn shipment" onclick="openTab('shipment')">出荷</button>
@@ -28,47 +24,49 @@ function renderBottomTabs() {
     <button class="tab-btn summary"  onclick="openTab('summary')">集計</button>
   `;
 }
-
 document.getElementById("bottomTabs").innerHTML = renderBottomTabs();
 
-/* ===== タブ切替メイン ===== */
+/* ==== タブ遷移 ==== */
 function openTab(tab) {
-
-  // 初期メニューは非表示
   document.getElementById("menuScreen").style.display = "none";
-
   const tc = document.getElementById("tabContent");
   tc.style.display = "block";
 
-  // タブの色切替
+  // Active 色
   document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
   const targetBtn = document.querySelector(`.tab-btn.${tab}`);
   if (targetBtn) targetBtn.classList.add("active");
 
-  /* ==== 出荷 ==== */
+  // 出荷
   if (tab === "shipment") {
     tc.innerHTML = renderShipmentScreen();
     activateShipmentFeatures();
     return;
   }
 
-  /* ==== 履歴 ==== */
+  // 履歴
   if (tab === "history") {
     tc.innerHTML = renderHistoryScreen();
     activateHistoryFeatures();
     return;
   }
 
-  /* ==== 売上・集計（開発中） ==== */
+  // ★ 売上（ここが今回の追加実装）
+  if (tab === "sales") {
+    tc.innerHTML = renderSalesScreen();
+    activateSalesFeatures();
+    return;
+  }
+
+  // 未実装タブ
   tc.innerHTML = `<h2>${tab}（開発中）</h2>`;
 }
 
-/* ===== 初期表示 ===== */
+/* ==== 初期画面 ==== */
 function initApp() {
   document.getElementById("menuScreen").innerHTML = renderMenuScreen();
   document.getElementById("menuScreen").style.display = "block";
   document.getElementById("tabContent").style.display = "none";
 }
 
-/* アプリ起動 */
 initApp();
