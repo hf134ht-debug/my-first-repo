@@ -1,192 +1,232 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-      body::before {
-        content: "";
-        position: fixed;
-        top:0; left:0;
-        width:100%; height:100%;
-        background-image: url('https://takatanouen.com/wp-content/uploads/2021/11/6f139b5aff6b0b56ebea56609d4ca516.png');
-        background-size: contain;
-        background-position: center;
-        background-repeat: no-repeat;
-        opacity: 0.25;
-        z-index: -1;
-      }
+<html lang="ja">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出荷管理</title>
+<style>
+  body {
+    margin:0;
+    font-family:'Arial',sans-serif;
+    background: linear-gradient(to bottom right,#e6f7d6,#f9ffd6);
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+  header {
+    text-align:center;
+    padding:15px;
+    font-size:1.8em;
+    font-weight:bold;
+    background:#a6d854;
+    color:#fff;
+  }
+  main {
+    flex:1;
+    padding:15px;
+    overflow-y:auto;
+  }
+  label {display:block;margin-top:12px;font-weight:bold;font-size:1em;}
+  input, select, button {
+    width:100%;
+    padding:8px;
+    margin-top:5px;
+    box-sizing:border-box;
+    font-size:1em;
+    border-radius:6px;
+    border:1px solid #aaa;
+  }
+  button {background-color:#a6d854;color:#fff;border:none;font-weight:bold;cursor:pointer;}
+  button:hover{background-color:#8bc34a;}
 
-      body {
-        font-family: 'Comic Sans MS','Arial',sans-serif;
-        padding: 20px;
-        max-width: 500px;
-        margin: auto;
-        font-size: 1.8em;
-        min-height:100vh;
-        background: linear-gradient(to bottom right, #e6f7d6, #f9ffd6);
-        background-attachment: fixed;
-      }
+  /* 品目ボタン */
+  #itemContainer {display:flex; flex-wrap:wrap; gap:10px; margin-top:5px;}
+  .item-button {
+    flex:1 1 45%;
+    padding:10px;
+    font-size:1em;
+    border:2px solid #3b7d32;
+    border-radius:8px;
+    cursor:pointer;
+    text-align:center;
+    background-color:#e0f0b8; /* 初期の薄い色 */
+    transition: background 0.3s,color 0.3s;
+  }
 
-      h2 {text-align:center;font-size:2.5em;color:#3b7d32;text-shadow:2px 2px 5px rgba(255,255,255,0.8);animation: floatUp 4s ease-in-out infinite alternate;}
-      @keyframes floatUp {0%{transform:translateY(0);}100%{transform:translateY(-12px);}}
-      label {display:block;margin-top:12px;font-weight:bold;font-size:1.3em;}
-      input, select, button {width:100%; padding:10px; margin-top:5px; box-sizing:border-box; font-size:1.2em; border-radius:8px; border:1px solid #aaa;}
-      button {margin-top:15px; background-color:#a6d854; color:#fff; font-weight:bold; border:none; cursor:pointer;}
-      button:hover {background-color:#8bc34a;}
+  /* 選択時の色 */
+  .item-白菜.selected { background-color:#a3c940; color:white; }
+  .item-白菜カット.selected { background-color:#b7d875; color:white; }
+  .item-キャベツ.selected { background-color:#4caf50; color:white; }
+  .item-キャベツカット.selected { background-color:#66bb6a; color:white; }
+  .item-トウモロコシ.selected { background-color:#ffd700; color:white; }
 
-      .store-row {display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; align-items:center;}
-      .store-row select, .store-row input {flex:1; min-width:120px;}
-      @media(min-width:700px){.store-row select,.store-row input{flex:1;}}
+  .store-row {display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; align-items:center;}
+  .store-row select,.store-row input{flex:1; min-width:120px;}
 
-      /* 品目ボタン */
-      #itemContainer {display:flex; flex-wrap:wrap; gap:10px; margin-top:5px;}
-      .item-button {
-        flex:1 1 45%; padding:10px; font-size:1.2em; border:2px solid #3b7d32;
-        border-radius:8px; cursor:pointer; text-align:center; user-select:none; transition: background 0.3s;
-      }
+  /* 下部タブバー */
+  nav {
+    display:flex;
+    justify-content:space-around;
+    background:#fff;
+    border-top:1px solid #ccc;
+    position:sticky;
+    bottom:0;
+  }
+  nav button {
+    flex:1;
+    padding:10px 0;
+    border:none;
+    background:none;
+    font-size:1em;
+    cursor:pointer;
+  }
+  nav button.active { color:#a6d854; font-weight:bold; }
+</style>
+</head>
+<body>
+<header>出荷管理</header>
+<main id="content">
+  <!-- 出荷画面 -->
+  <form id="shipmentForm">
+    <label>日付</label>
+    <input type="date" name="date" required id="dateInput">
 
-      /* 初期色 */
-      .item-白菜, .item-白菜カット { background-color:#d4f1a0; } /* 黄緑 */
-      .item-キャベツ, .item-キャベツカット { background-color:#7ec850; } /* 緑 */
-      .item-トウモロコシ { background: linear-gradient(to bottom, #fff86d, #ffffff); } /* 黄色→白 */
+    <label>品目</label>
+    <div id="itemContainer">
+      <div class="item-button item-白菜" data-value="白菜">白菜</div>
+      <div class="item-button item-白菜カット" data-value="白菜カット">白菜カット</div>
+      <div class="item-button item-キャベツ" data-value="キャベツ">キャベツ</div>
+      <div class="item-button item-キャベツカット" data-value="キャベツカット">キャベツカット</div>
+      <div class="item-button item-トウモロコシ" data-value="トウモロコシ">トウモロコシ</div>
+    </div>
 
-      /* 選択時の色（品目ごとに違う） */
-      .item-白菜.selected { background-color:#a3c940; color:white; }
-      .item-白菜カット.selected { background-color:#b7d875; color:white; }
-      .item-キャベツ.selected { background-color:#4caf50; color:white; }
-      .item-キャベツカット.selected { background-color:#66bb6a; color:white; }
-      .item-トウモロコシ.selected { background-color:#ffd700; color:white; }
-    </style>
-  </head>
-  <body>
-    <h2>出荷管理</h2>
-    <form id="shipmentForm">
-      <label>日付</label>
-      <input type="date" name="date" required id="dateInput">
+    <label>値段</label>
+    <input type="number" name="price" min="0" required>
 
-      <label>品目</label>
-      <div id="itemContainer">
-        <div class="item-button item-白菜" data-value="白菜">白菜</div>
-        <div class="item-button item-白菜カット" data-value="白菜カット">白菜カット</div>
-        <div class="item-button item-キャベツ" data-value="キャベツ">キャベツ</div>
-        <div class="item-button item-キャベツカット" data-value="キャベツカット">キャベツカット</div>
-        <div class="item-button item-トウモロコシ" data-value="トウモロコシ">トウモロコシ</div>
+    <div id="storesContainer">
+      <label>店舗・個数</label>
+      <div class="store-row">
+        <select name="store">
+          <option value="連島">連島</option>
+          <option value="津高">津高</option>
+          <option value="茶屋町">茶屋町</option>
+          <option value="大安寺">大安寺</option>
+          <option value="中庄">中庄</option>
+          <option value="総社南">総社南</option>
+          <option value="円山">円山</option>
+          <option value="児島">児島</option>
+        </select>
+        <input type="number" name="quantity" min="1" placeholder="個数" required>
       </div>
+    </div>
 
-      <label>値段</label>
-      <input type="number" name="price" min="0" required>
+    <button type="button" onclick="addStore()">+ 店舗追加</button>
+    <button type="submit">登録</button>
+  </form>
+</main>
 
-      <div id="storesContainer">
-        <label>店舗・個数</label>
-        <div class="store-row">
-          <select name="store">
-            <option value="連島">連島</option>
-            <option value="津高">津高</option>
-            <option value="茶屋町">茶屋町</option>
-            <option value="大安寺">大安寺</option>
-            <option value="中庄">中庄</option>
-            <option value="総社南">総社南</option>
-            <option value="円山">円山</option>
-            <option value="児島">児島</option>
-          </select>
-          <input type="number" name="quantity" min="1" placeholder="個数" required>
-        </div>
+<nav>
+  <button class="tab-button active" data-tab="shipment">出荷</button>
+  <button class="tab-button" data-tab="history">履歴</button>
+  <button class="tab-button" data-tab="summary">集計</button>
+  <button class="tab-button" data-tab="sales">売上</button>
+</nav>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzK497D-jhTqBKZs07bpcU1-DC4y5jmZIpYhFlfK9MXuvOrhz2jGuGppSNqxSNvwsWdNg/exec";
+
+// 日付初期値
+const today = new Date();
+document.getElementById('dateInput').value = today.toISOString().slice(0,10);
+
+// 品目選択
+const itemButtons = document.querySelectorAll('.item-button');
+let selectedItem = null;
+itemButtons.forEach(btn=>{
+  btn.addEventListener('click',function(){
+    itemButtons.forEach(b=>b.classList.remove('selected'));
+    this.classList.add('selected');
+    selectedItem=this.dataset.value;
+  });
+});
+
+// 店舗追加
+function addStore(){
+  const container = document.getElementById('storesContainer');
+  const div = document.createElement('div');
+  div.className='store-row';
+  div.innerHTML=`
+    <select name="store">
+      <option value="連島">連島</option>
+      <option value="津高">津高</option>
+      <option value="茶屋町">茶屋町</option>
+      <option value="大安寺">大安寺</option>
+      <option value="中庄">中庄</option>
+      <option value="総社南">総社南</option>
+      <option value="円山">円山</option>
+      <option value="児島">児島</option>
+    </select>
+    <input type="number" name="quantity" min="1" placeholder="個数" required>
+  `;
+  container.appendChild(div);
+}
+
+// フォーム送信
+document.getElementById('shipmentForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  if(!selectedItem){ alert('品目を選択してください'); return; }
+
+  const form = e.target;
+  const data = {
+    date: form.date.value,
+    item: selectedItem,
+    price: form.price.value,
+    stores: Array.from(form.querySelectorAll('.store-row')).map(r=>({
+      name:r.querySelector('select[name="store"]').value,
+      quantity:r.querySelector('input[name="quantity"]').value
+    }))
+  };
+
+  try{
+    await fetch(SCRIPT_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(data),
+      mode:'no-cors'
+    });
+    alert('登録完了！');
+    form.reset();
+    document.getElementById('storesContainer').innerHTML=`
+      <label>店舗・個数</label>
+      <div class="store-row">
+        <select name="store">
+          <option value="連島">連島</option>
+          <option value="津高">津高</option>
+          <option value="茶屋町">茶屋町</option>
+          <option value="大安寺">大安寺</option>
+          <option value="中庄">中庄</option>
+          <option value="総社南">総社南</option>
+          <option value="円山">円山</option>
+          <option value="児島">児島</option>
+        </select>
+        <input type="number" name="quantity" min="1" placeholder="個数" required>
       </div>
+    `;
+    itemButtons.forEach(b=>b.classList.remove('selected'));
+    selectedItem=null;
+    document.getElementById('dateInput').value=today.toISOString().slice(0,10);
+  }catch(err){ alert('通信エラー: '+err); }
+});
 
-      <button type="button" onclick="addStore()">+ 店舗追加</button>
-      <button type="submit">登録</button>
-    </form>
-
-    <script>
-      const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzK497D-jhTqBKZs07bpcU1-DC4y5jmZIpYhFlfK9MXuvOrhz2jGuGppSNqxSNvwsWdNg/exec";
-
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth()+1).padStart(2,'0');
-      const dd = String(today.getDate()).padStart(2,'0');
-      document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
-
-      const itemButtons = document.querySelectorAll('.item-button');
-      let selectedItem = null;
-      itemButtons.forEach(btn=>{
-        btn.addEventListener('click', function(){
-          itemButtons.forEach(b => b.classList.remove('selected'));
-          this.classList.add('selected');
-          selectedItem = this.getAttribute('data-value');
-        });
-      });
-
-      function addStore(){
-        const container = document.getElementById('storesContainer');
-        const div = document.createElement('div');
-        div.className='store-row';
-        div.innerHTML=`
-          <select name="store">
-            <option value="連島">連島</option>
-            <option value="津高">津高</option>
-            <option value="茶屋町">茶屋町</option>
-            <option value="大安寺">大安寺</option>
-            <option value="中庄">中庄</option>
-            <option value="総社南">総社南</option>
-            <option value="円山">円山</option>
-            <option value="児島">児島</option>
-          </select>
-          <input type="number" name="quantity" min="1" placeholder="個数" required>
-        `;
-        container.appendChild(div);
-      }
-
-      document.getElementById('shipmentForm').addEventListener('submit', async function(e){
-        e.preventDefault();
-        if(!selectedItem){ alert('品目を選択してください'); return; }
-
-        const form = e.target;
-        const data = {
-          date: form.date.value,
-          item: selectedItem,
-          price: form.price.value,
-          stores: Array.from(form.querySelectorAll('.store-row')).map(row=>({
-            name: row.querySelector('select[name="store"]').value,
-            quantity: row.querySelector('input[name="quantity"]').value
-          }))
-        };
-
-        try{
-          await fetch(SCRIPT_URL,{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify(data),
-            mode:'no-cors'
-          });
-          alert('登録完了！');
-          form.reset();
-          document.getElementById('storesContainer').innerHTML=`
-            <label>店舗・個数</label>
-            <div class="store-row">
-              <select name="store">
-                <option value="連島">連島</option>
-                <option value="津高">津高</option>
-                <option value="茶屋町">茶屋町</option>
-                <option value="大安寺">大安寺</option>
-                <option value="中庄">中庄</option>
-                <option value="総社南">総社南</option>
-                <option value="円山">円山</option>
-                <option value="児島">児島</option>
-              </select>
-              <input type="number" name="quantity" min="1" placeholder="個数" required>
-            </div>
-          `;
-          itemButtons.forEach(b=>b.classList.remove('selected'));
-          selectedItem = null;
-          document.getElementById('dateInput').value=`${yyyy}-${mm}-${dd}`;
-        }catch(err){
-          alert('通信エラー: '+err);
-        }
-      });
-    </script>
-  </body>
+// 下部タブ切り替え（簡易表示）
+const tabs = document.querySelectorAll('.tab-button');
+tabs.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    tabs.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab=btn.dataset.tab;
+    document.getElementById('content').innerHTML=`<h3>${tab}画面（開発中）</h3>`;
+  });
+});
+</script>
+</body>
 </html>
-
-  </body>
-</html>
-
