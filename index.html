@@ -1,107 +1,344 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>出荷管理 PWA</title>
-<style>
-/* 背景画像 */
-body::before {
-  content: "";
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background-image: url('https://takatanouen.com/wp-content/uploads/2021/11/6f139b5aff6b0b56ebea56609d4ca516.png');
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 0.25;
-  z-index: -1;
-}
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出荷管理 PWA</title>
+    <style>
+      /* ==== 背景画像（元に戻す） ==== */
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-image: url('https://takatanouen.com/wp-content/uploads/2021/11/6f139b5aff6b0b56ebea56609d4ca516.png');
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+        opacity: 0.25;
+        z-index: -1;
+      }
 
-body {
-  font-family: 'Comic Sans MS', 'Arial', sans-serif;
-  padding: 10px;
-  max-width: 500px;
-  margin: auto;
-  font-size: 1.5em;
-  min-height: 100vh;
-  background: linear-gradient(to bottom right, #e6f7d6, #f9ffd6);
-  background-attachment: fixed;
-}
+      body {
+        font-family: 'Comic Sans MS', 'Arial', sans-serif;
+        padding: 20px 10px 10px;
+        max-width: 500px;
+        margin: auto;
+        font-size: 1.8em;          /* もとの大きめ文字感 */
+        min-height: 100vh;
+        background: linear-gradient(to bottom right, #e6f7d6, #f9ffd6);
+        background-attachment: fixed;
+        box-sizing: border-box;
+      }
 
-h2 { text-align:center; font-size:2em; color:#3b7d32; text-shadow: 1px 1px 3px rgba(255,255,255,0.8); }
+      h2 {
+        text-align: center;
+        font-size: 2.3em;
+        color: #3b7d32;
+        text-shadow: 2px 2px 5px rgba(255,255,255,0.8);
+      }
 
-/* 品目ボタン */
-#itemContainer { display:flex; flex-wrap:wrap; gap:10px; margin-top:5px; }
-.item-button { flex:1 1 45%; padding:10px; font-size:1em; border:2px solid #3b7d32; border-radius:8px; cursor:pointer; text-align:center; background-color:#e0f0b8; transition:0.3s; }
-.item-白菜.selected { background-color:#a3c940; color:white; }
-.item-白菜カット.selected { background-color:#b7d875; color:white; }
-.item-キャベツ.selected { background-color:#4caf50; color:white; }
-.item-キャベツカット.selected { background-color:#66bb6a; color:white; }
-.item-トウモロコシ.selected { background-color:#ffd700; color:white; }
+      label {
+        display: block;
+        margin-top: 12px;
+        font-weight: bold;
+        font-size: 1.3em;
+      }
 
-/* 入力欄 */
-label { display:block; margin-top:10px; font-weight:bold; font-size:1em; }
-input, select, button { width:100%; padding:10px; margin-top:5px; box-sizing:border-box; font-size:1em; border-radius:8px; border:1px solid #aaa; }
-button { background-color:#a6d854; color:white; font-weight:bold; border:none; cursor:pointer; }
-button:hover { background-color:#8bc34a; }
+      input, select, button {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        box-sizing: border-box;
+        font-size: 1.2em;
+        border-radius: 8px;
+        border: 1px solid #aaa;
+      }
 
-.store-row { display:flex; flex-wrap:wrap; gap:5px; margin-top:5px; align-items:center; }
-.store-row select, .store-row input { flex:1; min-width:120px; padding:5px; border-radius:6px; border:1px solid #aaa; }
+      button {
+        margin-top: 12px;
+        background-color: #a6d854;
+        color: #fff;
+        font-weight: bold;
+        border: none;
+        cursor: pointer;
+      }
 
-/* 下部タブ */
-#bottomTabs {
-  position:fixed;
-  bottom:0; left:0; width:100%;
-  display:flex; justify-content:space-around;
-  background:#ffffffcc; padding:5px 0; border-top:1px solid #aaa;
-}
-.tab-btn { flex:1; text-align:center; padding:10px 0; font-size:1em; color:#3b7d32; font-weight:bold; cursor:pointer; transition:0.2s; }
-.tab-btn.active { background:#a6d854; color:white; border-radius:5px; }
+      button:hover {
+        background-color: #8bc34a;
+      }
 
-</style>
-</head>
-<body>
+      .store-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-top: 5px;
+        align-items: center;
+      }
 
-<h2>出荷管理</h2>
-<main id="tabContent">
-  <p>最初にタブを選択してください</p>
-</main>
+      .store-row select,
+      .store-row input {
+        flex: 1;
+        min-width: 120px;
+      }
 
-<!-- 下部タブ -->
-<div id="bottomTabs">
-  <div class="tab-btn" data-tab="shipment">出荷</div>
-  <div class="tab-btn" data-tab="history">履歴</div>
-  <div class="tab-btn" data-tab="summary">集計</div>
-  <div class="tab-btn" data-tab="sales">売上</div>
-</div>
+      @media (min-width: 700px) {
+        .store-row select,
+        .store-row input {
+          flex: 1;
+        }
+      }
 
-<script>
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbzK497D-jhTqBKZs07bpcU1-DC4y5jmZIpYhFlfK9MXuvOrhz2jGuGppSNqxSNvwsWdNg/exec";
-const today=new Date();
+      /* ==== 品目ボタン ==== */
+      #itemContainer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 5px;
+      }
 
-// 出荷画面HTML生成
-function renderShipment(){
-  return `
-    <form id="shipmentForm">
-      <label>日付</label>
-      <input type="date" name="date" required value="${today.toISOString().slice(0,10)}">
+      .item-button {
+        flex: 1 1 45%;
+        padding: 10px;
+        font-size: 1.2em;
+        background-color: #e0f0b8;   /* 初期は全部同じ薄い色 */
+        border: 2px solid #3b7d32;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: center;
+        user-select: none;
+        transition: background 0.3s, color 0.3s;
+      }
 
-      <label>品目</label>
-      <div id="itemContainer">
-        <div class="item-button item-白菜" data-value="白菜">白菜</div>
-        <div class="item-button item-白菜カット" data-value="白菜カット">白菜カット</div>
-        <div class="item-button item-キャベツ" data-value="キャベツ">キャベツ</div>
-        <div class="item-button item-キャベツカット" data-value="キャベツカット">キャベツカット</div>
-        <div class="item-button item-トウモロコシ" data-value="トウモロコシ">トウモロコシ</div>
+      /* 選択時の色（品目ごと） */
+      .item-白菜.selected        { background-color: #a3c940; color: white; }
+      .item-白菜カット.selected  { background-color: #b7d875; color: white; }
+      .item-キャベツ.selected    { background-color: #4caf50; color: white; }
+      .item-キャベツカット.selected { background-color: #66bb6a; color: white; }
+      .item-トウモロコシ.selected{ background: linear-gradient(to bottom, #ffd700, #fffbe0); color: #444; }
+
+      /* ==== 最初の4ボタンメニュー ==== */
+      #menuScreen {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
+        margin-top: 40px;
+      }
+
+      .menu-btn {
+        flex: 1 1 45%;
+        padding: 20px 10px;
+        font-size: 1.2em;
+        border-radius: 12px;
+        border: none;
+        background: linear-gradient(135deg, #ffeb3b, #ffd54f);
+        font-weight: bold;
+        color: #4e342e;
+        cursor: pointer;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        text-align: center;
+      }
+
+      .menu-btn:nth-child(2) {
+        background: linear-gradient(135deg, #81d4fa, #4fc3f7);
+        color: #01579b;
+      }
+
+      .menu-btn:nth-child(3) {
+        background: linear-gradient(135deg, #c5e1a5, #aed581);
+        color: #33691e;
+      }
+
+      .menu-btn:nth-child(4) {
+        background: linear-gradient(135deg, #ffccbc, #ffab91);
+        color: #bf360c;
+      }
+
+      .menu-btn:active {
+        transform: translateY(1px);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      }
+
+      /* ==== 下タブ（ページにかぶらない・ポップ） ==== */
+      #bottomTabs {
+        margin-top: 25px;
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+      }
+
+      .tab-btn {
+        flex: 1;
+        text-align: center;
+        padding: 8px 0;
+        font-size: 0.9em;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        background: #ffe082;
+        color: #5d4037;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      }
+
+      .tab-btn.active {
+        background: linear-gradient(135deg, #ff9800, #ffca28);
+        color: white;
+      }
+
+      .tab-btn:active {
+        transform: translateY(1px);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      }
+
+      /* コンテンツ部分 */
+      #tabContent {
+        margin-bottom: 20px; /* 下タブと少しスペース */
+      }
+    </style>
+  </head>
+  <body>
+    <h2>出荷管理</h2>
+
+    <!-- 中央のコンテンツエリア -->
+    <div id="tabContent">
+      <!-- 初期表示：4つのメニューボタン -->
+      <div id="menuScreen">
+        <button class="menu-btn" data-tab="shipment">出荷管理</button>
+        <button class="menu-btn" data-tab="history">履歴</button>
+        <button class="menu-btn" data-tab="summary">集計</button>
+        <button class="menu-btn" data-tab="sales">売上</button>
       </div>
+    </div>
 
-      <label>値段</label>
-      <input type="number" name="price" min="0" required>
+    <!-- 下のタブ（コンテンツにかぶらない／ポップな色） -->
+    <div id="bottomTabs">
+      <button class="tab-btn" data-tab="shipment">出荷</button>
+      <button class="tab-btn" data-tab="history">履歴</button>
+      <button class="tab-btn" data-tab="summary">集計</button>
+      <button class="tab-btn" data-tab="sales">売上</button>
+    </div>
 
-      <div id="storesContainer">
-        <label>店舗・個数</label>
-        <div class="store-row">
+    <script>
+      const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzK497D-jhTqBKZs07bpcU1-DC4y5jmZIpYhFlfK9MXuvOrhz2jGuGppSNqxSNvwsWdNg/exec";
+      const today = new Date();
+      let selectedItem = null;
+
+      const tabContentEl = document.getElementById('tabContent');
+
+      // === 出荷画面のHTML ===
+      function renderShipment() {
+        const dateStr = today.toISOString().slice(0, 10);
+        return `
+          <form id="shipmentForm">
+            <label>日付</label>
+            <input type="date" name="date" required value="${dateStr}">
+
+            <label>品目</label>
+            <div id="itemContainer">
+              <div class="item-button item-白菜" data-value="白菜">白菜</div>
+              <div class="item-button item-白菜カット" data-value="白菜カット">白菜カット</div>
+              <div class="item-button item-キャベツ" data-value="キャベツ">キャベツ</div>
+              <div class="item-button item-キャベツカット" data-value="キャベツカット">キャベツカット</div>
+              <div class="item-button item-トウモロコシ" data-value="トウモロコシ">トウモロコシ</div>
+            </div>
+
+            <label>値段</label>
+            <input type="number" name="price" min="0" required>
+
+            <div id="storesContainer">
+              <label>店舗・個数</label>
+              <div class="store-row">
+                <select name="store">
+                  <option value="連島">連島</option>
+                  <option value="津高">津高</option>
+                  <option value="茶屋町">茶屋町</option>
+                  <option value="大安寺">大安寺</option>
+                  <option value="中庄">中庄</option>
+                  <option value="総社南">総社南</option>
+                  <option value="円山">円山</option>
+                  <option value="児島">児島</option>
+                </select>
+                <input type="number" name="quantity" min="1" placeholder="個数" required>
+              </div>
+            </div>
+
+            <button type="button" onclick="addStore()">+ 店舗追加</button>
+            <button type="submit">登録</button>
+          </form>
+        `;
+      }
+
+      // === 出荷フォームのイベント設定 ===
+      function initShipmentForm() {
+        selectedItem = null;
+
+        const itemButtons = document.querySelectorAll('.item-button');
+        itemButtons.forEach(btn => {
+          btn.addEventListener('click', function () {
+            itemButtons.forEach(b => b.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedItem = this.dataset.value;
+          });
+        });
+
+        document.getElementById('shipmentForm').addEventListener('submit', async function (e) {
+          e.preventDefault();
+          if (!selectedItem) {
+            alert('品目を選択してください');
+            return;
+          }
+
+          const form = e.target;
+          const data = {
+            date: form.date.value,
+            item: selectedItem,
+            price: form.price.value,
+            stores: Array.from(form.querySelectorAll('.store-row')).map(row => ({
+              name: row.querySelector('select[name="store"]').value,
+              quantity: row.querySelector('input[name="quantity"]').value
+            }))
+          };
+
+          try {
+            await fetch(SCRIPT_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(data),
+              mode: 'no-cors'
+            });
+            alert('登録完了！');
+            form.reset();
+            document.getElementById('storesContainer').innerHTML = `
+              <label>店舗・個数</label>
+              <div class="store-row">
+                <select name="store">
+                  <option value="連島">連島</option>
+                  <option value="津高">津高</option>
+                  <option value="茶屋町">茶屋町</option>
+                  <option value="大安寺">大安寺</option>
+                  <option value="中庄">中庄</option>
+                  <option value="総社南">総社南</option>
+                  <option value="円山">円山</option>
+                  <option value="児島">児島</option>
+                </select>
+                <input type="number" name="quantity" min="1" placeholder="個数" required>
+              </div>
+            `;
+            document.querySelectorAll('.item-button').forEach(b => b.classList.remove('selected'));
+            selectedItem = null;
+          } catch (err) {
+            alert('通信エラー: ' + err);
+          }
+        });
+      }
+
+      // グローバルで使うため window に関数を出す
+      window.addStore = function () {
+        const container = document.getElementById('storesContainer');
+        const div = document.createElement('div');
+        div.className = 'store-row';
+        div.innerHTML = `
           <select name="store">
             <option value="連島">連島</option>
             <option value="津高">津高</option>
@@ -113,101 +350,46 @@ function renderShipment(){
             <option value="児島">児島</option>
           </select>
           <input type="number" name="quantity" min="1" placeholder="個数" required>
-        </div>
-      </div>
-      <button type="button" onclick="addStore()">+ 店舗追加</button>
-      <button type="submit">登録</button>
-    </form>
-  `;
-}
+        `;
+        container.appendChild(div);
+      };
 
-// 品目選択
-let selectedItem=null;
-function initShipmentForm(){
-  const itemButtons=document.querySelectorAll('.item-button');
-  itemButtons.forEach(btn=>{
-    btn.addEventListener('click',function(){
-      itemButtons.forEach(b=>b.classList.remove('selected'));
-      this.classList.add('selected');
-      selectedItem=this.dataset.value;
-    });
-  });
+      // === タブ表示切り替え ===
+      function showTab(tab) {
+        // 下タブの見た目更新
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        const targetTabBtn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+        if (targetTabBtn) targetTabBtn.classList.add('active');
 
-  document.getElementById('shipmentForm').addEventListener('submit',async function(e){
-    e.preventDefault();
-    if(!selectedItem){ alert('品目を選択してください'); return; }
-    const form=e.target;
-    const data={
-      date: form.date.value,
-      item: selectedItem,
-      price: form.price.value,
-      stores:Array.from(form.querySelectorAll('.store-row')).map(r=>({
-        name:r.querySelector('select[name="store"]').value,
-        quantity:r.querySelector('input[name="quantity"]').value
-      }))
-    };
-    try{
-      await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data),mode:'no-cors'});
-      alert('登録完了！');
-      form.reset();
-      document.getElementById('storesContainer').innerHTML=`
-        <label>店舗・個数</label>
-        <div class="store-row">
-          <select name="store">
-            <option value="連島">連島</option>
-            <option value="津高">津高</option>
-            <option value="茶屋町">茶屋町</option>
-            <option value="大安寺">大安寺</option>
-            <option value="中庄">中庄</option>
-            <option value="総社南">総社南</option>
-            <option value="円山">円山</option>
-            <option value="児島">児島</option>
-          </select>
-          <input type="number" name="quantity" min="1" placeholder="個数" required>
-        </div>
-      `;
-      itemButtons.forEach(b=>b.classList.remove('selected'));
-      selectedItem=null;
-    }catch(err){ alert('通信エラー:'+err); }
-  });
-}
+        if (tab === 'shipment') {
+          tabContentEl.innerHTML = renderShipment();
+          initShipmentForm();
+        } else if (tab === 'history') {
+          tabContentEl.innerHTML = `<p>履歴画面（これから作成）</p>`;
+        } else if (tab === 'summary') {
+          tabContentEl.innerHTML = `<p>集計画面（これから作成）</p>`;
+        } else if (tab === 'sales') {
+          tabContentEl.innerHTML = `<p>売上画面（これから作成）</p>`;
+        }
+      }
 
-// 店舗追加
-function addStore(){
-  const container=document.getElementById('storesContainer');
-  const div=document.createElement('div');
-  div.className='store-row';
-  div.innerHTML=`
-    <select name="store">
-      <option value="連島">連島</option>
-      <option value="津高">津高</option>
-      <option value="茶屋町">茶屋町</option>
-      <option value="大安寺">大安寺</option>
-      <option value="中庄">中庄</option>
-      <option value="総社南">総社南</option>
-      <option value="円山">円山</option>
-      <option value="児島">児島</option>
-    </select>
-    <input type="number" name="quantity" min="1" placeholder="個数" required>
-  `;
-  container.appendChild(div);
-}
+      // ==== 最初の4ボタン（メニュー） → タブ切替 ====
+      document.querySelectorAll('.menu-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tab = btn.dataset.tab;
+          showTab(tab);
+        });
+      });
 
-// 下部タブクリック
-function showTab(tab){
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
-  const tabContent=document.getElementById('tabContent');
-  if(tab==='shipment'){ tabContent.innerHTML=renderShipment(); initShipmentForm(); }
-  else tabContent.innerHTML=`<h3>${tab}画面（開発中）</h3>`;
-}
+      // 下タブからの切り替え
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          showTab(btn.dataset.tab);
+        });
+      });
 
-// 初期表示
-showTab('shipment');
-document.querySelectorAll('.tab-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>showTab(btn.dataset.tab));
-});
-</script>
-
-</body>
+      // 初期表示は「4つのボタン」のまま（tabContentに既に描画済み）
+      // 下タブも最初はどれも active にしない
+    </script>
+  </body>
 </html>
