@@ -199,7 +199,6 @@ input, select {
 }
 
 /* ===== 履歴画面 ===== */
-
 .history-container {
   padding: 10px 16px 40px;
 }
@@ -266,8 +265,9 @@ input, select {
     <div class="menu-grid">
       <div class="menu-btn btn-shipment" onclick="openTab('shipment')">出荷管理</div>
       <div class="menu-btn btn-history"  onclick="openTab('history')">履歴</div>
-      <div class="menu-btn btn-summary"  onclick="openTab('summary')">集計</div>
+      <!-- ★ ここを「売上 → 集計」の順に入れ替え ★ -->
       <div class="menu-btn btn-sales"    onclick="openTab('sales')">売上</div>
+      <div class="menu-btn btn-summary"  onclick="openTab('summary')">集計</div>
     </div>
   </div>
 
@@ -279,8 +279,9 @@ input, select {
 <div id="bottomTabs">
   <button class="tab-btn shipment" onclick="openTab('shipment')">出荷</button>
   <button class="tab-btn history"  onclick="openTab('history')">履歴</button>
-  <button class="tab-btn summary"  onclick="openTab('summary')">集計</button>
+  <!-- ★ ここも「売上 → 集計」の順に入れ替え ★ -->
   <button class="tab-btn sales"    onclick="openTab('sales')">売上</button>
+  <button class="tab-btn summary"  onclick="openTab('summary')">集計</button>
 </div>
 
 <script>
