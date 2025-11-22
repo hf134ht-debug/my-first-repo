@@ -1,6 +1,7 @@
 /* =========================================================
    全体背景
 ========================================================= */
+
 body::before {
   content: "";
   position: fixed;
@@ -30,7 +31,10 @@ body {
 /* =========================================================
    メニュー画面
 ========================================================= */
-#menuScreen { padding: 20px; }
+
+#menuScreen {
+  padding: 20px;
+}
 
 .menu-grid {
   display: grid;
@@ -57,8 +61,9 @@ body {
 .btn-summary  { background: linear-gradient(135deg,#c8e6c9,#a5d6a7); }
 
 /* =========================================================
-   下タブ
+   下タブ（常に固定）
 ========================================================= */
+
 #bottomTabs {
   position: fixed;
   bottom: 0;
@@ -91,11 +96,14 @@ body {
 .tab-btn.sales    { background: linear-gradient(135deg,#ffcdd2,#ef9a9a); color:#b71c1c; }
 .tab-btn.summary  { background: linear-gradient(135deg,#c8e6c9,#a5d6a7); color:#33691e; }
 
-.tab-btn.active { filter: brightness(1.15); }
+.tab-btn.active {
+  filter: brightness(1.15);
+}
 
 /* =========================================================
-   見出しなど
+   見出し
 ========================================================= */
+
 h2 {
   text-align: center;
   font-size: 1.8em;
@@ -104,94 +112,129 @@ h2 {
 }
 
 /* =========================================================
-   📌 和紙カレンダー（履歴は現状維持、売上のみ改善）
+   和紙カレンダー（履歴・売上共通）
 ========================================================= */
+
 .calendar-wrapper {
   background: #f3f5e9;
-  background-image: 
-    radial-gradient(#e8ecd8 2px, transparent 2px),
-    radial-gradient(#e8ecd8 2px, transparent 2px),
-    linear-gradient(135deg,#f8faef,#eef3da);
-  background-size: 12px 12px,12px 12px,100% 100%;
+  background-image:
+     radial-gradient(#e8ecd8 2px, transparent 2px),
+     radial-gradient(#e8ecd8 2px, transparent 2px),
+     linear-gradient(135deg,#f8faef,#eef3da);
+  background-size: 12px 12px, 12px 12px, 100% 100%;
   background-position: 0 0, 6px 6px, 0 0;
   padding: 10px;
   border-radius: 14px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.18);
   margin-bottom: 14px;
   border: 1px solid #cdd8b4;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.18);
+  animation: fadeIn 0.4s ease-out;
 }
 
-.calendar-date {
-  background: white;
-  padding: 8px 0;
-  border-radius: 8px;
-  cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-}
-
-/* ★データあり日（売上・履歴共通） */
-.calendar-date.has-data {
-  background: #fdf5cc !important;
-  font-weight: bold;
-}
-
-/* 選択日 */
-.calendar-date.selected {
-  background: #a5d6a7 !important;
-  color: white !important;
-  transform: scale(1.12);
-}
-
-/* =========================================================
-   🎯 売上カード改善
-========================================================= */
-.history-card {
-  margin-top: 10px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: #ffffffcc;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-}
-
-/* 品目色（履歴と完全統一） */
-.history-card.hakusai { background: linear-gradient(135deg,#f1ffcf,#d4ff8a); }
-.history-card.cabbage { background: linear-gradient(135deg,#e0f2f1,#a5d6a7); }
-.history-card.corn    { background: linear-gradient(135deg,#fff9c4,#fffde7); }
-
-.history-title {
-  font-weight: bold;
+.calendar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 18px;
 }
 
-/* ✨特別バッジ（右上） */
-.item-total-badge {
+.cal-btn {
+  background: #cbe3a7;
+  border: none;
   padding: 6px 12px;
-  font-size: 15px;
+  border-radius: 6px;
+  cursor: pointer;
   font-weight: bold;
-  border-radius: 16px;
-  color: #fff;
-  text-shadow: 0 0 3px rgba(0,0,0,0.25);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
-.item-total-hakusai { background: #85bc5e; }
-.item-total-cabbage { background: #4da659; }
-.item-total-corn    { background: #e8b41c; color:#3a2600; }
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(32px,1fr)); /* ←スマホ崩れ修正 */
+  gap: 4px;
+  margin-top: 10px;
+}
 
-/* 🥇全店計（特大メダル） */
-.all-total-badge {
-  font-size: 22px;
-  font-weight: 900;
-  padding: 10px 24px;
-  border-radius: 60px;
-  background: linear-gradient(180deg,#ffffff,#dff3d1);
-  border: 2px solid #67b74a;
-  color: #0a4f08;
+/* 曜日カラー */
+.calendar-day:nth-child(1) { color: #e53935; }
+.calendar-day:nth-child(7) { color: #1e88e5; }
+
+/* =========================================================
+   カレンダー日デザイン
+========================================================= */
+
+.calendar-date {
+  background: white;
+  border-radius: 8px;
+  padding: 8px 0;
   text-align: center;
-  margin: auto;
-  display: inline-block;
-  box-shadow: 0 0 10px rgba(0,0,0,0.20), inset 0 0 4px rgba(255,255,255,0.7);
-  margin-bottom: 10px;
+  cursor: pointer;
+  transition: 0.15s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.calendar-date.has-data {
+  background: #bbdefb;  /* 空色 */
+  border: 1px solid #64b5f6;
+}
+
+.calendar-date.today {
+  font-weight: bold;
+}
+
+.calendar-date.selected {
+  background: #a5d6a7;
+  color: white;
+  font-weight: bold;
+  border: 1px solid #4caf50;
+  transform: scale(1.1);
+}
+
+/* =========================================================
+   カード（履歴・売上共通）
+========================================================= */
+
+.history-card {
+  margin-top: 12px;
+  padding: 14px 14px;
+  border-radius: 14px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* 品目色（履歴と統一！）*/
+.history-card.hakusai {
+  background: linear-gradient(135deg,#d4ff8a,#a7ff4d);
+}
+.history-card.cabbage {
+  background: linear-gradient(135deg,#66bb6a,#388e3c);
+  color: white;
+}
+.history-card.corn {
+  background: linear-gradient(135deg,#fff59d,#fffde7);
+}
+
+/* 品目タイトル＆合計バッジ並び */
+.history-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: bold;
+  font-size: 1.15em; /* ←見やすくUP */
+  margin-bottom: 8px;
+}
+
+/* 合計バッジ強化 */
+.item-total-badge {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 1.0em;
+  font-weight: bold;
+  box-shadow: 0 2px 3px rgba(0,0,0,0.15);
+}
+
+/* 全店計カード専用 */
+.history-card-all {
+  background: linear-gradient(135deg,#a5d6a7,#66bb6a);
+  color: #fff;
+  font-size: 1.2em;
+  border: 2px solid #388e3c;
 }
