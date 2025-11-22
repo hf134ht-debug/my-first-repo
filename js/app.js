@@ -51,7 +51,7 @@ function openTab(tab) {
     return;
   }
 
-  // ★ 売上（ここが今回の追加実装）
+  // 売上
   if (tab === "sales") {
     tc.innerHTML = renderSalesScreen();
     activateSalesFeatures();
