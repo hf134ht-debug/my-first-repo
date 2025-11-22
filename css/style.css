@@ -1,7 +1,6 @@
 /* =========================================================
    全体背景
 ========================================================= */
-
 body::before {
   content: "";
   position: fixed;
@@ -31,7 +30,6 @@ body {
 /* =========================================================
    メニュー画面
 ========================================================= */
-
 #menuScreen {
   padding: 20px;
 }
@@ -63,7 +61,6 @@ body {
 /* =========================================================
    下タブ
 ========================================================= */
-
 #bottomTabs {
   position: fixed;
   bottom: 0;
@@ -101,9 +98,8 @@ body {
 }
 
 /* =========================================================
-   見出し
+   見出し・フォーム
 ========================================================= */
-
 h2 {
   text-align: center;
   font-size: 1.8em;
@@ -111,13 +107,104 @@ h2 {
   color: #3b7d32;
 }
 
-/* =========================================================
-   和紙カレンダー
-========================================================= */
+label {
+  display: block;
+  margin-top: 12px;
+  font-size: 1.1em;
+  font-weight: bold;
+}
 
+input, select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 4px;
+  border-radius: 8px;
+  border: 1px solid #aaa;
+  font-size: 1em;
+}
+
+/* =========================================================
+   出荷管理
+========================================================= */
+#itemContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.item-button {
+  flex: 1 1 45%;
+  padding: 12px;
+  text-align: center;
+  border-radius: 12px;
+  background: #f7f7f7;
+  border: 2px solid #888;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+.item-button.selected.hakusai {
+  background: linear-gradient(135deg,#d4ff8a,#a7ff4d);
+  box-shadow: 0 0 12px rgba(170,255,120,0.9);
+  transform: scale(1.05);
+}
+
+.item-button.selected.cabbage {
+  background: linear-gradient(135deg,#66bb6a,#388e3c);
+  color: white;
+  border-color: #1b5e20;
+  box-shadow: inset 0 3px 5px rgba(0,0,0,0.3);
+  transform: scale(1.03);
+}
+
+.item-button.selected.corn {
+  background: linear-gradient(135deg,#fff59d,#fffde7);
+  border-color: #fbc02d;
+  box-shadow: 0 0 10px rgba(255,235,59,0.9);
+  transform: scale(1.05);
+}
+
+.store-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.store-row select,
+.store-row input {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #aaa;
+  flex: 1;
+}
+
+.add-btn {
+  margin-top: 15px;
+  background: #a6d854;
+  border: none;
+  padding: 12px;
+  color: white;
+  border-radius: 8px;
+}
+
+.submit-btn {
+  margin-top: 15px;
+  background: linear-gradient(135deg,#ff9800,#ffb74d);
+  border: none;
+  padding: 12px;
+  color: white;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+/* =========================================================
+   カレンダー（履歴 & 売上共通）
+========================================================= */
 .calendar-wrapper {
   background: #f3f5e9;
-  background-image: 
+  background-image:
      radial-gradient(#e8ecd8 2px, transparent 2px),
      radial-gradient(#e8ecd8 2px, transparent 2px),
      linear-gradient(135deg, #f8faef, #eef3da);
@@ -128,6 +215,28 @@ h2 {
   box-shadow: 0 3px 8px rgba(0,0,0,0.18);
   margin-bottom: 14px;
   border: 1px solid #cdd8b4;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cal-btn {
+  background: #cbe3a7;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
 .calendar-grid {
@@ -137,92 +246,89 @@ h2 {
   gap: 4px;
 }
 
-/* データあり日 */
-.calendar-date.has-data {
-  background: #bbdefb !important;
-  border: 1px solid #64b5f6;
+.calendar-day:nth-child(1) { color: #e53935; }
+.calendar-day:nth-child(7) { color: #1e88e5; }
+
+.calendar-date {
+  background: white;
+  border-radius: 8px;
+  padding: 8px 0;
+  text-align: center; /* ← スマホ中央揃え修正済み */
+  cursor: pointer;
+  transition: 0.15s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
-/* 選択日アニメ効果 */
+.calendar-date.has-data {
+  background: #bbdefb !important;
+  border: 2px solid #64b5f6;
+  font-weight: bold;
+}
+
+.calendar-date.today {
+  font-weight: bold;
+}
+
 .calendar-date.selected {
   background: #a5d6a7;
   color: white;
   font-weight: bold;
-  border: 1px solid #4caf50;
+  border: 2px solid #4caf50;
   transform: scale(1.1);
-  transition: 0.15s;
-}
-
-/* タップ感向上 */
-.calendar-date:active {
-  transform: scale(0.92) !important;
 }
 
 /* =========================================================
-   カードデザイン（履歴 & 売上 共通）
+   履歴・売上カード
 ========================================================= */
-
 .history-card {
   margin-top: 10px;
-  padding: 12px 14px;
+  padding: 12px;
   border-radius: 12px;
+  background: #ffffffcc;
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
-/* 白菜 */
 .history-card.hakusai {
   background: linear-gradient(135deg,#f1ffcf,#d4ff8a);
 }
 
-/* キャベツ */
 .history-card.cabbage {
-  background: linear-gradient(135deg,#f0fff0,#d2f8cc);
+  background: linear-gradient(135deg,#e0f2f1,#a5d6a7);
 }
 
-/* トウモロコシ */
 .history-card.corn {
   background: linear-gradient(135deg,#fff9c4,#fffde7);
 }
 
-/* 全店計（売上のみ専用色：オレンジ系） */
-.history-card.total-all {
-  background: linear-gradient(135deg,#ffe0b2,#ffb74d);
-  border: 1px solid #fb8c00;
-}
-
-/* =========================================================
-   タイトル & 合計バッジ
-========================================================= */
-
 .history-title {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   font-weight: bold;
   margin-bottom: 6px;
-  font-size: 1.1em;
 }
 
 .item-total-badge {
   display: inline-block;
-  padding: 3px 12px;
-  border-radius: 999px;
-  font-size: 0.9em;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 1em;
   font-weight: bold;
-  color: #333;
   border: 1px solid rgba(0,0,0,0.15);
-  backdrop-filter: brightness(1.1);
 }
 
-/* バッジ色 */
+/* チップの色（品目別） */
 .item-total-hakusai {
-  background: #e1ffb3;
+  background: linear-gradient(135deg,#b7e87a,#8cd856);
+  color: #1a3300;
 }
+
 .item-total-cabbage {
-  background: #c8f2c8;
+  background: linear-gradient(135deg,#b2e1c5,#7ebc8f);
+  color: #0f3b19;
 }
+
 .item-total-corn {
-  background: #fff7a8;
-}
-.item-total-all {
-  background: #ffd28a;
+  background: linear-gradient(135deg,#fff59d,#ffeb3b);
+  color: #4e3b00;
 }
