@@ -166,10 +166,32 @@ input, select {
   transform: scale(1.05);
 }
 
+/* 店舗行（削除ボタン付き） */
 .store-row {
   display: flex;
   gap: 6px;
   margin-top: 5px;
+  align-items: center;
+}
+
+/* 店舗削除ボタン（中サイズ・タップ時フェードアウト） */
+.store-remove-btn {
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: none;
+  background: #ffcccb;
+  color: #b71c1c;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.8em;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+/* 削除アニメ用クラス */
+.store-row.removing {
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .store-row select,
@@ -332,3 +354,4 @@ input, select {
   background: linear-gradient(135deg,#fff59d,#ffeb3b);
   color: #4e3b00;
 }
+
