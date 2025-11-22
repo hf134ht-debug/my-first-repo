@@ -101,7 +101,7 @@ body {
 }
 
 /* =========================================================
-   見出し
+   見出し・フォーム
 ========================================================= */
 
 h2 {
@@ -111,16 +111,104 @@ h2 {
   color: #3b7d32;
 }
 
+label {
+  display: block;
+  margin-top: 12px;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 4px;
+  border-radius: 8px;
+  border: 1px solid #aaa;
+  font-size: 1em;
+}
+
 /* =========================================================
-   和紙カレンダー（履歴・売上共通）
+   出荷：品目ボタン
+========================================================= */
+
+#itemContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.item-button {
+  flex: 1 1 45%;
+  padding: 10px;
+  text-align: center;
+  background: #e8f5e9;
+  border: 2px solid #3b7d32;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.25s;
+}
+
+/* 白菜 */
+.item-button.selected.hakusai {
+  background: linear-gradient(135deg,#d4ff8a,#a7ff4d);
+  box-shadow: 0 0 12px rgba(170,255,120,0.9);
+  transform: scale(1.05);
+}
+
+/* キャベツ */
+.item-button.selected.cabbage {
+  background: linear-gradient(135deg,#66bb6a,#388e3c);
+  color: white;
+  border-color: #1b5e20;
+  box-shadow: inset 0 3px 5px rgba(0,0,0,0.3);
+  transform: scale(1.03);
+}
+
+/* トウモロコシ */
+.item-button.selected.corn {
+  background: linear-gradient(135deg,#fff59d,#fffde7);
+  border-color: #fbc02d;
+  box-shadow: 0 0 10px rgba(255,235,59,0.9);
+  transform: scale(1.05);
+}
+
+/* ボタン */
+.add-btn {
+  margin-top: 15px;
+  background: #a6d854;
+  border: none;
+  padding: 12px;
+  color: white;
+  border-radius: 8px;
+}
+
+.submit-btn {
+  margin-top: 15px;
+  background: linear-gradient(135deg,#ff9800,#ffb74d);
+  border: none;
+  padding: 12px;
+  color: white;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.store-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+/* =========================================================
+   カレンダー（履歴・売上共通）
 ========================================================= */
 
 .calendar-wrapper {
   background: #f3f5e9;
-  background-image:
+  background-image: 
      radial-gradient(#e8ecd8 2px, transparent 2px),
      radial-gradient(#e8ecd8 2px, transparent 2px),
-     linear-gradient(135deg,#f8faef,#eef3da);
+     linear-gradient(135deg, #f8faef, #eef3da);
   background-size: 12px 12px, 12px 12px, 100% 100%;
   background-position: 0 0, 6px 6px, 0 0;
   padding: 10px;
@@ -129,6 +217,11 @@ h2 {
   margin-bottom: 14px;
   border: 1px solid #cdd8b4;
   animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .calendar-header {
@@ -149,18 +242,13 @@ h2 {
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(32px,1fr)); /* ←スマホ崩れ修正 */
-  gap: 4px;
+  grid-template-columns: repeat(7, 1fr);
   margin-top: 10px;
+  gap: 4px;
 }
 
-/* 曜日カラー */
 .calendar-day:nth-child(1) { color: #e53935; }
 .calendar-day:nth-child(7) { color: #1e88e5; }
-
-/* =========================================================
-   カレンダー日デザイン
-========================================================= */
 
 .calendar-date {
   background: white;
@@ -172,15 +260,18 @@ h2 {
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
+/* データあり日 */
 .calendar-date.has-data {
-  background: #bbdefb;  /* 空色 */
+  background: #bbdefb !important;
   border: 1px solid #64b5f6;
 }
 
+/* 今日 */
 .calendar-date.today {
   font-weight: bold;
 }
 
+/* 選択日 */
 .calendar-date.selected {
   background: #a5d6a7;
   color: white;
@@ -190,51 +281,85 @@ h2 {
 }
 
 /* =========================================================
-   カード（履歴・売上共通）
+   履歴・売上カード（共通）
 ========================================================= */
 
 .history-card {
-  margin-top: 12px;
-  padding: 14px 14px;
-  border-radius: 14px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #ffffffcc;
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
-/* 品目色（履歴と統一！）*/
+/* 白菜 */
 .history-card.hakusai {
-  background: linear-gradient(135deg,#d4ff8a,#a7ff4d);
-}
-.history-card.cabbage {
-  background: linear-gradient(135deg,#66bb6a,#388e3c);
-  color: white;
-}
-.history-card.corn {
-  background: linear-gradient(135deg,#fff59d,#fffde7);
+  background: linear-gradient(135deg,#f1ffcf,#d4ff8a);
 }
 
-/* 品目タイトル＆合計バッジ並び */
+/* キャベツ */
+.history-card.cabbage {
+  background: linear-gradient(135deg,#e0f2f1,#a5d6a7);
+}
+
+/* トウモロコシ */
+.history-card.corn {
+  background: linear-gradient(135deg,#fff9c4,#fffde7);
+}
+
+/* 売上：全店計カード（青系に統一） */
+.history-card.total-card {
+  background: linear-gradient(135deg,#81d4fa,#4fc3f7);
+  color: #0b3954;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.18);
+}
+
 .history-title {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-weight: bold;
-  font-size: 1.15em; /* ←見やすくUP */
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
-/* 合計バッジ強化 */
-.item-total-badge {
+/* =========================================================
+   バッジ（視認性強化）
+========================================================= */
+
+.item-total-badge,
+.total-badge {
   padding: 4px 12px;
-  border-radius: 999px;
-  font-size: 1.0em;
+  font-size: 1em;
   font-weight: bold;
-  box-shadow: 0 2px 3px rgba(0,0,0,0.15);
+  border-radius: 999px;
+  border: 2px solid rgba(0,0,0,0.15);
 }
 
-/* 全店計カード専用 */
-.history-card-all {
-  background: linear-gradient(135deg,#a5d6a7,#66bb6a);
-  color: #fff;
-  font-size: 1.2em;
-  border: 2px solid #388e3c;
+/* 白菜 */
+.item-total-hakusai {
+  background: linear-gradient(135deg,#b1e86d,#89d845);
+  border-color: #558b2f;
+  color: #2e7d32;
+}
+
+/* キャベツ */
+.item-total-cabbage {
+  background: linear-gradient(135deg,#81c784,#4caf50);
+  border-color: #2e7d32;
+  color: white;
+}
+
+/* トウモロコシ */
+.item-total-corn {
+  background: linear-gradient(135deg,#ffeb3b,#ffca28);
+  border-color: #fbc02d;
+  color: #795548;
+}
+
+/* 全店計 */
+.total-badge {
+  background: #ffffffdd;
+  border-color: #0288d1;
+  color: #01579b;
+  font-size: 1.05em;
 }
