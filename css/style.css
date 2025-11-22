@@ -355,3 +355,45 @@ input, select {
   color: #4e3b00;
 }
 
+/* 全体サマリー用カード色（売上と被らない青系） */
+.history-card.summary-total {
+  background: linear-gradient(135deg,#bbdefb,#90caf9);
+}
+
+/* 集計用バッジ（少し濃い青） */
+.item-total-badge.summary-badge {
+  background: linear-gradient(135deg,#64b5f6,#42a5f5);
+  color: #fff;
+}
+
+/* 店舗別アコーディオン */
+.store-accordion {
+  margin-top: 6px;
+}
+
+.store-accordion-toggle {
+  margin-top: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85em;
+  background: #ffe082;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.store-accordion-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s cubic-bezier(0.25, 1.3, 0.5, 1);
+}
+
+.store-accordion-body.open {
+  /* max-height は JS で制御 */
+}
+
+.store-accordion-row {
+  font-size: 0.85em;
+  padding: 4px 4px 0 4px;
+}
