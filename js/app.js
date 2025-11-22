@@ -58,6 +58,13 @@ function openTab(tab) {
     return;
   }
 
+    // ★ 集計（日別ロス）
+  if (tab === "summary") {
+    tc.innerHTML = renderSummaryScreen();
+    activateSummaryFeatures();
+    return;
+  }
+   
   // 未実装タブ
   tc.innerHTML = `<h2>${tab}（開発中）</h2>`;
 }
@@ -70,3 +77,4 @@ function initApp() {
 }
 
 initApp();
+
