@@ -23,8 +23,8 @@ function renderShipmentScreen() {
 
     <label>品目</label>
     <div id="itemContainer">
-      <div class="item-button" data-item="白菜" data-type="hakusai">白菜</div>
-      <div class="item-button" data-item="白菜カット" data-type="hakusai">白菜カット</div>
+      <div class="item-button" data-item="はくさい" data-type="hakusai">はくさい</div>
+      <div class="item-button" data-item="はくさいカット" data-type="hakusai">はくさいカット</div>
       <div class="item-button" data-item="キャベツ" data-type="cabbage">キャベツ</div>
       <div class="item-button" data-item="キャベツカット" data-type="cabbage">キャベツカット</div>
       <div class="item-button" data-item="トウモロコシ" data-type="corn">トウモロコシ</div>
@@ -44,7 +44,7 @@ function renderShipmentScreen() {
 }
 
 
-/* ===== 店舗行テンプレ ===== */
+/* ===== 店舗行テンプレ（削除ボタン付き） ===== */
 function renderStoreRow() {
   return `
     <div class="store-row">
@@ -59,6 +59,8 @@ function renderStoreRow() {
         <option value="児島">児島</option>
       </select>
       <input type="number" class="store-qty" min="1" placeholder="個数">
+
+      <button type="button" class="store-remove-btn">✕</button>
     </div>
   `;
 }
@@ -74,28 +76,46 @@ function activateShipmentFeatures() {
   itemButtons.forEach(btn => {
     btn.addEventListener("click", () => {
       // すべてリセット
-      itemButtons.forEach(b => b.classList.remove("selected", "hakusai", "cabbage", "corn"));
+      itemButtons.forEach(b =>
+        b.classList.remove("selected", "hakusai", "cabbage", "corn")
+      );
 
       const type = btn.dataset.type;
       selectedItem = btn.dataset.item;
 
       // 選択時の色付け
-      btn.classList.add("selected");
-      btn.classList.add(type);
+      btn.classList.add("selected", type);
     });
   });
 
-
   /* --- 店舗追加ボタン --- */
   document.getElementById("addStoreBtn").addEventListener("click", () => {
-    document.getElementById("storesContainer").insertAdjacentHTML("beforeend", renderStoreRow());
+    document
+      .getElementById("storesContainer")
+      .insertAdjacentHTML("beforeend", renderStoreRow());
   });
 
+  /* --- 店舗行削除（中サイズボタン + フェードアウト）--- */
+  document
+    .getElementById("storesContainer")
+    .addEventListener("click", (e) => {
+      const btn = e.target.closest(".store-remove-btn");
+      if (!btn) return;
+
+      const row = btn.closest(".store-row");
+      if (!row) return;
+
+      // フェードアウト → 削除
+      row.classList.add("removing");
+      setTimeout(() => {
+        row.remove();
+      }, 200);
+    });
 
   /* --- 登録ボタン --- */
   document.getElementById("submitShipment").addEventListener("click", async () => {
 
-    const date = document.getElementById("shipDate").value;
+    const date  = document.getElementById("shipDate").value;
     const price = document.getElementById("priceInput").value;
 
     if (!selectedItem) {
@@ -112,7 +132,12 @@ function activateShipmentFeatures() {
     const stores = rows.map(r => ({
       name: r.querySelector(".store-name").value,
       quantity: r.querySelector(".store-qty").value
-    }));
+    })).filter(s => s.quantity); // 個数未入力は送らない
+
+    if (stores.length === 0) {
+      alert("店舗の個数を1つ以上入力してください");
+      return;
+    }
 
     const payload = {
       date: date,
@@ -122,7 +147,7 @@ function activateShipmentFeatures() {
     };
 
     try {
-      const res = await fetch(SCRIPT_URL, {
+      await fetch(SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
@@ -131,7 +156,7 @@ function activateShipmentFeatures() {
 
       alert("登録完了！");
 
-      // リセット
+      // 画面リセット
       document.getElementById("tabContent").innerHTML = renderShipmentScreen();
       activateShipmentFeatures();
 
