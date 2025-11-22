@@ -2,7 +2,7 @@
    service-worker.js（GitHub Pages用・sales.js対応 完全版）
 ========================================================= */
 
-const CACHE_NAME = "shukka-app-v2";
+const CACHE_NAME = "shukka-app-v3";
 const BASE = "/my-first-repo";
 
 const ASSETS = [
@@ -49,4 +49,5 @@ self.addEventListener("fetch", e => {
 
 /* ===== fetch（オンライン優先 + オフライン fallback） ===== */
 self.addEventListener("f
+
 
