@@ -1,57 +1,60 @@
 /* =========================================================
-   sales.js（売上カレンダー + 売上表示 + データあり日強調）
+   sales.js
+   - 売上画面
+   - カレンダー：データあり日を #fdf5cc でハイライト
+   - 初期は日付未選択
 ========================================================= */
 
 const SALES_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
 
-/* ===== 売上画面 HTML ===== */
+/* 売上画面 HTML */
 function renderSalesScreen() {
   return `
     <h2>売上</h2>
     <div id="salesCalendarArea"></div>
     <div id="salesSummary"></div>
-    <div id="salesResult"></div>
+    <div id="salesResult"><p>日付を選択してください</p></div>
   `;
 }
 
-/* ===== カレンダー状態 ===== */
+/* カレンダー状態 */
 let salesCalYear;
 let salesCalMonth;
 
-/* =========================================================
-   売上画面を開いた時点では「未選択」
-========================================================= */
+/* 月ごとのデータ有日キャッシュ { "2025-11": ["01","03",...] } */
+const salesMonthDaysCache = {};
+
+/* 月ごとのデータ有日を取得（売上用） */
+async function getSalesDaysWithData(year, month) {
+  const ym = `${year}-${String(month + 1).padStart(2,'0')}`;
+  if (salesMonthDaysCache[ym]) return salesMonthDaysCache[ym];
+
+  const res = await fetch(`${SALES_SCRIPT_URL}?checkSalesMonth=${ym}`);
+  const data = await res.json();
+  const days = data.days || [];
+
+  salesMonthDaysCache[ym] = days;
+  return days;
+}
+
+/* 売上タブを開いたとき */
 async function activateSalesFeatures() {
   const now = new Date();
   salesCalYear  = now.getFullYear();
   salesCalMonth = now.getMonth();
 
-  await renderSalesCalendarWithData(salesCalYear, salesCalMonth, null);
+  const daysWithData = await getSalesDaysWithData(salesCalYear, salesCalMonth);
+
+  document.getElementById("salesCalendarArea").innerHTML =
+    drawSalesCalendar(salesCalYear, salesCalMonth, null, daysWithData);
 
   document.getElementById("salesSummary").innerHTML = "";
   document.getElementById("salesResult").innerHTML =
     `<p>日付を選択してください</p>`;
 }
 
-/* =========================================================
-   月のデータを GAS に問い合わせる
-========================================================= */
-async function renderSalesCalendarWithData(year, month, selectedDate) {
-  const ym = `${year}-${String(month + 1).padStart(2, '0')}`;
-
-  // GAS: "?checkSalesMonth=YYYY-MM"
-  const res = await fetch(`${SALES_SCRIPT_URL}?checkSalesMonth=${ym}`);
-  const monthInfo = await res.json();
-  const daysWithData = monthInfo.days || [];
-
-  document.getElementById("salesCalendarArea").innerHTML =
-    drawSalesCalendar(year, month, selectedDate, daysWithData);
-}
-
-/* =========================================================
-   カレンダー描画
-========================================================= */
+/* カレンダー描画（売上用） */
 function drawSalesCalendar(year, month, selectedDate = null, daysWithData = []) {
   const today = new Date();
 
@@ -64,23 +67,23 @@ function drawSalesCalendar(year, month, selectedDate = null, daysWithData = []) 
     <div class="calendar-wrapper">
       <div class="calendar-header">
         <button class="cal-btn" onclick="changeSalesMonth(-1)">＜</button>
-        <div><b>${year}年 ${month + 1}月</b></div>
+        <div><b>${year}年 ${month+1}月</b></div>
         <button class="cal-btn" onclick="changeSalesMonth(1)">＞</button>
       </div>
 
       <div class="calendar-grid">
-        ${days.map(d => `<div class="calendar-day">${d}</div>`).join('')}
+        ${days.map(d => `<div class="calendar-day">${d}</div>`).join("")}
       </div>
 
       <div class="calendar-grid">
   `;
 
-  /* 空白 */
+  // 最初の空白
   for (let i = 0; i < first.getDay(); i++) {
     html += `<div></div>`;
   }
 
-  /* 日付 */
+  // 日付
   for (let d = 1; d <= last.getDate(); d++) {
     const dd = String(d).padStart(2, '0');
 
@@ -104,7 +107,9 @@ function drawSalesCalendar(year, month, selectedDate = null, daysWithData = []) 
           ${isSelected ? "selected" : ""}
           ${hasData ? "has-data" : ""}"
         onclick="selectSalesDate(${year},${month},${d})"
-      >${d}</div>
+      >
+        ${d}
+      </div>
     `;
   }
 
@@ -112,42 +117,35 @@ function drawSalesCalendar(year, month, selectedDate = null, daysWithData = []) 
   return html;
 }
 
-/* =========================================================
-   月移動
-========================================================= */
+/* 月移動 */
 async function changeSalesMonth(offset) {
   salesCalMonth += offset;
+  if (salesCalMonth < 0) { salesCalMonth = 11; salesCalYear--; }
+  if (salesCalMonth > 11) { salesCalMonth = 0; salesCalYear++; }
 
-  if (salesCalMonth < 0) {
-    salesCalMonth = 11;
-    salesCalYear--;
-  }
-  if (salesCalMonth > 11) {
-    salesCalMonth = 0;
-    salesCalYear++;
-  }
+  const daysWithData = await getSalesDaysWithData(salesCalYear, salesCalMonth);
 
-  await renderSalesCalendarWithData(salesCalYear, salesCalMonth, null);
+  document.getElementById("salesCalendarArea").innerHTML =
+    drawSalesCalendar(salesCalYear, salesCalMonth, null, daysWithData);
 
   document.getElementById("salesSummary").innerHTML = "";
   document.getElementById("salesResult").innerHTML =
     `<p>日付を選択してください</p>`;
 }
 
-/* =========================================================
-   日付選択 → 売上読み込み
-========================================================= */
+/* 日付クリック → 売上読み込み */
 async function selectSalesDate(y, m, d) {
   const dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 
-  await renderSalesCalendarWithData(y, m, new Date(y, m, d));
+  const daysWithData = await getSalesDaysWithData(y, m);
+
+  document.getElementById("salesCalendarArea").innerHTML =
+    drawSalesCalendar(y, m, new Date(y,m,d), daysWithData);
 
   loadDailySales(dateStr);
 }
 
-/* =========================================================
-   GAS から売上データ取得
-========================================================= */
+/* 売上データ取得 */
 async function loadDailySales(dateStr) {
   const summaryDiv = document.getElementById("salesSummary");
   const resultDiv  = document.getElementById("salesResult");
@@ -156,7 +154,7 @@ async function loadDailySales(dateStr) {
   resultDiv.innerHTML  = `<p>読み込み中…</p>`;
 
   try {
-    const res = await fetch(`${SALES_SCRIPT_URL}?sales=${dateStr}`);
+    const res  = await fetch(`${SALES_SCRIPT_URL}?sales=${dateStr}`);
     const data = await res.json();
 
     if (!data.found) {
@@ -165,9 +163,9 @@ async function loadDailySales(dateStr) {
       return;
     }
 
-    /* ====== 全店計 ====== */
-    const totalAmount = data.summary.totalAmount || 0;
-    const totalQty    = data.summary.totalQuantity || 0;
+    /* 全店計（GAS が summary で返してくる値 → シート最下行） */
+    const totalAmount = Number(data.summary.totalAmount || 0);
+    const totalQty    = Number(data.summary.totalQuantity || 0);
 
     summaryDiv.innerHTML = `
       <div class="history-card cabbage">
@@ -177,10 +175,10 @@ async function loadDailySales(dateStr) {
       </div>
     `;
 
-    /* ===== 品目ごと ===== */
+    /* 品目ごとのカード */
     const items = data.items || [];
-
     let html = "";
+
     items.forEach(item => {
       let cls = "";
       if (item.item.includes("白菜")) cls = "hakusai";
@@ -202,7 +200,7 @@ async function loadDailySales(dateStr) {
       `;
     });
 
-    resultDiv.innerHTML = html;
+    resultDiv.innerHTML = html || `<p>データがありません。</p>`;
 
   } catch (err) {
     summaryDiv.innerHTML = "";
