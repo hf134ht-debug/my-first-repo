@@ -260,17 +260,16 @@ input, select {
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
-/* データあり日（今回追加） */
+/* データあり日（空色で塗りつぶし） */
 .calendar-date.has-data {
-  background: #fdf5cc !important;
-  border: 1px solid #e0c978;
+  background: #bbdefb !important;   /* 空色 */
+  border: 1px solid #64b5f6;
 }
 
-/* 今日 */
+/* 今日（太字だけにする） */
 .calendar-date.today {
-  background: #e7f7b3;
-  border: 1px solid #c5db6e;
   font-weight: bold;
+  /* 背景色は変更しない（白のまま） */
 }
 
 /* 選択日 */
@@ -316,3 +315,4 @@ input, select {
   font-weight: bold;
   margin-top: 4px;
 }
+
