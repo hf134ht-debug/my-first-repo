@@ -1,8 +1,7 @@
 /* =========================================================
    sales.js
    - 売上画面（カレンダー + 売上表示）
-   - カレンダー仕様は履歴と同じ
-   - 初期表示は日付未選択
+   - 全店計（画面上部）＋ 品目ごと合計バッジ（右上）
 ========================================================= */
 
 const SALES_SCRIPT_URL =
@@ -24,7 +23,7 @@ let salesCalMonth;
 /* 月ごとのデータ有日キャッシュ { "2025-11": ["01","03",...] } */
 const salesMonthDaysCache = {};
 
-/* 月ごとのデータ有日を取得（キャッシュ付き） */
+/* 月ごとのデータ有日を取得（キャッシュ） */
 async function getSalesDaysWithData(year, month) {
   const ym = `${year}-${String(month + 1).padStart(2, '0')}`;
   if (salesMonthDaysCache[ym]) return salesMonthDaysCache[ym];
@@ -156,35 +155,53 @@ async function loadDailySales(dateStr) {
 
     let html = `<h3>${dateStr} の売上</h3>`;
 
-    /* ▼ 全店計（最上部） */
+    /* ▼ 画面上部の全店計カード */
     html += `
       <div class="history-card cabbage">
-        <div class="history-title">📊 全店計</div>
-        <div>売上合計：<b>${Number(data.totalAmount || 0).toLocaleString()} 円</b></div>
-        <div>個数合計：<b>${Number(data.totalQty || 0)} 個</b></div>
+        <div class="history-title">
+          <span>📊 全店計</span>
+          <span class="item-total-badge item-total-cabbage">
+            ${Number(data.totalQty || 0)}個 /
+            ${Number(data.totalAmount || 0).toLocaleString()}円
+          </span>
+        </div>
       </div>
     `;
 
-    /* ▼ 品目ごとのカード表示（履歴とほぼ同じ構成） */
+    /* ▼ 品目ごとのカード（右上に合計：個数＋金額） */
     (data.items || []).forEach(item => {
-      let cls = "";
+      let cls = "corn";
+      let badgeCls = "item-total-corn";
       const name = item.item || "";
-      if (name.includes("白菜") || name.includes("はくさい")) cls = "hakusai";
-      else if (name.includes("キャベツ")) cls = "cabbage";
-      else cls = "corn";
 
+      if (name.includes("白菜") || name.includes("はくさい")) {
+        cls = "hakusai";
+        badgeCls = "item-total-hakusai";
+      } else if (name.includes("キャベツ")) {
+        cls = "cabbage";
+        badgeCls = "item-total-cabbage";
+      }
+
+      const totalQty    = Number(item.totalQty || 0);
       const totalAmount = Number(item.totalAmount || 0);
-      const totalQty    = Number(item.totalQuantity || 0);
 
       html += `
         <div class="history-card ${cls}">
-          <div class="history-title">${name}</div>
-          ${ (item.stores || []).map(s => `
-            <div>・${s.name}：${s.quantity}個（${Number(s.amount || 0).toLocaleString()}円）</div>
-          `).join("") }
-          <div class="history-total">
-            合計：${totalQty}個 / ${totalAmount.toLocaleString()}円
+          <div class="history-title">
+            <span>${name}</span>
+            <span class="item-total-badge ${badgeCls}">
+              合計：${totalQty}個 / ${totalAmount.toLocaleString()}円
+            </span>
           </div>
+          ${
+            (item.stores || []).map(s => `
+              <div>
+                ・${s.name}：
+                  ${Number(s.qty || 0)}個
+                  （${Number(s.amount || 0).toLocaleString()}円）
+              </div>
+            `).join("")
+          }
         </div>
       `;
     });
