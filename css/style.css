@@ -298,6 +298,12 @@ input, select {
   transform: scale(1.1);
 }
 
+/* 集計タブ：週ビュー用（カレンダー上で週をハイライト） */
+.calendar-date.week-selected {
+  box-shadow: 0 0 0 2px rgba(255, 167, 38, 0.7);
+  background: #ffe0b2;
+}
+
 /* =========================================================
    履歴・売上カード
 ========================================================= */
@@ -445,3 +451,4 @@ input, select {
   font-size: 0.9em;
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
+
