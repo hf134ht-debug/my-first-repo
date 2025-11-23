@@ -421,7 +421,9 @@ input, select {
 }
 
 .summary-tab.active {
-  background: linear-gradient(135deg,#82d4bb,#4da88c);
+  background: linear-gradient(135deg, #ff9ce6, #ff6fd8);
   color: #ffffff;
-  filter: brightness(1.18);
+  transform: scale(1.08);
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 12px rgba(255, 111, 216, 0.8);
 }
