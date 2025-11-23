@@ -70,10 +70,6 @@ function openTab(tab) {
   tc.innerHTML = `<h2>${tab}（開発中）</h2>`;
 }
 
-
-/* ===== 集計ビュー切替制御 ===== */
-let currentSummaryView = "day"; // 初期は「日」
-
 function renderSummaryTabs() {
   return `
     <div class="summary-tabs">
@@ -115,4 +111,5 @@ function initApp() {
   document.getElementById("tabContent").style.display = "none";
 }
 initApp();
+
 
