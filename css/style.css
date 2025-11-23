@@ -593,3 +593,70 @@ input, select {
   box-shadow: 0 2px 4px rgba(0,0,0,0.12);
 }
 
+/* =========================================================
+   ローディング表示 / データなし表示
+========================================================= */
+.summary-loading {
+  padding: 16px;
+  text-align: center;
+  font-size: 0.95em;
+  color: #555;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-loading-spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid rgba(120, 144, 156, 0.3);
+  border-top-color: #42a5f5;
+  animation: summary-spin 0.8s linear infinite;
+}
+
+.summary-loading-text {
+  font-size: 0.9em;
+}
+
+@keyframes summary-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.summary-empty-card {
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #fffde7;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+  text-align: center;
+  font-size: 0.9em;
+  color: #795548;
+}
+
+.summary-empty-icon {
+  font-size: 1.4em;
+  margin-bottom: 4px;
+}
+
+/* =========================================================
+   ロス率の色分け
+========================================================= */
+.loss-good {
+  color: #1b5e20;
+  font-weight: bold;
+}
+
+.loss-warn {
+  color: #f9a825;
+  font-weight: bold;
+}
+
+.loss-bad {
+  color: #c62828;
+  font-weight: bold;
+}
+
+
