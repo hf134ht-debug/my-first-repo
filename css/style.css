@@ -397,3 +397,26 @@ input, select {
   font-size: 0.85em;
   padding: 4px 4px 0 4px;
 }
+
+/* ===== 集計タブ ===== */
+.summary-tabs {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.summary-tab {
+  background: #dcedc8;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.summary-tab.active {
+  background: #81c784;
+  color: white;
+}
