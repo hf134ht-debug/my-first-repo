@@ -1,10 +1,10 @@
-/* =========================================================
-   sales.js
-   売上タブ
-   - カレンダー（売上データ有りの日をマーキング）
-   - 品目別売上カード（色分け）
-   - 店舗別内訳（アコーディオン）
-========================================================= */
+/************************************************************
+ * sales.js（完全版）
+ * 売上タブ
+ * - カレンダー（売上データ有りの日をマーキング）
+ * - 品目別売上カード（色分け＆順序固定）
+ * - 店舗別内訳（アコーディオン）
+ ************************************************************/
 
 /* ★ あなたの GAS exec URL ★ */
 const SALES_SCRIPT_URL =
@@ -23,10 +23,10 @@ function renderSalesScreen() {
 let salesCalYear;
 let salesCalMonth;
 
-/* 月ごとの「データあり日」キャッシュ { "2025-11": ["01","03",...] } */
+/* ===== キャッシュ ===== */
 const salesMonthDaysCache = {};
 
-/* ===== 月ごとのデータあり日を取得（GAS） ===== */
+/* ===== GAS：月のデータあり日 ===== */
 async function getSalesDaysWithData(year, month) {
   const ym = `${year}-${String(month + 1).padStart(2, "0")}`;
   if (salesMonthDaysCache[ym]) return salesMonthDaysCache[ym];
@@ -34,27 +34,22 @@ async function getSalesDaysWithData(year, month) {
   const res  = await fetch(`${SALES_SCRIPT_URL}?checkSalesMonth=${ym}`);
   const data = await res.json();
   const days = data.days || [];
-
   salesMonthDaysCache[ym] = days;
   return days;
 }
 
-/* ===== 売上タブを開いたときに呼ぶ ===== */
+/* ===== 初期起動 ===== */
 async function activateSalesFeatures() {
   const now = new Date();
   salesCalYear  = now.getFullYear();
   salesCalMonth = now.getMonth();
 
   const daysWithData = await getSalesDaysWithData(salesCalYear, salesCalMonth);
-
   document.getElementById("salesCalendarArea").innerHTML =
     drawSalesCalendar(salesCalYear, salesCalMonth, null, daysWithData);
-
-  document.getElementById("salesResult").innerHTML =
-    `<p>日付を選択してください</p>`;
 }
 
-/* ===== カレンダー描画（売上用） ===== */
+/* ===== カレンダー描画 ===== */
 function drawSalesCalendar(year, month, selectedDate = null, daysWithData = []) {
   const today = new Date();
   const first = new Date(year, month, 1);
@@ -77,35 +72,20 @@ function drawSalesCalendar(year, month, selectedDate = null, daysWithData = []) 
       <div class="calendar-grid">
   `;
 
-  // 最初の空白（1日が何曜日か）
-  for (let i = 0; i < first.getDay(); i++) {
-    html += `<div></div>`;
-  }
+  for (let i = 0; i < first.getDay(); i++) html += `<div></div>`;
 
   for (let d = 1; d <= last.getDate(); d++) {
     const dd = String(d).padStart(2,"0");
-
-    const isToday =
-      today.getFullYear() === year &&
-      today.getMonth() === month &&
-      today.getDate() === d;
-
-    const isSelected =
-      selectedDate &&
-      selectedDate.getFullYear() === year &&
-      selectedDate.getMonth() === month &&
-      selectedDate.getDate() === d;
-
+    const isToday = today.getFullYear()==year && today.getMonth()==month && today.getDate()==d;
+    const isSelected = selectedDate && selectedDate.getDate()==d;
     const hasData = daysWithData.includes(dd);
 
     html += `
-      <div
-        class="calendar-date
+      <div class="calendar-date
           ${isToday ? "today" : ""}
           ${isSelected ? "selected" : ""}
           ${hasData ? "has-data" : ""}"
-        onclick="selectSalesDate(${year},${month},${d})"
-      >
+        onclick="selectSalesDate(${year},${month},${d})">
         ${d}
       </div>
     `;
@@ -118,38 +98,26 @@ function drawSalesCalendar(year, month, selectedDate = null, daysWithData = []) 
 /* ===== 月移動 ===== */
 async function changeSalesMonth(offset) {
   salesCalMonth += offset;
-  if (salesCalMonth < 0) {
-    salesCalMonth = 11;
-    salesCalYear--;
-  }
-  if (salesCalMonth > 11) {
-    salesCalMonth = 0;
-    salesCalYear++;
-  }
+  if (salesCalMonth < 0) { salesCalMonth = 11; salesCalYear--; }
+  if (salesCalMonth > 11) { salesCalMonth = 0; salesCalYear++; }
 
   const daysWithData = await getSalesDaysWithData(salesCalYear, salesCalMonth);
-
   document.getElementById("salesCalendarArea").innerHTML =
     drawSalesCalendar(salesCalYear, salesCalMonth, null, daysWithData);
-
-  document.getElementById("salesResult").innerHTML =
-    `<p>日付を選択してください</p>`;
 }
 
-/* ===== 日付クリック ===== */
+/* ===== 日付選択 ===== */
 async function selectSalesDate(y, m, d) {
   const dateStr = `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-
   const daysWithData = await getSalesDaysWithData(y, m);
+
   document.getElementById("salesCalendarArea").innerHTML =
     drawSalesCalendar(y, m, new Date(y,m,d), daysWithData);
 
   loadSalesData(dateStr);
 }
 
-/* =========================================================
-   売上データ取得 & 表示
-========================================================= */
+/* ===== 売上取得 ===== */
 async function loadSalesData(dateStr) {
   const resultDiv = document.getElementById("salesResult");
   resultDiv.innerHTML = `<p>読み込み中…</p>`;
@@ -157,135 +125,79 @@ async function loadSalesData(dateStr) {
   try {
     const res  = await fetch(`${SALES_SCRIPT_URL}?salesDate=${dateStr}`);
     const data = await res.json();
-
     if (!data.found) {
-      resultDiv.innerHTML = `<p>${dateStr} の売上データがありません。</p>`;
+      resultDiv.innerHTML = `<p>${dateStr} のデータがありません</p>`;
       return;
     }
 
-    const totalQty    = data.totalQty    || 0;
-    const totalAmount = data.totalAmount || 0;
-    const items       = data.items       || [];
+    let items = data.items || [];
+    const order = ['白菜','白菜カット','キャベツ','キャベツカット','トウモロコシ'];
+    items.sort((a,b)=>(order.indexOf(a.item)-order.indexOf(b.item)));
 
     let html = `
       <h3>${dateStr} の売上</h3>
-    `;
-
-    // ===== 全体サマリーカード =====
-    html += `
       <div class="history-card summary-total">
         <div class="history-title">
-          <span>💰 全体売上</span>
+          <span>💰全体売上</span>
           <span class="item-total-badge summary-badge">
-            合計金額：${totalAmount.toLocaleString()}円
+            金額：${data.totalAmount.toLocaleString()}円
           </span>
         </div>
-        <div>販売数量：<b>${totalQty}個</b></div>
+        <div>販売数量：<b>${data.totalQty}</b> 個</div>
       </div>
     `;
 
-    // ===== 品目別カード =====
     items.forEach(it => {
-      const itemName    = it.item;
-      const itemQty     = it.totalQty    || 0;
-      const itemAmount  = it.totalAmount || 0;
-      const stores      = it.stores      || [];
-
-      // 品目ごとに履歴と同じ色分け
-　　　let cls = "";
-      let badgeCls = "";
-
-      if (itemName.indexOf("白菜") !== -1) {
-         cls = "hakusai";
-         badgeCls = "item-total-hakusai";
-      } else if (itemName.indexOf("キャベツ") !== -1) {
-         cls = "cabbage";
-         badgeCls = "item-total-cabbage";
-      } else if (itemName.indexOf("トウモロコシ") !== -1) {
-         cls = "corn";
-         badgeCls = "item-total-corn";
-      } else {
-         // 万が一別の品目がきた時はneutralの仮色
-         cls = "corn";
-         badgeCls = "item-total-corn";
-      }
-
+      let cls="",badgeCls="";
+      if(it.item.includes("白菜")){ cls="hakusai"; badgeCls="item-total-hakusai";}
+      else if(it.item.includes("キャベツ")){ cls="cabbage"; badgeCls="item-total-cabbage";}
+      else{ cls="corn"; badgeCls="item-total-corn"; }
 
       html += `
         <div class="history-card ${cls}">
           <div class="history-title">
-            <span>${itemName}</span>
+            <span>${it.item}</span>
             <span class="item-total-badge ${badgeCls}">
-              売上：${itemAmount.toLocaleString()}円（${itemQty}個）
+              ${it.totalAmount.toLocaleString()}円 (${it.totalQty}個)
             </span>
           </div>
-          ${
-            stores && stores.length
-              ? renderSalesStoreAccordion(stores)
-              : `<div style="font-size:0.85em;color:#555;margin-top:4px;">
-                   店舗別内訳なし
-                 </div>`
-          }
+          ${renderSalesStoreAccordion(it.stores)}
         </div>
       `;
     });
 
     resultDiv.innerHTML = html;
-
-    // アコーディオンにイベント付与
     attachStoreAccordionEvents();
 
-  } catch (err) {
+  } catch(err) {
     resultDiv.innerHTML = `<p>エラー：${err}</p>`;
   }
 }
 
-/* ===== 店舗別アコーディオン（売上用） ===== */
-function renderSalesStoreAccordion(stores) {
-  // stores: [{ name, qty, amount }, ...]
+/* ===== 店舗別内訳 ===== */
+function renderSalesStoreAccordion(stores){
+  if(!stores || !stores.length) return "";
   return `
     <div class="store-accordion">
-      <button class="store-accordion-toggle">
-        店舗別内訳を表示
-      </button>
+      <button class="store-accordion-toggle">店舗別内訳</button>
       <div class="store-accordion-body">
-        ${
-          stores.map(s => `
-            <div class="store-accordion-row">
-              <b>${s.name}</b><br>
-              個数：${s.qty}個 /
-              金額：${s.amount.toLocaleString()}円
-            </div>
-          `).join("")
-        }
+        ${stores.map(s=>`
+          <div class="store-accordion-row">
+            <b>${s.name}</b>：${s.qty}個 / ${s.amount.toLocaleString()}円
+          </div>`).join("")}
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
-/* ===== アコーディオン動作（共通） ===== */
-function attachStoreAccordionEvents() {
-  const toggles = document.querySelectorAll(".store-accordion-toggle");
-
-  toggles.forEach(btn => {
-    btn.onclick = () => {
-      const body = btn.nextElementSibling;
-      if (!body) return;
-
-      const isOpen = body.classList.contains("open");
-      if (isOpen) {
-        // 閉じる（バネ感を少しだけ）
-        body.style.maxHeight = body.scrollHeight + "px";
-        requestAnimationFrame(() => {
-          body.style.maxHeight = "0px";
-          body.classList.remove("open");
-        });
-      } else {
-        // 開く
-        body.classList.add("open");
-        body.style.maxHeight = body.scrollHeight + "px";
-      }
-    };
-  });
+/* ===== アコーディオン ===== */
+function attachStoreAccordionEvents(){
+  document.querySelectorAll(".store-accordion-toggle")
+    .forEach(btn=>{
+      btn.onclick=()=>{
+        const body=btn.nextElementSibling;
+        body.classList.toggle("open");
+        body.style.maxHeight = body.classList.contains("open") ?
+          body.scrollHeight+"px" : "0px";
+      };
+    });
 }
-
