@@ -421,11 +421,10 @@ input, select {
 }
 
 .summary-tab.active {
-  background: linear-gradient(135deg, #ff9ce6, #ff6fd8);
+  background: linear-gradient(135deg, #6ab7a8, #4e8d7a);
   color: #ffffff;
-  transform: scale(1.08);
-  border: 3px solid #ffffff;
-  box-shadow: 0 0 12px rgba(255, 111, 216, 0.8);
-　border-bottom: 5px solid #ffffff;
+  transform: scale(1.06);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(78, 141, 122, 0.7);
 }
 
