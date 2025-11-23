@@ -452,3 +452,112 @@ input, select {
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
+/* =========================================================
+   ▼ 週ビュー用 週チップ（ポップでかわいい感じ）
+========================================================= */
+
+.summary-week-wrapper {
+  margin-bottom: 10px;
+}
+
+.summary-week-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.summary-week-month-label {
+  font-weight: bold;
+  font-size: 1.0em;
+  color: #4e7c2a;
+}
+
+.week-nav-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.9em;
+  cursor: pointer;
+  background: linear-gradient(135deg,#ffe0b2,#ffcc80);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+/* 横スクロール可能な週チップエリア */
+.summary-week-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 2px;
+}
+
+/* 週チップ本体 */
+.week-pill {
+  min-width: 110px;
+  border-radius: 18px;
+  padding: 8px 10px;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.8em;
+  line-height: 1.4;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+  background: #fff8e1;
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+/* データあり週：ポップなハイライト */
+.week-pill.has-data {
+  background: linear-gradient(135deg,#ffecb3,#ffcc80);
+}
+
+/* データなし週：淡くするが選択は可能 */
+.week-pill.no-data {
+  background: #f1f1f1;
+  color: #777;
+}
+
+/* 選択中の週：一段階強いハイライト（でもギラギラしない） */
+.week-pill.active {
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+  border: 2px solid #ffb74d;
+}
+
+/* 週チップ内テキスト */
+.week-pill-title {
+  font-weight: bold;
+  font-size: 0.85em;
+  margin-bottom: 2px;
+}
+
+.week-pill-range {
+  font-size: 0.8em;
+}
+
+/* データ有無のドット行 */
+.week-pill-dot-row {
+  margin-top: 3px;
+  font-size: 0.75em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.week-pill-dot-row--muted {
+  color: #999;
+}
+
+.week-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ff7043; /* ポップなオレンジ */
+}
+
+.week-pill-dot--empty {
+  background: transparent;
+  border: 1px dashed #bbb;
+}
+
