@@ -146,7 +146,7 @@ async function getSummaryDaysWithData(year, month) {
 
   const res  = await fetch(`${SUMMARY_SCRIPT_URL}?checkSummaryMonth=${ym}`);
   const data = await res.json();
-  const days = data.days || [];
+  let days = data.days || [];
 
   summaryMonthDaysCache[ym] = days;
   return days;
@@ -1567,4 +1567,5 @@ function formatDateYmd(d) {
   const day = String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
 }
+
 
