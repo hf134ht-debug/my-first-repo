@@ -1,11 +1,9 @@
 /* =========================================================
    summary.js
-   集計タブ（日／週）
+   集計タブ（日／週／月）
    - 日：カレンダー（データあり日ハイライト）＋日別ロスカード
-   - 週：横並び「週チップ」＋週別ロス
-        + グラフ3種（棒・折れ線・ドーナツ）
-        + 店舗別アコーディオン
-        + AIコメント
+   - 週：横並び「週チップ」＋週別ロスカード
+   - 月：横並び「月チップ」＋月別ロスカード＋店舗別内訳＋AIコメント
 ========================================================= */
 
 /* ★ あなたの GAS exec URL ★ */
@@ -26,10 +24,10 @@ let summaryWeekMonth;
 let summaryWeeks = [];           // [{ start:Date, end:Date, hasData:true/false }, ...]
 let summarySelectedWeekIndex = 0;
 
-/* ===== ApexCharts インスタンス（週ビュー用） ===== */
-let weekBarChartObj = null;
-let weekLineChartObj = null;
-let weekDonutChartObj = null;
+/* ===== 月ビュー用 状態 ===== */
+let summaryMonthViewYear;
+let summarySelectedMonthIndex = 0; // 0〜11（1〜12月に対応）
+
 
 /* =========================================================
    画面描画
@@ -41,7 +39,7 @@ function renderSummaryScreen() {
     <h2>集計</h2>
     <div id="summaryTabArea">${renderSummaryTabs()}</div>
 
-    <!-- 日 or 週 のコントロール（カレンダー／週チップ） -->
+    <!-- 日／週／月 のコントロール（カレンダー／週チップ／月チップ） -->
     <div id="summaryControlArea"></div>
 
     <!-- 結果表示 -->
@@ -87,13 +85,12 @@ function changeSummaryView(view) {
   } else if (view === "week") {
     setupSummaryWeekView();
   } else if (view === "month") {
-    const ctrl = document.getElementById("summaryControlArea");
-    if (ctrl) ctrl.innerHTML = `<p>月集計は開発中です。</p>`;
-    document.getElementById("summaryResult").innerHTML = "";
+    setupSummaryMonthView();
   } else if (view === "year") {
     const ctrl = document.getElementById("summaryControlArea");
     if (ctrl) ctrl.innerHTML = `<p>年集計は開発中です。</p>`;
-    document.getElementById("summaryResult").innerHTML = "";
+    const result = document.getElementById("summaryResult");
+    if (result) result.innerHTML = "";
   }
 }
 
@@ -104,6 +101,7 @@ async function activateSummaryFeatures() {
   if (tabArea) tabArea.innerHTML = renderSummaryTabs();
   await setupSummaryDayView();
 }
+
 
 /* =========================================================
    ▼ 日ビュー（カレンダー＋日別ロス）
@@ -142,7 +140,7 @@ async function setupSummaryDayView() {
     `<p>日付を選択してください</p>`;
 }
 
-/* カレンダー描画（summary 用） */
+/* カレンダー描画（日ビュー用） */
 function drawSummaryCalendar(year, month, selectedDate = null, daysWithData = []) {
   const today = new Date();
   const first = new Date(year, month, 1);
@@ -331,7 +329,7 @@ async function loadDailySummary(dateStr) {
   }
 }
 
-/* 店舗別アコーディオン HTML（日ビュー／週ビュー共通で使用） */
+/* 店舗別アコーディオン HTML */
 function renderStoreAccordion(stores) {
   // stores: [{ name, shippedQty, soldQty, lossQty, lossRate }, ...]
   return `
@@ -382,12 +380,9 @@ function attachStoreAccordionEvents() {
   });
 }
 
+
 /* =========================================================
    ▼ 週ビュー（横並び「週チップ」）
-   - 月単位で「第1週〜第n週」のチップを表示
-   - データあり週はポップなハイライト
-   - データなし週も選択可能（淡く表示）
-   - グラフ3種 + 店舗別アコーディオン + AIコメント
 ========================================================= */
 
 /* 週ビュー 初期セットアップ */
@@ -550,53 +545,6 @@ async function selectSummaryWeek(index) {
   await refreshSummaryWeekChips(); // 自分で再描画＋loadWeeklySummary 呼び出し
 }
 
-/* 週集計用：週内の店舗別情報をまとめる（summaryDate API を日別に叩く） */
-async function fetchWeeklyStoreDetails(daysArray) {
-  const storeMap = {}; // itemName -> storeName -> {shippedQty, soldQty, lossQty}
-
-  if (!Array.isArray(daysArray)) return storeMap;
-
-  const tasks = daysArray.map(async (ds) => {
-    try {
-      const res = await fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${ds}`);
-      const daily = await res.json();
-      if (!daily.found || !daily.items) return;
-
-      daily.items.forEach(item => {
-        const itemName = item.item;
-        if (!storeMap[itemName]) storeMap[itemName] = {};
-
-        if (Array.isArray(item.stores)) {
-          item.stores.forEach(st => {
-            const name = st.name;
-            if (!storeMap[itemName][name]) {
-              storeMap[itemName][name] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
-            }
-            storeMap[itemName][name].shippedQty += st.shippedQty || 0;
-            storeMap[itemName][name].soldQty    += st.soldQty    || 0;
-            storeMap[itemName][name].lossQty    += st.lossQty    || 0;
-          });
-        }
-      });
-    } catch (e) {
-      console.warn("fetchWeeklyStoreDetails error:", e);
-    }
-  });
-
-  await Promise.all(tasks);
-
-  // lossRate 付与
-  Object.values(storeMap).forEach(itemStores => {
-    Object.values(itemStores).forEach(s => {
-      s.lossRate = s.shippedQty > 0
-        ? Math.round((s.lossQty / s.shippedQty) * 100)
-        : null;
-    });
-  });
-
-  return storeMap;
-}
-
 /* 週集計データ取得 & 表示 */
 async function loadWeeklySummary(weekStartStr) {
   const resultDiv = document.getElementById("summaryResult");
@@ -626,12 +574,6 @@ async function loadWeeklySummary(weekStartStr) {
     const weekStart = data.days[0];
     const weekEnd   = data.days[data.days.length - 1];
 
-    // 週内の店舗別情報を別途日別APIから集計
-    const weeklyStoreMap = await fetchWeeklyStoreDetails(data.days || []);
-
-    // グラフ用データを整形
-    const chartData = buildWeekChartData(data);
-
     let html = `
       <h3>${weekStart}〜${weekEnd} の週集計</h3>
     `;
@@ -654,25 +596,7 @@ async function loadWeeklySummary(weekStartStr) {
       </div>
     `;
 
-    // ▼ グラフ3種（順番：棒 → 折れ線 → ドーナツ）
-    html += `
-      <div class="week-charts">
-        <div class="week-chart-card">
-          <h4>品目別ロス（個数）</h4>
-          <div id="weekBarChart"></div>
-        </div>
-        <div class="week-chart-card">
-          <h4>日別ロス推移</h4>
-          <div id="weekLineChart"></div>
-        </div>
-        <div class="week-chart-card">
-          <h4>品目別ロス構成比</h4>
-          <div id="weekDonutChart"></div>
-        </div>
-      </div>
-    `;
-
-    // ▼ 品目別カード（週トータル）＋ 店舗別アコーディオン
+    // ▼ 品目別
     items.forEach(it => {
       const itemName   = it.item;
       const shippedQty = it.shippedQty || 0;
@@ -680,7 +604,7 @@ async function loadWeeklySummary(weekStartStr) {
       const lossQty    = it.lossQty    || 0;
       const lossRate   = shippedQty > 0 ? Math.round((lossQty / shippedQty) * 100) : null;
 
-      // 色分け：日ビューと同じ（白菜系：黄緑／キャベツ系：緑／トウモロコシ系：薄黄色）
+      // 色分け：日ビューと同じ
       let cls = "corn";
       let badgeCls = "item-total-corn";
 
@@ -690,28 +614,6 @@ async function loadWeeklySummary(weekStartStr) {
       } else if (itemName.indexOf("キャベツ") !== -1) {
         cls = "cabbage";
         badgeCls = "item-total-cabbage";
-      }
-
-      // この品目の店舗別（週トータル）
-      let storeAccordionHtml = `<div style="font-size:0.85em;color:#555;margin-top:4px;">
-        店舗別内訳なし
-      </div>`;
-
-      const storeMapForItem = weeklyStoreMap[itemName];
-      if (storeMapForItem) {
-        const storesArr = Object.keys(storeMapForItem).map(name => {
-          const s = weeklyStoreMap[itemName][name];
-          return {
-            name,
-            shippedQty: s.shippedQty,
-            soldQty: s.soldQty,
-            lossQty: s.lossQty,
-            lossRate: s.lossRate
-          };
-        });
-        if (storesArr.length > 0) {
-          storeAccordionHtml = renderStoreAccordion(storesArr);
-        }
       }
 
       html += `
@@ -727,314 +629,429 @@ async function loadWeeklySummary(weekStartStr) {
             </span>
           </div>
           <div>出荷合計：${shippedQty}個 / 売上合計：${soldQty}個</div>
-          ${storeAccordionHtml}
         </div>
       `;
     });
 
-    // ▼ AIコメント（画面の一番下）
-    const aiComment = generateWeeklyAiComment(data);
-    html += `
-      <div class="history-card ai-comment-card">
-        <div class="history-title">
-          <span>🤖 今週のAIコメント</span>
-        </div>
-        <div class="ai-comment-body">
-          ${escapeHtml(aiComment).replace(/\n/g, "<br>")}
-        </div>
-      </div>
-    `;
-
     resultDiv.innerHTML = html;
-
-    // 店舗アコーディオンを有効化
-    attachStoreAccordionEvents();
-
-    // グラフ描画
-    renderWeekCharts(chartData);
 
   } catch (err) {
     resultDiv.innerHTML = `<p>エラー：${err}</p>`;
   }
 }
 
-/* グラフ用データの整形 */
-function buildWeekChartData(weekData) {
-  const items = weekData.items || [];
-  const days  = weekData.days  || [];
-
-  // 品目別ロス（棒 & ドーナツ）
-  const itemLabels = [];
-  const itemLoss   = [];
-
-  items.forEach(it => {
-    itemLabels.push(it.item);
-    itemLoss.push(it.lossQty || 0);
-  });
-
-  // 日別ロス合計（折れ線）
-  const dailyLossMap = {}; // dateStr -> totalLoss
-  days.forEach(ds => {
-    dailyLossMap[ds] = 0;
-  });
-
-  items.forEach(it => {
-    if (!Array.isArray(it.daily)) return;
-    it.daily.forEach(d => {
-      if (dailyLossMap[d.date] === undefined) {
-        dailyLossMap[d.date] = 0;
-      }
-      dailyLossMap[d.date] += d.lossQty || 0;
-    });
-  });
-
-  const dayLabels = Object.keys(dailyLossMap).sort();
-  const dayLoss   = dayLabels.map(ds => dailyLossMap[ds]);
-
-  return {
-    itemLabels,
-    itemLoss,
-    dayLabels,
-    dayLoss
-  };
-}
-
-/* グラフ描画本体（ApexCharts） */
-function renderWeekCharts(chartData) {
-  if (typeof ApexCharts === "undefined") {
-    console.warn("ApexCharts が読み込まれていません");
-    return;
-  }
-
-  // 既存チャートがあれば破棄
-  if (weekBarChartObj) {
-    weekBarChartObj.destroy();
-    weekBarChartObj = null;
-  }
-  if (weekLineChartObj) {
-    weekLineChartObj.destroy();
-    weekLineChartObj = null;
-  }
-  if (weekDonutChartObj) {
-    weekDonutChartObj.destroy();
-    weekDonutChartObj = null;
-  }
-
-  const { itemLabels, itemLoss, dayLabels, dayLoss } = chartData;
-
-  // 品目ごとの色（履歴のカード色に合わせたイメージ）
-  const barColors = itemLabels.map(name => getItemColor(name));
-
-  /* --- ① 横棒グラフ：品目別ロス --- */
-  const barEl = document.querySelector("#weekBarChart");
-  if (barEl && itemLabels.length > 0) {
-    const barOptions = {
-      chart: {
-        type: "bar",
-        height: 260
-      },
-      plotOptions: {
-        bar: {
-          horizontal: true,
-          distributed: true,
-          borderRadius: 6,
-          barHeight: "60%"
-        }
-      },
-      series: [
-        {
-          name: "ロス個数",
-          data: itemLoss
-        }
-      ],
-      xaxis: {
-        categories: itemLabels
-      },
-      colors: barColors,
-      dataLabels: {
-        enabled: true,
-        formatter: val => `${val}個`
-      },
-      legend: {
-        show: false
-      }
-    };
-    weekBarChartObj = new ApexCharts(barEl, barOptions);
-    weekBarChartObj.render();
-  }
-
-  /* --- ② 折れ線グラフ：日別ロス推移 --- */
-  const lineEl = document.querySelector("#weekLineChart");
-  if (lineEl && dayLabels.length > 0) {
-    const lineOptions = {
-      chart: {
-        type: "line",
-        height: 260
-      },
-      series: [
-        {
-          name: "ロス個数",
-          data: dayLoss
-        }
-      ],
-      xaxis: {
-        categories: dayLabels.map(ds => ds.slice(5)), // "MM-DD" 部分だけ表示
-        labels: {
-          rotate: -45
-        }
-      },
-      stroke: {
-        curve: "smooth",
-        width: 3
-      },
-      markers: {
-        size: 4
-      },
-      colors: ["#ff9f7a"],
-      dataLabels: {
-        enabled: true,
-        formatter: val => `${val}個`
-      }
-    };
-    weekLineChartObj = new ApexCharts(lineEl, lineOptions);
-    weekLineChartObj.render();
-  }
-
-  /* --- ③ ドーナツグラフ：品目別ロス構成比 --- */
-  const donutEl = document.querySelector("#weekDonutChart");
-  if (donutEl && itemLabels.length > 0) {
-    const donutOptions = {
-      chart: {
-        type: "donut",
-        height: 260
-      },
-      series: itemLoss,
-      labels: itemLabels,
-      colors: barColors,
-      legend: {
-        position: "bottom"
-      },
-      dataLabels: {
-        enabled: true,
-        formatter: (val) => `${Math.round(val)}%`
-      }
-    };
-    weekDonutChartObj = new ApexCharts(donutEl, donutOptions);
-    weekDonutChartObj.render();
-  }
-}
-
-/* 品目名から色を決める（白菜系：黄緑／キャベツ系：緑／トウモロコシ系：薄黄色） */
-function getItemColor(name) {
-  const s = String(name);
-  if (s.indexOf("白菜") !== -1) {
-    return "#b6e36b"; // 黄緑
-  }
-  if (s.indexOf("キャベツ") !== -1) {
-    return "#5ac18e"; // 緑寄り
-  }
-  if (s.indexOf("トウモロコシ") !== -1) {
-    return "#ffe08a"; // 薄黄色
-  }
-  return "#cccccc";
-}
 
 /* =========================================================
-   AIコメント生成（週ビュー用・スタイルC＋位置A）
+   ▼ 月ビュー（横並び「月チップ」＋AIコメント）
 ========================================================= */
-function generateWeeklyAiComment(weekData) {
-  if (!weekData || !weekData.total || !Array.isArray(weekData.items)) {
-    return "今週のデータが少ないため、コメントの生成は見送りました。";
+
+/* 月ビュー 初期セットアップ */
+async function setupSummaryMonthView() {
+  const ctrl = document.getElementById("summaryControlArea");
+  if (!ctrl) return;
+
+  const today = new Date();
+  summaryMonthViewYear   = today.getFullYear();
+  summarySelectedMonthIndex = today.getMonth(); // 0〜11
+
+  ctrl.innerHTML = `
+    <div class="summary-week-wrapper">
+      <div class="summary-week-header">
+        <button class="week-nav-btn" onclick="changeSummaryMonthYear(-1)">＜</button>
+        <div class="summary-week-month-label summary-month-year-label"></div>
+        <button class="week-nav-btn" onclick="changeSummaryMonthYear(1)">＞</button>
+      </div>
+      <div id="summaryMonthChips" class="summary-week-chips summary-month-chips"></div>
+    </div>
+  `;
+
+  await refreshSummaryMonthChips();
+}
+
+/* 年移動（月ビュー） */
+async function changeSummaryMonthYear(offset) {
+  summaryMonthViewYear += offset;
+  if (summaryMonthViewYear < 2000) summaryMonthViewYear = 2000; // 下限ガード（お好みで）
+  if (summaryMonthViewYear > 2100) summaryMonthViewYear = 2100; // 上限ガード（お好みで）
+
+  // 年が変わったらとりあえず1月を選択
+  summarySelectedMonthIndex = 0;
+  await refreshSummaryMonthChips();
+}
+
+/* 月チップ再描画 */
+async function refreshSummaryMonthChips() {
+  const yearLabel = document.querySelector(".summary-month-year-label");
+  if (yearLabel) {
+    yearLabel.textContent = `${summaryMonthViewYear}年`;
   }
 
-  const total = weekData.total;
-  const items = weekData.items;
+  const chipsDiv = document.getElementById("summaryMonthChips");
+  if (!chipsDiv) return;
 
-  const totalLoss = total.lossQty || 0;
-  if (totalLoss <= 0) {
-    return [
-      "今週は全体としてロスがほとんど発生していません。",
-      "売り切り傾向なので、人気が高い品目の出荷を少し増やしても良さそうです。",
-      "来週も同様の出荷バランスで様子を見て、売上の伸び方を確認してみてください。"
-    ].join("\n");
+  // 12ヶ月分まとめて「データあり日」を取得
+  const promises = [];
+  for (let m = 0; m < 12; m++) {
+    promises.push(getSummaryDaysWithData(summaryMonthViewYear, m));
   }
+  const daysByMonth = await Promise.all(promises); // [ ["01","03"], [], ... ]
 
-  // ① ロスが大きい品目
-  let worstItem = null;
-  items.forEach(it => {
-    if (!worstItem || (it.lossQty || 0) > (worstItem.lossQty || 0)) {
-      worstItem = it;
+  chipsDiv.innerHTML = daysByMonth
+    .map((days, idx) => {
+      const hasData = days.length > 0;
+      const hasDataClass = hasData ? "has-data" : "no-data";
+      const activeClass  = idx === summarySelectedMonthIndex ? "active" : "";
+
+      return `
+        <button
+          class="week-pill month-pill ${hasDataClass} ${activeClass}"
+          onclick="selectSummaryMonth(${idx})"
+        >
+          <div class="week-pill-title">${idx + 1}月</div>
+          ${
+            hasData
+              ? `<div class="week-pill-dot-row">
+                   <span class="week-pill-dot"></span>
+                   データあり
+                 </div>`
+              : `<div class="week-pill-dot-row week-pill-dot-row--muted">
+                   <span class="week-pill-dot week-pill-dot--empty"></span>
+                   データなし
+                 </div>`
+          }
+        </button>
+      `;
+    })
+    .join("");
+
+  // 選択中の月の月集計を表示
+  await loadMonthlySummary(summaryMonthViewYear, summarySelectedMonthIndex, daysByMonth[summarySelectedMonthIndex]);
+}
+
+/* 月チップ選択 */
+async function selectSummaryMonth(monthIndex) {
+  summarySelectedMonthIndex = monthIndex;
+  // daysByMonth を再度計算しても良いが、簡単のために chips 再描画からやり直す
+  await refreshSummaryMonthChips();
+}
+
+/* 月集計データ取得 & 表示
+   - GAS に新しいAPIを作らず、
+   - その月の各日について ?summaryDate=YYYY-MM-DD を呼び出し JS 側で合算
+*/
+async function loadMonthlySummary(year, monthIndex, daysInMonth) {
+  const resultDiv = document.getElementById("summaryResult");
+  resultDiv.innerHTML = `<p>読み込み中…</p>`;
+
+  try {
+    // daysInMonth が未指定のときは再取得
+    let dayList = daysInMonth;
+    if (!dayList) {
+      dayList = await getSummaryDaysWithData(year, monthIndex);
     }
-  });
 
-  // ② 日別ロス最大の日
-  const dayLossMap = {};
-  (weekData.days || []).forEach(ds => {
-    dayLossMap[ds] = 0;
-  });
+    if (!dayList || dayList.length === 0) {
+      resultDiv.innerHTML = `
+        <div class="history-card summary-total" style="opacity:0.7;">
+          <div class="history-title">
+            <span>この月のデータはありません</span>
+          </div>
+          <div style="font-size:0.9em;color:#555;">
+            別の月を選択してください。
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const ym = `${year}-${String(monthIndex + 1).padStart(2,"0")}`;
+
+    // 月集計用の変数
+    let totalShipped = 0;
+    let totalSold    = 0;
+
+    const itemMap = {}; // key: itemName
+
+    // 日ごとに summaryDate を叩いて合算
+    for (const day of dayList) {
+      const dateStr = `${ym}-${day}`;
+      const res  = await fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${dateStr}`);
+      const data = await res.json();
+
+      if (!data.found) continue;
+
+      const dailyTotal = data.total || {};
+      totalShipped += dailyTotal.shippedQty || 0;
+      totalSold    += dailyTotal.soldQty    || 0;
+
+      const dailyItems = data.items || [];
+      dailyItems.forEach(it => {
+        const itemName = it.item;
+        if (!itemMap[itemName]) {
+          itemMap[itemName] = {
+            item: itemName,
+            shippedQty: 0,
+            soldQty: 0,
+            lossQty: 0,
+            storesMap: {} // { storeName: {shippedQty, soldQty, lossQty} }
+          };
+        }
+        const target = itemMap[itemName];
+        target.shippedQty += it.shippedQty || 0;
+        target.soldQty    += it.soldQty    || 0;
+        target.lossQty    += it.lossQty    || 0;
+
+        // 店舗別サマリ
+        (it.stores || []).forEach(s => {
+          const name = s.name;
+          if (!target.storesMap[name]) {
+            target.storesMap[name] = {
+              name,
+              shippedQty: 0,
+              soldQty: 0,
+              lossQty: 0
+            };
+          }
+          const st = target.storesMap[name];
+          st.shippedQty += s.shippedQty || 0;
+          st.soldQty    += s.soldQty    || 0;
+          st.lossQty    += s.lossQty    || 0;
+        });
+      });
+    }
+
+    const totalLoss = totalShipped - totalSold;
+    const totalLossRate = totalShipped > 0
+      ? Math.round((totalLoss / totalShipped) * 100)
+      : null;
+
+    // 品目リスト整形（表示順固定 & 店舗配列）
+    const order = ["白菜", "白菜カット", "キャベツ", "キャベツカット", "トウモロコシ"];
+
+    const items = Object.values(itemMap).map(it => {
+      const shippedQty = it.shippedQty;
+      const soldQty    = it.soldQty;
+      const lossQty    = it.lossQty;
+      const lossRate   = shippedQty > 0
+        ? Math.round((lossQty / shippedQty) * 100)
+        : null;
+
+      const storesArr = Object.values(it.storesMap).map(s => {
+        const sLossRate = s.shippedQty > 0
+          ? Math.round((s.lossQty / s.shippedQty) * 100)
+          : null;
+        return {
+          name: s.name,
+          shippedQty: s.shippedQty,
+          soldQty: s.soldQty,
+          lossQty: s.lossQty,
+          lossRate: sLossRate
+        };
+      });
+
+      return {
+        item: it.item,
+        shippedQty,
+        soldQty,
+        lossQty,
+        lossRate,
+        stores: storesArr
+      };
+    });
+
+    items.sort((a, b) => {
+      const ia = order.indexOf(a.item);
+      const ib = order.indexOf(b.item);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    });
+
+    // タイトル・期間
+    const sortedDays = [...dayList].sort((a, b) => Number(a) - Number(b));
+    const firstDay = sortedDays[0];
+    const lastDay  = sortedDays[sortedDays.length - 1];
+
+    let html = `
+      <h3>${year}年${monthIndex + 1}月の月別集計</h3>
+      <p style="font-size:0.9em;color:#555;">
+        集計対象日：${ym}-${firstDay} 〜 ${ym}-${lastDay}
+      </p>
+    `;
+
+    // ▼ 全体サマリーカード
+    html += `
+      <div class="history-card summary-total">
+        <div class="history-title">
+          <span>📅 月合計ロス</span>
+          <span class="item-total-badge summary-badge">
+            ${
+              totalLossRate === null
+                ? 'ロス率：ー'
+                : `ロス率：${totalLossRate}%（${totalLoss}個）`
+            }
+          </span>
+        </div>
+        <div>出荷合計：<b>${totalShipped || 0}個</b></div>
+        <div>売上合計：<b>${totalSold || 0}個</b></div>
+      </div>
+    `;
+
+    // ▼ AIコメント（改善アドバイス）
+    const aiComment = generateMonthlyAiComment(items, {
+      shippedQty: totalShipped,
+      soldQty: totalSold,
+      lossQty: totalLoss,
+      lossRate: totalLossRate
+    });
+
+    html += `
+      <div class="history-card summary-total" style="background:#f0f4ff;">
+        <div class="history-title">
+          <span>🤖 AIコメント（月レビュー）</span>
+        </div>
+        <div style="font-size:0.9em; line-height:1.6;">
+          ${aiComment}
+        </div>
+      </div>
+    `;
+
+    // ▼ 品目別カード
+    items.forEach(it => {
+      const itemName   = it.item;
+      const shippedQty = it.shippedQty || 0;
+      const soldQty    = it.soldQty    || 0;
+      const lossQty    = it.lossQty    || 0;
+      const lossRate   = it.lossRate;
+
+      let cls = "corn";
+      let badgeCls = "item-total-corn";
+
+      if (itemName.indexOf("白菜") !== -1) {
+        cls = "hakusai";
+        badgeCls = "item-total-hakusai";
+      } else if (itemName.indexOf("キャベツ") !== -1) {
+        cls = "cabbage";
+        badgeCls = "item-total-cabbage";
+      }
+
+      html += `
+        <div class="history-card ${cls}">
+          <div class="history-title">
+            <span>${itemName}</span>
+            <span class="item-total-badge ${badgeCls}">
+              ${
+                lossRate === null
+                  ? `ロス：${lossQty}個`
+                  : `ロス：${lossQty}個（${lossRate}%）`
+              }
+            </span>
+          </div>
+          <div>出荷合計：${shippedQty}個 / 売上合計：${soldQty}個</div>
+          ${
+            it.stores && it.stores.length
+              ? renderStoreAccordion(it.stores)
+              : `<div style="font-size:0.85em;color:#555;margin-top:4px;">
+                   店舗別内訳なし
+                 </div>`
+          }
+        </div>
+      `;
+    });
+
+    resultDiv.innerHTML = html;
+    attachStoreAccordionEvents();
+
+  } catch (err) {
+    resultDiv.innerHTML = `<p>エラー：${err}</p>`;
+  }
+}
+
+/* 月ビュー用 AIコメント生成（A：前向き改善） */
+function generateMonthlyAiComment(items, total) {
+  if (!items || items.length === 0 || !total) {
+    return "今月のロスデータがほとんどありません。まずは対象商品の取り扱い日を増やして、傾向を見ていきましょう。";
+  }
+
+  // ロス率が高い順に並べる（出荷10個未満はノイズとして除外）
+  const candidates = items
+    .filter(it => it.shippedQty >= 10)
+    .map(it => ({
+      name: it.item,
+      lossRate: it.lossRate ?? 0,
+      lossQty: it.lossQty,
+      shippedQty: it.shippedQty,
+      soldQty: it.soldQty
+    }))
+    .sort((a, b) => (b.lossRate || 0) - (a.lossRate || 0));
+
+  const bestSellers = [...items]
+    .filter(it => it.soldQty >= 10)
+    .sort((a, b) => (b.soldQty || 0) - (a.soldQty || 0));
+
+  const worst = candidates[0];
+  const best  = bestSellers[0];
+
+  let lines = [];
+
+  // 1. 全体のコメント
+  if (total.lossRate === null) {
+    lines.push("今月は全体としてロス率が計算できない日も多く、データが安定していません。まずは出荷と売上の両方が揃う日を増やしていきましょう。");
+  } else if (total.lossRate <= 10) {
+    lines.push(`全体のロス率は約${total.lossRate}% と、比較的コントロールされています。今の出荷バランスを維持しつつ、品目ごとの微調整でさらに改善が狙えます。`);
+  } else if (total.lossRate <= 20) {
+    lines.push(`全体のロス率は約${total.lossRate}% です。少し高めなので、ロスが大きい品目を中心に出荷量の見直しをすると効果が出やすそうです。`);
+  } else {
+    lines.push(`全体のロス率は約${total.lossRate}% と高めです。特にロスが集中している品目・店舗を絞り込んで、出荷量を一段階落としてみるのがおすすめです。`);
+  }
+
+  // 2. 悪い方のピックアップ
+  if (worst && worst.lossRate > 0) {
+    lines.push(
+      `今月もっともロス率が高かったのは「${worst.name}」です（ロス率：約${worst.lossRate}%、ロス個数：${worst.lossQty}個）。`
+      + " 出荷数に対して売上が追いついていない可能性があるので、次月はまずこの品目の出荷を少し抑えて様子を見ると良さそうです。"
+    );
+  }
+
+  // 3. 良い方のピックアップ
+  if (best && best.lossRate !== null && best.lossRate <= 10) {
+    lines.push(
+      `一方で「${best.item}」は売上がしっかり出ており（${best.soldQty}個）、ロス率も${best.lossRate ?? 0}%台と安定しています。`
+      + " この品目は今の出荷量でも問題なさそうなので、他品目のロス調整とセットで全体のバランスを整えていけます。"
+    );
+  }
+
+  // 4. 店舗観点（ざっくり）
+  const storeLossMap = {};
   items.forEach(it => {
-    if (!Array.isArray(it.daily)) return;
-    it.daily.forEach(d => {
-      if (dayLossMap[d.date] === undefined) dayLossMap[d.date] = 0;
-      dayLossMap[d.date] += d.lossQty || 0;
+    (it.stores || []).forEach(s => {
+      if (!storeLossMap[s.name]) {
+        storeLossMap[s.name] = { name: s.name, lossQty: 0, shippedQty: 0 };
+      }
+      storeLossMap[s.name].lossQty   += s.lossQty   || 0;
+      storeLossMap[s.name].shippedQty += s.shippedQty || 0;
     });
   });
 
-  let worstDay = null;
-  let worstDayLoss = 0;
-  Object.keys(dayLossMap).forEach(ds => {
-    const v = dayLossMap[ds];
-    if (v > worstDayLoss) {
-      worstDayLoss = v;
-      worstDay = ds;
-    }
-  });
+  const storeList = Object.values(storeLossMap).map(s => ({
+    name: s.name,
+    lossQty: s.lossQty,
+    lossRate: s.shippedQty > 0 ? Math.round((s.lossQty / s.shippedQty) * 100) : null
+  })).sort((a, b) => (b.lossRate || 0) - (a.lossRate || 0));
 
-  // ③ ロス率が低い優等生品目
-  let bestItem = null;
-  items.forEach(it => {
-    const shipped = it.shippedQty || 0;
-    const loss    = it.lossQty    || 0;
-    if (shipped <= 0) return;
-    const rate = loss / shipped;
-    if (!bestItem || rate < bestItem.rate) {
-      bestItem = {
-        name: it.item,
-        rate,
-        shipped
-      };
-    }
-  });
-
-  const lines = [];
-
-  if (worstItem) {
-    const shipped = worstItem.shippedQty || 0;
-    const loss    = worstItem.lossQty    || 0;
-    const rate    = shipped > 0 ? Math.round((loss / shipped) * 100) : null;
+  const worstStore = storeList[0];
+  if (worstStore && worstStore.lossRate !== null && worstStore.lossRate > 0) {
     lines.push(
-      `・今週もっともロスが大きかったのは「${worstItem.item}」（${loss}個${rate !== null ? `／ロス率：${rate}%` : ""}）です。`
+      `店舗別では「${worstStore.name}」のロス率がやや高め（約${worstStore.lossRate}%）です。`
+      + " この店舗向けの出荷を一段階抑えて、他店舗に振り分けられないか検討してみる価値があります。"
     );
   }
 
-  if (worstDay) {
-    lines.push(
-      `・ロスが集中した日は「${worstDay}」（合計ロス：${worstDayLoss}個）です。特にこの日の出荷量を見直すと効果が出やすいです。`
-    );
+  if (lines.length === 0) {
+    return "今月のデータでは大きな偏りは見られません。今の出荷バランスを維持しつつ、週次の推移を見ながら細かく調整していきましょう。";
   }
 
-  if (bestItem && bestItem.rate < 0.1) {
-    lines.push(
-      `・ロス率が低い優等生は「${bestItem.name}」（ロス率：約${Math.round(bestItem.rate * 100)}%）です。出荷を少し増やしてもリスクは小さそうです。`
-    );
-  }
-
-  lines.push(
-    "・来週はロスの多かった品目の出荷を少し控えめにしつつ、ロスの少ない品目に振り替えることで全体ロスの圧縮が期待できます。"
-  );
-
-  return lines.join("\n");
+  return lines.join("<br>");
 }
+
 
 /* =========================================================
    Util
@@ -1044,14 +1061,4 @@ function formatDateYmd(d) {
   const m = String(d.getMonth() + 1).padStart(2,"0");
   const day = String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
-}
-
-function escapeHtml(str) {
-  if (str == null) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 }
