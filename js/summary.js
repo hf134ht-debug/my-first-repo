@@ -37,11 +37,11 @@ const STORE_ORDER = [
 /* ===== 品目キー & カラー（グラフ用：白菜系/キャベツ系を分ける） ===== */
 const ITEM_ORDER = ["白菜", "白菜カット", "キャベツ", "キャベツカット", "トウモロコシ"];
 const ITEM_COLOR_MAP = {
-  "白菜":        "#B5E48C", // 黄緑
-  "白菜カット":  "#99D98C", // 少し濃い黄緑
-  "キャベツ":    "#52B788", // 緑
+  "白菜":          "#B5E48C", // 黄緑
+  "白菜カット":    "#99D98C", // 少し濃い黄緑
+  "キャベツ":      "#52B788", // 緑
   "キャベツカット": "#168AAD", // 青緑寄り
-  "トウモロコシ": "#FFE66D"  // 薄黄色
+  "トウモロコシ":   "#FFE66D"  // 薄黄色
 };
 
 /* 品目名から正規のキーを取得（グラフ・並び順用） */
@@ -61,6 +61,21 @@ function getStoreKey(name) {
   if (!name) return "";
   let s = String(name).trim();
   return s.replace(/店$/, "");
+}
+
+/* 表示用：必ず「店」を付けて表示 */
+function formatStoreLabel(name) {
+  if (!name) return "";
+  const s = String(name).trim();
+  return s.endsWith("店") ? s : `${s}店`;
+}
+
+/* ロス率に応じた色（text-color 用） */
+function getLossRateColor(rate) {
+  if (rate === null || typeof rate === "undefined" || isNaN(rate)) return "";
+  if (rate >= 50) return "#d32f2f";  // 赤：かなり高い
+  if (rate >= 20) return "#f57c00";  // オレンジ：要注意
+  return "#388e3c";                  // 緑：良好〜許容
 }
 
 /* =========================================================
@@ -283,6 +298,9 @@ async function loadDailySummary(dateStr) {
     const total    = data.total || {};
     const items    = data.items || [];
 
+    const totalLossColor = getLossRateColor(total.lossRate);
+    const totalLossStyle = totalLossColor ? ` style="color:${totalLossColor};"` : "";
+
     let html = `
       <h3>${dateStr} の集計</h3>
       <p style="font-size:0.9em;color:#555;">
@@ -294,7 +312,7 @@ async function loadDailySummary(dateStr) {
       <div class="history-card summary-total">
         <div class="history-title">
           <span>📊 全体ロス</span>
-          <span class="item-total-badge summary-badge">
+          <span class="item-total-badge summary-badge"${totalLossStyle}>
             ${
               total.lossRate === null
                 ? 'ロス率：ー'
@@ -327,11 +345,14 @@ async function loadDailySummary(dateStr) {
         badgeCls = "item-total-cabbage";
       }
 
+      const lossColor = getLossRateColor(lossRate);
+      const lossStyle = lossColor ? ` style="color:${lossColor};"` : "";
+
       html += `
         <div class="history-card ${cls}">
           <div class="history-title">
             <span>${itemName}</span>
-            <span class="item-total-badge ${badgeCls}">
+            <span class="item-total-badge ${badgeCls}"${lossStyle}>
               ロス率：
               ${
                 lossRate === null
@@ -356,7 +377,18 @@ async function loadDailySummary(dateStr) {
     attachStoreAccordionEvents();
 
   } catch (err) {
-    resultDiv.innerHTML = `<p>エラー：${err}</p>`;
+    resultDiv.innerHTML = `
+      <div class="history-card summary-total">
+        <div class="history-title">
+          <span>⚠ データ取得エラー</span>
+        </div>
+        <div style="font-size:0.9em;color:#555;">
+          日別集計の取得中にエラーが発生しました。<br>
+          ネットワーク状況を確認して、もう一度お試しください。<br>
+          <span style="font-size:0.8em;color:#999;">詳細: ${err}</span>
+        </div>
+      </div>
+    `;
   }
 }
 
@@ -370,17 +402,25 @@ function renderStoreAccordion(stores) {
       </button>
       <div class="store-accordion-body">
         ${
-          stores.map(s => `
+          stores.map(s => {
+            const color = getLossRateColor(s.lossRate);
+            const style = color ? ` style="color:${color};"` : "";
+            return `
             <div class="store-accordion-row">
-              <b>${s.name}</b><br>
+              <b>${formatStoreLabel(s.name)}</b><br>
               出荷：${s.shippedQty}個 /
               売上：${s.soldQty}個 /
               ロス：
-                ${s.lossRate === null || typeof s.lossRate === "undefined"
-                  ? `${s.lossQty}個`
-                  : `${s.lossQty}個（${s.lossRate}%）`}
+              <span${style}>
+                ${
+                  s.lossRate === null || typeof s.lossRate === "undefined"
+                    ? `${s.lossQty}個`
+                    : `${s.lossQty}個（${s.lossRate}%）`
+                }
+              </span>
             </div>
-          `).join("")
+            `;
+          }).join("")
         }
       </div>
     </div>
@@ -674,6 +714,9 @@ async function loadWeeklySummary(weekStartStr) {
     // ④ AIコメント生成
     const aiCommentHtml = buildWeeklyAiComment(total, items, storeTotalMap);
 
+    const totalLossColor = getLossRateColor(total.lossRate);
+    const totalLossStyle = totalLossColor ? ` style="color:${totalLossColor};"` : "";
+
     // ⑤ HTML構築
     const weekStart = days[0];
     const weekEnd   = days[days.length - 1];
@@ -688,7 +731,7 @@ async function loadWeeklySummary(weekStartStr) {
       <div class="history-card summary-total">
         <div class="history-title">
           <span>📅 週合計ロス</span>
-          <span class="item-total-badge summary-badge">
+          <span class="item-total-badge summary-badge"${totalLossStyle}>
             ${
               total.lossRate === null
                 ? 'ロス率：ー'
@@ -723,6 +766,9 @@ async function loadWeeklySummary(weekStartStr) {
         badgeCls = "item-total-cabbage";
       }
 
+      const lossColor = getLossRateColor(lossRate);
+      const lossStyle = lossColor ? ` style="color:${lossColor};"` : "";
+
       // 店舗別週合算（この品目のみ）
       const perStoreMap = storeItemMap[itemName] || {};
       let storeRows = Object.keys(perStoreMap).map(name => {
@@ -750,7 +796,7 @@ async function loadWeeklySummary(weekStartStr) {
         <div class="history-card ${cls}">
           <div class="history-title">
             <span>${itemName}</span>
-            <span class="item-total-badge ${badgeCls}">
+            <span class="item-total-badge ${badgeCls}"${lossStyle}>
               ${
                 lossRate === null
                   ? `ロス：${lossQty}個`
@@ -800,7 +846,18 @@ async function loadWeeklySummary(weekStartStr) {
     renderWeekCharts(items, days, dailyLossMap);
 
   } catch (err) {
-    resultDiv.innerHTML = `<p>エラー：${err}</p>`;
+    resultDiv.innerHTML = `
+      <div class="history-card summary-total">
+        <div class="history-title">
+          <span>⚠ データ取得エラー</span>
+        </div>
+        <div style="font-size:0.9em;color:#555;">
+          週集計の取得中にエラーが発生しました。<br>
+          ネットワーク状況を確認して、もう一度お試しください。<br>
+          <span style="font-size:0.8em;color:#999;">詳細: ${err}</span>
+        </div>
+      </div>
+    `;
   }
 }
 
@@ -836,7 +893,9 @@ function renderWeeklyStoreTotalSection(storeTotalMap) {
   `;
 
   rows.forEach(r => {
-    const label = r.name.endsWith("店") ? r.name : `${r.name}店`;
+    const label = formatStoreLabel(r.name);
+    const color = getLossRateColor(r.lossRate);
+    const style = color ? ` style="color:${color};"` : "";
     html += `
       <div class="store-week-total-row">
         <div class="store-week-total-name">${label}</div>
@@ -844,11 +903,13 @@ function renderWeeklyStoreTotalSection(storeTotalMap) {
           出荷：${r.shippedQty}個 /
           売上：${r.soldQty}個 /
           ロス：
+          <span${style}>
           ${
             r.lossRate === null
               ? `${r.lossQty}個`
               : `${r.lossQty}個（${r.lossRate}%）`
           }
+          </span>
         </div>
       </div>
     `;
@@ -902,7 +963,7 @@ function buildWeeklyAiComment(total, items, storeTotalMap) {
 
   // 店舗のポイント
   if (maxStore && typeof maxStore.lossRate === "number") {
-    const label = maxStore.name.endsWith("店") ? maxStore.name : `${maxStore.name}店`;
+    const label = formatStoreLabel(maxStore.name);
     lines.push(`店舗別では「${label}」のロス率が相対的に高めです。出荷する品目や数量を1〜2割ほど抑えて様子を見る、他店舗との売れ行きの違いを確認する、といった対応が有効かもしれません。`);
   }
 
@@ -1136,10 +1197,10 @@ async function loadMonthlySummary(ym) {
     });
 
     // ③ 各日について summaryDate を呼び出し、
-     
-     // ▼ 未来日のデータは集計対象外にする
-     const todayStr = formatDateYmd(new Date());
-     days = days.filter(ds => ds <= todayStr);
+
+    // ▼ 未来日のデータは集計対象外にする
+    const todayStr = formatDateYmd(new Date());
+    days = days.filter(ds => ds <= todayStr);
 
     //    店舗別月合算（店舗×品目）と店舗別トータルを作る
     const dailyPromises = days.map(ds =>
@@ -1191,6 +1252,9 @@ async function loadMonthlySummary(ym) {
     // ④ AIコメント生成（月版）
     const aiCommentHtml = buildMonthlyAiComment(total, items, storeTotalMap, ym);
 
+    const totalLossColor = getLossRateColor(total.lossRate);
+    const totalLossStyle = totalLossColor ? ` style="color:${totalLossColor};"` : "";
+
     // ⑤ HTML構築
     const monthLabel = ym.replace(/-(\d{2})$/, "年 $1月");
     let html = `
@@ -1203,7 +1267,7 @@ async function loadMonthlySummary(ym) {
       <div class="history-card summary-total">
         <div class="history-title">
           <span>🗓 月合計ロス</span>
-          <span class="item-total-badge summary-badge">
+          <span class="item-total-badge summary-badge"${totalLossStyle}>
             ${
               total.lossRate === null
                 ? 'ロス率：ー'
@@ -1237,6 +1301,9 @@ async function loadMonthlySummary(ym) {
         badgeCls = "item-total-cabbage";
       }
 
+      const lossColor = getLossRateColor(lossRate);
+      const lossStyle = lossColor ? ` style="color:${lossColor};"` : "";
+
       const perStoreMap = storeItemMap[itemName] || {};
       let storeRows = Object.keys(perStoreMap).map(name => {
         const st = perStoreMap[name];
@@ -1263,7 +1330,7 @@ async function loadMonthlySummary(ym) {
         <div class="history-card ${cls}">
           <div class="history-title">
             <span>${itemName}</span>
-            <span class="item-total-badge ${badgeCls}">
+            <span class="item-total-badge ${badgeCls}"${lossStyle}>
               ${
                 lossRate === null
                   ? `ロス：${lossQty}個`
@@ -1313,7 +1380,18 @@ async function loadMonthlySummary(ym) {
     renderMonthCharts(items, days, dailyLossMap);
 
   } catch (err) {
-    resultDiv.innerHTML = `<p>エラー：${err}</p>`;
+    resultDiv.innerHTML = `
+      <div class="history-card summary-total">
+        <div class="history-title">
+          <span>⚠ データ取得エラー</span>
+        </div>
+        <div style="font-size:0.9em;color:#555;">
+          月集計の取得中にエラーが発生しました。<br>
+          ネットワーク状況を確認して、もう一度お試しください。<br>
+          <span style="font-size:0.8em;color:#999;">詳細: ${err}</span>
+        </div>
+      </div>
+    `;
   }
 }
 
@@ -1349,7 +1427,9 @@ function renderMonthlyStoreTotalSection(storeTotalMap) {
   `;
 
   rows.forEach(r => {
-    const label = r.name.endsWith("店") ? r.name : `${r.name}店`;
+    const label = formatStoreLabel(r.name);
+    const color = getLossRateColor(r.lossRate);
+    const style = color ? ` style="color:${color};"` : "";
     html += `
       <div class="store-week-total-row">
         <div class="store-week-total-name">${label}</div>
@@ -1357,11 +1437,13 @@ function renderMonthlyStoreTotalSection(storeTotalMap) {
           出荷：${r.shippedQty}個 /
           売上：${r.soldQty}個 /
           ロス：
+          <span${style}>
           ${
             r.lossRate === null
               ? `${r.lossQty}個`
               : `${r.lossQty}個（${r.lossRate}%）`
           }
+          </span>
         </div>
       </div>
     `;
@@ -1422,7 +1504,7 @@ function buildMonthlyAiComment(total, items, storeTotalMap, ym) {
 
   // 店舗のポイント
   if (maxStore && typeof maxStore.lossRate === "number") {
-    const label = maxStore.name.endsWith("店") ? maxStore.name : `${maxStore.name}店`;
+    const label = formatStoreLabel(maxStore.name);
     lines.push(`店舗別では「${label}」のロス率が相対的に高めです。この店舗は「売れ行きが弱い曜日」や「動きが鈍い品目」が偏っていないかを確認し、出荷量の見直しや他店舗との分担調整を検討してみてください。`);
   }
 
@@ -1567,7 +1649,3 @@ function formatDateYmd(d) {
   const day = String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
 }
-
-
-
-
