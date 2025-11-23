@@ -191,17 +191,25 @@ async function loadSalesData(dateStr) {
       const itemAmount  = it.totalAmount || 0;
       const stores      = it.stores      || [];
 
-      // 品目ごとに色分け（白菜 / キャベツ / トウモロコシ）
-      let cls = "corn";   // デフォルト：トウモロコシ色
-      let badgeCls = "item-total-corn";
+      // 品目ごとに履歴と同じ色分け
+　　　let cls = "";
+      let badgeCls = "";
 
       if (itemName.indexOf("白菜") !== -1) {
-        cls = "hakusai";
-        badgeCls = "item-total-hakusai";
+         cls = "hakusai";
+         badgeCls = "item-total-hakusai";
       } else if (itemName.indexOf("キャベツ") !== -1) {
-        cls = "cabbage";
-        badgeCls = "item-total-cabbage";
+         cls = "cabbage";
+         badgeCls = "item-total-cabbage";
+      } else if (itemName.indexOf("トウモロコシ") !== -1) {
+         cls = "corn";
+         badgeCls = "item-total-corn";
+      } else {
+         // 万が一別の品目がきた時はneutralの仮色
+         cls = "corn";
+         badgeCls = "item-total-corn";
       }
+
 
       html += `
         <div class="history-card ${cls}">
@@ -280,3 +288,4 @@ function attachStoreAccordionEvents() {
     };
   });
 }
+
