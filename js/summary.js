@@ -1136,6 +1136,11 @@ async function loadMonthlySummary(ym) {
     });
 
     // ③ 各日について summaryDate を呼び出し、
+     
+     // ▼ 未来日のデータは集計対象外にする
+　　const todayStr = formatDateYmd(new Date());
+　　days = days.filter(ds => ds <= todayStr);
+
     //    店舗別月合算（店舗×品目）と店舗別トータルを作る
     const dailyPromises = days.map(ds =>
       fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${ds}`)
@@ -1562,3 +1567,4 @@ function formatDateYmd(d) {
   const day = String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
 }
+
