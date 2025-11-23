@@ -1,120 +1,145 @@
 /* =========================================================
-   sales.js（売上表示 完全版）
+   sales.js : 売上データ表示（REST API fetch版 完全）
 ========================================================= */
 
-let selectedSalesDate = null;
+/* ★ あなたの GAS Web API URL ★ */
+const GAS_URL =
+  "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
 
+/* 売上画面HTML */
 function renderSalesScreen() {
-  const today = new Date();
-  selectedSalesDate = formatDate(today);
-  renderSalesCalendar();
-
   return `
     <h2>売上</h2>
     <div id="salesCalendar"></div>
-    <div id="salesResult"></div>
+    <div id="salesResult"><p>日付を選択してください</p></div>
   `;
 }
 
-/* カレンダー描画 */
-function renderSalesCalendar() {
-  const y = selectedSalesDate.slice(0,4);
-  const m = selectedSalesDate.slice(5,7);
-  const ym = `${y}-${m}`;
+/* 初期ロード */
+async function activateSalesFeatures() {
+  const today = new Date();
+  salesCalYear = today.getFullYear();
+  salesCalMonth = today.getMonth();
 
-  document.getElementById("salesCalendar").innerHTML = `<p>読み込み中...</p>`;
+  const days = await fetchSalesDaysWithData(salesCalYear, salesCalMonth);
 
-  google.script.run
-    .withSuccessHandler(data => drawSalesCalendar(data.days))
-    .checkSalesMonth(ym);
+  document.getElementById("salesCalendar").innerHTML =
+    drawSalesCalendar(salesCalYear, salesCalMonth, null, days);
 }
 
-/* カレンダーUI */
-function drawSalesCalendar(daysWithData) {
-  const d = new Date(selectedSalesDate + "T00:00:00+09:00");
-  const y = d.getFullYear();
-  const m = d.getMonth();
-  const lastDay = new Date(y, m + 1, 0).getDate();
+/* 取得した「データあり日」キャッシュ */
+const salesDaysCache = {};
 
-  let html = `<table class="cal"><tr>`;
-  const week = ["日","月","火","水","木","金","土"];
-  week.forEach(w => html += `<th>${w}</th>`);
-  html += `</tr><tr>`;
+async function fetchSalesDaysWithData(year, month) {
+  const ym = `${year}-${String(month+1).padStart(2,'0')}`;
+  if (salesDaysCache[ym]) return salesDaysCache[ym];
 
-  let firstDay = new Date(y, m, 1).getDay();
-  for (let i = 0; i < firstDay; i++) html += `<td></td>`;
-
-  for (let day = 1; day <= lastDay; day++) {
-    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    const has = daysWithData.includes(String(day).padStart(2,'0'));
-
-    let cls = has ? "has-data" : "";
-    let mark = has ? `onclick="selectSalesDate('${ds}')"` : "";
-
-    if (ds === selectedSalesDate)
-      cls = "selected";
-
-    html += `<td class="${cls}" ${mark}>${day}</td>`;
-
-    if (new Date(y, m, day).getDay() === 6) html += `</tr><tr>`;
-  }
-
-  html += `</tr></table>`;
-  document.getElementById("salesCalendar").innerHTML = html;
-
-  loadSalesResult();
+  const res = await fetch(`${GAS_URL}?checkSalesMonth=${ym}`);
+  const data = await res.json();
+  const days = data.days || [];
+  salesDaysCache[ym] = days;
+  return days;
 }
 
-/* 日付選択 */
-function selectSalesDate(ds) {
-  selectedSalesDate = ds;
-  renderSalesCalendar();
-}
-
-/* API取得 */
-function loadSalesResult() {
-  document.getElementById("salesResult").innerHTML = `<p>取得中...</p>`;
-
-  google.script.run
-    .withSuccessHandler(showSalesResult)
-    .getSalesData(selectedSalesDate);
-}
-
-/* 表示処理 */
-function showSalesResult(data) {
-  if (!data.found) {
-    document.getElementById("salesResult").innerHTML = "<p>データなし</p>";
-    return;
-  }
+function drawSalesCalendar(year, month, selectedDate=null, daysWithData=[]) {
+  const first = new Date(year, month, 1);
+  const last  = new Date(year, month+1, 0);
 
   let html = `
-    <h3>${selectedSalesDate} 売上</h3>
-    <table class="summary-table">
-      <tr><th>品目</th><th>数量</th><th>金額</th></tr>
+    <div class="calendar-wrapper">
+      <div class="calendar-header">
+        <button onclick="changeSalesMonth(-1)">＜</button>
+        <span>${year}年 ${month+1}月</span>
+        <button onclick="changeSalesMonth(1)">＞</button>
+      </div>
+      <div class="calendar-grid">
   `;
 
-  data.items.forEach(x => {
-    html += `
-      <tr>
-        <td>${x.item}</td>
-        <td>${x.totalQty}</td>
-        <td>${x.totalAmount.toLocaleString()} 円</td>
-      </tr>`;
+  ["日","月","火","水","木","金","土"].forEach(d => {
+    html += `<div class="calendar-day">${d}</div>`;
   });
 
-  html += `
-    <tr class="total">
-      <td>合計</td>
-      <td>${data.totalQty}</td>
-      <td>${data.totalAmount.toLocaleString()} 円</td>
-    </tr>
-    </table>
-  `;
+  for (let i = 0; i < first.getDay(); i++) html += `<div></div>`;
 
-  document.getElementById("salesResult").innerHTML = html;
+  for (let d=1; d<=last.getDate(); d++) {
+    const dd = String(d).padStart(2,"0");
+    const has = daysWithData.includes(dd);
+    const isSel = selectedDate &&
+      selectedDate.getDate() === d &&
+      selectedDate.getMonth() === month &&
+      selectedDate.getFullYear() === year;
+
+    html += `
+      <div class="calendar-date ${has?'has-data':''} ${isSel?'selected':''}"
+        onclick="selectSalesDate(${year},${month},${d})">
+        ${d}
+      </div>`;
+  }
+
+  html += `</div></div>`;
+  return html;
 }
 
-/* Util */
-function formatDate(d) {
-  return d.toISOString().slice(0,10);
+/* 月移動時 */
+async function changeSalesMonth(offset) {
+  salesCalMonth += offset;
+  if (salesCalMonth < 0) { salesCalMonth = 11; salesCalYear--; }
+  if (salesCalMonth > 11) { salesCalMonth = 0; salesCalYear++; }
+
+  const days = await fetchSalesDaysWithData(salesCalYear, salesCalMonth);
+
+  document.getElementById("salesCalendar").innerHTML =
+    drawSalesCalendar(salesCalYear, salesCalMonth, null, days);
+
+  document.getElementById("salesResult").innerHTML =
+    `<p>日付を選択してください</p>`;
+}
+
+/* 日付クリック */
+async function selectSalesDate(y,m,d) {
+  const dateStr = `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  const days = await fetchSalesDaysWithData(y, m);
+  document.getElementById("salesCalendar").innerHTML =
+    drawSalesCalendar(y,m,new Date(y,m,d), days);
+
+  loadSalesData(dateStr);
+}
+
+/* API fetch 売上データ取得 */
+async function loadSalesData(dateStr) {
+  document.getElementById("salesResult").innerHTML = `<p>読み込み中...</p>`;
+
+  try {
+    const res = await fetch(`${GAS_URL}?salesDate=${dateStr}`);
+    const data = await res.json();
+
+    if (!data.found) {
+      document.getElementById("salesResult").innerHTML = `<p>データなし</p>`;
+      return;
+    }
+
+    let html = `
+      <h3>${dateStr} 売上</h3>
+      <table class="sales-table">
+        <tr>
+          <th>品目</th><th>数量</th><th>金額</th>
+        </tr>
+    `;
+
+    data.items.forEach(i => {
+      html += `<tr>
+          <td>${i.item}</td>
+          <td>${i.totalQty}</td>
+          <td>${i.totalAmount.toLocaleString()} 円</td>
+        </tr>`;
+    });
+
+    html += `</table>
+      <p><b>総数量:</b> ${data.totalQty} / <b>総額:</b> ${data.totalAmount.toLocaleString()} 円</p>
+    `;
+
+    document.getElementById("salesResult").innerHTML = html;
+  } catch(e) {
+    document.getElementById("salesResult").innerHTML = `<p>エラー: ${e}</p>`;
+  }
 }
