@@ -13,7 +13,11 @@ const SUMMARY_SCRIPT_URL =
 /* ===== 集計画面 HTML ===== */
 function renderSummaryScreen() {
   return `
-    <h2>集計（日別ロス）</h2>
+    <h2>集計</h2>
+
+    <!-- ★ ここに集計タブを入れる領域追加 -->
+    <div id="summaryTabArea">${renderSummaryTabs()}</div>
+
     <div id="summaryCalendarArea"></div>
     <div id="summaryResult"><p>日付を選択してください</p></div>
   `;
@@ -297,3 +301,4 @@ function attachStoreAccordionEvents() {
     };
   });
 }
+
