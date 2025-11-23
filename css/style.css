@@ -561,3 +561,35 @@ input, select {
   border: 1px dashed #bbb;
 }
 
+/* ==== AI考察カード ==== */
+.ai-comment-card {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff3e0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+  border-left: 5px solid #ffb74d;
+  font-size: 0.9em;
+}
+
+.ai-comment-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+  color: #e65100;
+}
+
+.ai-comment-body p {
+  margin: 3px 0;
+}
+
+/* ==== 週グラフボックス ==== */
+.summary-chart-box {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding: 8px 6px;
+  border-radius: 12px;
+  background: #ffffffcc;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+}
+
