@@ -67,7 +67,7 @@ body {
   left: 0; right: 0;
   margin: auto;
   max-width: 500px;
-  background: #ffffffdd;
+  background: #ffffffee;
   padding: 8px 10px;
   display: flex;
   gap: 8px;
@@ -174,7 +174,6 @@ input, select {
   align-items: center;
 }
 
-/* 店舗削除ボタン（中サイズ・タップ時フェードアウト） */
 .store-remove-btn {
   padding: 6px 10px;
   border-radius: 999px;
@@ -187,7 +186,7 @@ input, select {
   box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
-/* 削除アニメ用クラス */
+/* アニメ */
 .store-row.removing {
   opacity: 0;
   transform: translateX(-10px);
@@ -222,7 +221,7 @@ input, select {
 }
 
 /* =========================================================
-   カレンダー（履歴 & 売上共通）
+   カレンダー
 ========================================================= */
 .calendar-wrapper {
   background: #f3f5e9;
@@ -275,7 +274,7 @@ input, select {
   background: white;
   border-radius: 8px;
   padding: 8px 0;
-  text-align: center; /* ← スマホ中央揃え修正済み */
+  text-align: center;
   cursor: pointer;
   transition: 0.15s;
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
@@ -339,7 +338,6 @@ input, select {
   border: 1px solid rgba(0,0,0,0.15);
 }
 
-/* チップの色（品目別） */
 .item-total-hakusai {
   background: linear-gradient(135deg,#b7e87a,#8cd856);
   color: #1a3300;
@@ -355,18 +353,15 @@ input, select {
   color: #4e3b00;
 }
 
-/* 全体サマリー用カード色（売上と被らない青系） */
 .history-card.summary-total {
   background: linear-gradient(135deg,#bbdefb,#90caf9);
 }
 
-/* 集計用バッジ（少し濃い青） */
 .item-total-badge.summary-badge {
   background: linear-gradient(135deg,#64b5f6,#42a5f5);
   color: #fff;
 }
 
-/* 店舗別アコーディオン */
 .store-accordion {
   margin-top: 6px;
 }
@@ -390,7 +385,6 @@ input, select {
 }
 
 .store-accordion-body.open {
-  /* max-height は JS で制御 */
 }
 
 .store-accordion-row {
@@ -398,25 +392,36 @@ input, select {
   padding: 4px 4px 0 4px;
 }
 
-/* ===== 集計タブ ===== */
+/* =========================================================
+   集計タブ（新デザイン）
+========================================================= */
 .summary-tabs {
   display: flex;
-  gap: 6px;
+  gap: 10px;
   justify-content: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .summary-tab {
-  background: #dcedc8;
+  background: linear-gradient(135deg,#a3d8ff,#73baff);
   border: none;
-  padding: 8px 18px;
-  border-radius: 20px;
+  padding: 10px 20px;
+  border-radius: 30px;
   cursor: pointer;
+  font-size: 1.1em;
   font-weight: bold;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  color: #034078;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+  transition: 0.2s;
+}
+
+.summary-tab:hover {
+  filter: brightness(1.12);
+  transform: translateY(-2px);
 }
 
 .summary-tab.active {
-  background: #81c784;
-  color: white;
+  background: linear-gradient(135deg,#82d4bb,#4da88c);
+  color: #ffffff;
+  filter: brightness(1.18);
 }
