@@ -96,8 +96,10 @@ function changeSummaryView(view) {
 
   if (view === "day") {
     activateSummaryFeatures();
-  } else if (view === "week") {
-    resultArea.innerHTML = `<h3>週集計（開発中）</h3>`;
+ } else if (view === "week") {
+  document.getElementById("summaryCalendarArea").innerHTML = "";
+  document.getElementById("summaryResult").innerHTML = renderWeekView();
+  loadWeekSummary();
   } else if (view === "month") {
     resultArea.innerHTML = `<h3>月集計（開発中）</h3>`;
   } else if (view === "year") {
@@ -113,3 +115,4 @@ function initApp() {
   document.getElementById("tabContent").style.display = "none";
 }
 initApp();
+
