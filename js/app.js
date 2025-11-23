@@ -26,6 +26,7 @@ function renderBottomTabs() {
 }
 document.getElementById("bottomTabs").innerHTML = renderBottomTabs();
 
+
 /* ==== タブ遷移 ==== */
 function openTab(tab) {
   document.getElementById("menuScreen").style.display = "none";
@@ -58,14 +59,19 @@ function openTab(tab) {
     return;
   }
 
-    // ★ 集計（日別ロス）
+  // ★ 集計
   if (tab === "summary") {
     tc.innerHTML = renderSummaryScreen();
     activateSummaryFeatures();
     return;
   }
 
-/* ===== 集計ビュー切替 ===== */
+  // その他未実装タブ
+  tc.innerHTML = `<h2>${tab}（開発中）</h2>`;
+}
+
+
+/* ===== 集計ビュー切替制御 ===== */
 let currentSummaryView = "day"; // 初期は「日」
 
 function renderSummaryTabs() {
@@ -98,10 +104,7 @@ function changeSummaryView(view) {
     resultArea.innerHTML = `<h3>年集計（開発中）</h3>`;
   }
 }
-   
-  // 未実装タブ
-  tc.innerHTML = `<h2>${tab}（開発中）</h2>`;
-}
+
 
 /* ==== 初期画面 ==== */
 function initApp() {
@@ -109,7 +112,4 @@ function initApp() {
   document.getElementById("menuScreen").style.display = "block";
   document.getElementById("tabContent").style.display = "none";
 }
-
 initApp();
-
-
