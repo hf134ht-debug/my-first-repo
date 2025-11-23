@@ -426,4 +426,6 @@ input, select {
   transform: scale(1.08);
   border: 3px solid #ffffff;
   box-shadow: 0 0 12px rgba(255, 111, 216, 0.8);
+　border-bottom: 5px solid #ffffff;
 }
+
