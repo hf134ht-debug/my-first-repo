@@ -64,6 +64,40 @@ function openTab(tab) {
     activateSummaryFeatures();
     return;
   }
+
+/* ===== 集計ビュー切替 ===== */
+let currentSummaryView = "day"; // 初期は「日」
+
+function renderSummaryTabs() {
+  return `
+    <div class="summary-tabs">
+      <button onclick="changeSummaryView('day')"  class="summary-tab ${currentSummaryView==='day'?'active':''}">日</button>
+      <button onclick="changeSummaryView('week')" class="summary-tab ${currentSummaryView==='week'?'active':''}">週</button>
+      <button onclick="changeSummaryView('month')" class="summary-tab ${currentSummaryView==='month'?'active':''}">月</button>
+      <button onclick="changeSummaryView('year')" class="summary-tab ${currentSummaryView==='year'?'active':''}">年</button>
+    </div>
+  `;
+}
+
+function changeSummaryView(view) {
+  currentSummaryView = view;
+
+  const tabArea = document.getElementById("summaryTabArea");
+  if (tabArea) tabArea.innerHTML = renderSummaryTabs();
+
+  const resultArea = document.getElementById("summaryResult");
+  if (!resultArea) return;
+
+  if (view === "day") {
+    activateSummaryFeatures();
+  } else if (view === "week") {
+    resultArea.innerHTML = `<h3>週集計（開発中）</h3>`;
+  } else if (view === "month") {
+    resultArea.innerHTML = `<h3>月集計（開発中）</h3>`;
+  } else if (view === "year") {
+    resultArea.innerHTML = `<h3>年集計（開発中）</h3>`;
+  }
+}
    
   // 未実装タブ
   tc.innerHTML = `<h2>${tab}（開発中）</h2>`;
@@ -77,4 +111,5 @@ function initApp() {
 }
 
 initApp();
+
 
