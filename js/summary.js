@@ -2,7 +2,7 @@
    summary.js
    集計タブ（日／週）
    - 日：カレンダー（データあり日ハイライト）＋日別ロスカード
-   - 週：横並び「週チップ」（ポップに強調）＋週別ロス
+   - 週：横並び「週チップ」＋週別ロス＋横棒グラフ＋AI考察
 ========================================================= */
 
 /* ★ あなたの GAS exec URL ★ */
@@ -325,9 +325,7 @@ async function loadDailySummary(dateStr) {
 
 /* 店舗別アコーディオン HTML（日ビュー／週ビュー共通で使用） */
 function renderStoreAccordion(stores) {
-  // stores: [{ name, shippedQty, soldQty, lossQty, lossRate }, ...] or
-  //         [{ name, qty, amount }, ...] など
-  // ここではロス用だけ使うので shippedQty 系を想定
+  // stores: [{ name, shippedQty, soldQty, lossQty, lossRate }, ...]
   return `
     <div class="store-accordion">
       <button class="store-accordion-toggle">
@@ -377,10 +375,7 @@ function attachStoreAccordionEvents() {
 }
 
 /* =========================================================
-   ▼ 週ビュー（横並び「週チップ」）
-   - 月単位で「第1週〜第n週」のチップを表示
-   - データあり週はポップなハイライト
-   - データなし週も選択は可能（淡く表示）
+   ▼ 週ビュー（横並び「週チップ」＋グラフ＋AI考察）
 ========================================================= */
 
 /* 週ビュー 初期セットアップ */
@@ -543,7 +538,7 @@ async function selectSummaryWeek(index) {
   await refreshSummaryWeekChips(); // 自分で再描画＋loadWeeklySummary 呼び出し
 }
 
-/* 週集計データ取得 & 表示 */
+/* 週集計データ取得 & 表示（＋グラフ＋AI考察） */
 async function loadWeeklySummary(weekStartStr) {
   const resultDiv = document.getElementById("summaryResult");
   resultDiv.innerHTML = `<p>読み込み中…</p>`;
@@ -553,8 +548,6 @@ async function loadWeeklySummary(weekStartStr) {
     const data = await res.json();
 
     if (!data.found) {
-      // 「データなし」と書かず、淡くカードを1枚出すだけでも良いが、
-      // ここでは軽めの文言にしておく
       resultDiv.innerHTML = `
         <div class="history-card summary-total" style="opacity:0.7;">
           <div class="history-title">
@@ -576,10 +569,11 @@ async function loadWeeklySummary(weekStartStr) {
 
     let html = `
       <h3>${weekStart}〜${weekEnd} の週集計</h3>
-    `;
 
-    // ▼ 全体サマリー
-    html += `
+      <!-- AI考察（最上部） -->
+      <div id="weeklyAiComment" class="ai-comment-card"></div>
+
+      <!-- 全体サマリー -->
       <div class="history-card summary-total">
         <div class="history-title">
           <span>📅 週合計ロス</span>
@@ -594,9 +588,12 @@ async function loadWeeklySummary(weekStartStr) {
         <div>出荷：<b>${total.shippedQty || 0}個</b></div>
         <div>売上：<b>${total.soldQty || 0}個</b></div>
       </div>
+
+      <!-- ロス横棒グラフ -->
+      <div id="weeklyLossChart" class="summary-chart-box"></div>
     `;
 
-    // ▼ 品目別
+    // ▼ 品目別カード
     items.forEach(it => {
       const itemName   = it.item;
       const shippedQty = it.shippedQty || 0;
@@ -635,9 +632,161 @@ async function loadWeeklySummary(weekStartStr) {
 
     resultDiv.innerHTML = html;
 
+    // グラフ描画
+    renderWeeklyLossChart(items);
+
+    // AI考察描画
+    renderWeeklyAiComment(data);
+
   } catch (err) {
     resultDiv.innerHTML = `<p>エラー：${err}</p>`;
   }
+}
+
+/* =========================================================
+   ▼ 週ビュー用：グラフ＆AI考察
+========================================================= */
+
+/* 品目ごとのカラー（履歴の色に寄せた単色） */
+function getItemColorForChart(itemName) {
+  if (!itemName) return "#ccc";
+
+  if (itemName.indexOf("白菜") !== -1) {
+    // 黄緑（白菜系）
+    return "#a5d66a";
+  }
+  if (itemName.indexOf("キャベツ") !== -1) {
+    // 緑（キャベツ系）
+    return "#66bb6a";
+  }
+  if (itemName.indexOf("トウモロコシ") !== -1) {
+    // 薄黄色（トウモロコシ系）
+    return "#fbc02d";
+  }
+  return "#90caf9"; // その他（めったに来ない想定）
+}
+
+/* ロス個数の横棒グラフ（A案） */
+function renderWeeklyLossChart(items) {
+  const el = document.getElementById("weeklyLossChart");
+  if (!el) return;
+  if (!items || !items.length) {
+    el.innerHTML = "";
+    return;
+  }
+
+  const labels = [];
+  const data = [];
+  const colors = [];
+
+  items.forEach(it => {
+    labels.push(it.item);
+    data.push(it.lossQty || 0);
+    colors.push(getItemColorForChart(it.item));
+  });
+
+  const options = {
+    chart: {
+      type: "bar",
+      height: 280,
+      toolbar: { show: false }
+    },
+    series: [
+      {
+        name: "ロス個数",
+        data: data
+      }
+    ],
+    xaxis: {
+      categories: labels
+    },
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        distributed: true,
+        borderRadius: 8
+      }
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: function (val) {
+        return val + "個";
+      }
+    },
+    colors: colors,
+    tooltip: {
+      y: {
+        formatter: function (val) {
+          return val + "個";
+        }
+      }
+    }
+  };
+
+  el.innerHTML = "";
+  const chart = new ApexCharts(el, options);
+  chart.render();
+}
+
+/* AI考察（Cレベル・出荷側アクション提案） */
+function renderWeeklyAiComment(data) {
+  const box = document.getElementById("weeklyAiComment");
+  if (!box) return;
+
+  const total = data.total || {};
+  const items = data.items || [];
+
+  if (!items.length) {
+    box.innerHTML = "";
+    return;
+  }
+
+  // 最悪ロス品目・優等生品目を計算
+  let worst = null;
+  let best  = null;
+
+  items.forEach(it => {
+    const shipped = it.shippedQty || 0;
+    const loss    = it.lossQty    || 0;
+    if (shipped <= 0) return;
+
+    const rate = Math.round((loss / shipped) * 100);
+    const info = { name: it.item, loss, rate };
+
+    if (!worst || info.rate > worst.rate) worst = info;
+    if (!best  || info.rate < best.rate)  best  = info;
+  });
+
+  const totalRate = total.lossRate;
+
+  const lines = [];
+
+  // 全体コメント
+  if (totalRate === null) {
+    lines.push("今週の全体ロス率は算出できませんでしたが、品目別の傾向から出荷バランスを見直す余地があります。");
+  } else {
+    lines.push(`今週の全体ロス率は約${totalRate}%です。前週や平常時と比較して高い場合は、出荷量の見直しを優先してください。`);
+  }
+
+  // ロスが重い品目
+  if (worst) {
+    lines.push(`ロスが最も大きかったのは「${worst.name}」（ロス率 約${worst.rate}%、ロス ${worst.loss}個）です。この品目は次週以降、同じ週の出荷量を目安として<strong>5〜10%程度抑える</strong>ことを検討してください。`);
+  }
+
+  // ロスが少ない＝需要が安定している品目
+  if (best && worst && best.name !== worst.name) {
+    lines.push(`一方で「${best.name}」は相対的にロス率が低く、需要が安定している可能性があります。ロスが大きい品目を減らした分を、こうした<strong>安定品目に少し振り替える</strong>と全体ロスの改善につながります。`);
+  }
+
+  // 出荷側として取れる具体的アクション
+  lines.push("出荷側としては、店舗からのフィードバックや天候・イベントを踏まえつつ、ロス率の高い品目は保守的に、ロス率の低い品目はやや積極的に出荷する「メリハリ」を付ける運用がおすすめです。");
+
+  box.innerHTML = `
+    <div class="ai-comment-title">🤖 AI考察（出荷側アクションの提案）</div>
+    <div class="ai-comment-body">
+      ${lines.map(t => `<p>${t}</p>`).join("")}
+    </div>
+  `;
 }
 
 /* =========================================================
