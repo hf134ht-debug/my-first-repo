@@ -1,304 +1,199 @@
 /* =========================================================
-   summary.js
-   集計タブ（日別ロス）
-   - カレンダー（売上データ有りの日をマーキング）
-   - 出荷(2日前) vs 売上(当日)
-   - 品目別＋店舗別ロス（アコーディオン）
+   summary.js（日／週 集計 UI & API 連携 完全版）
 ========================================================= */
 
-/* ★ あなたの GAS exec URL ★ */
-const SUMMARY_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
+let currentSummaryView = "day"; // 初期ビュー：日
+let selectedSummaryDate = null; // カレンダーで選択された日
 
-/* ===== 集計画面 HTML ===== */
+/* ==== HTML レンダリング ==== */
 function renderSummaryScreen() {
   return `
     <h2>集計</h2>
-
-    <!-- ★ ここに集計タブを入れる領域追加 -->
     <div id="summaryTabArea">${renderSummaryTabs()}</div>
-
-    <div id="summaryCalendarArea"></div>
-    <div id="summaryResult"><p>日付を選択してください</p></div>
+    <div id="summaryCalendar"></div>
+    <div id="summaryResult"></div>
   `;
 }
 
-/* ===== カレンダー状態 ===== */
-let summaryCalYear;
-let summaryCalMonth;
-
-/* 月ごとの「データあり日」キャッシュ { "2025-11": ["01","03",...] } */
-const summaryMonthDaysCache = {};
-
-/* ===== 月ごとのデータあり日を取得（GAS） ===== */
-async function getSummaryDaysWithData(year, month) {
-  const ym = `${year}-${String(month + 1).padStart(2, "0")}`;
-  if (summaryMonthDaysCache[ym]) return summaryMonthDaysCache[ym];
-
-  const res  = await fetch(`${SUMMARY_SCRIPT_URL}?checkSummaryMonth=${ym}`);
-  const data = await res.json();
-  const days = data.days || [];
-
-  summaryMonthDaysCache[ym] = days;
-  return days;
-}
-
-/* ===== 集計タブを開いたときに呼ぶ ===== */
-async function activateSummaryFeatures() {
-  const now = new Date();
-  summaryCalYear  = now.getFullYear();
-  summaryCalMonth = now.getMonth();
-
-  const daysWithData = await getSummaryDaysWithData(summaryCalYear, summaryCalMonth);
-
-  document.getElementById("summaryCalendarArea").innerHTML =
-    drawSummaryCalendar(summaryCalYear, summaryCalMonth, null, daysWithData);
-
-  document.getElementById("summaryResult").innerHTML =
-    `<p>日付を選択してください</p>`;
-}
-
-/* ===== カレンダー描画（集計用） ===== */
-function drawSummaryCalendar(year, month, selectedDate = null, daysWithData = []) {
-  const today = new Date();
-  const first = new Date(year, month, 1);
-  const last  = new Date(year, month + 1, 0);
-
-  const daysOfWeek = ["日","月","火","水","木","金","土"];
-
-  let html = `
-    <div class="calendar-wrapper">
-      <div class="calendar-header">
-        <button class="cal-btn" onclick="changeSummaryMonth(-1)">＜</button>
-        <div><b>${year}年 ${month+1}月</b></div>
-        <button class="cal-btn" onclick="changeSummaryMonth(1)">＞</button>
-      </div>
-
-      <div class="calendar-grid">
-        ${daysOfWeek.map(d => `<div class="calendar-day">${d}</div>`).join("")}
-      </div>
-
-      <div class="calendar-grid">
-  `;
-
-  // 最初の空白（1日が何曜日か）
-  for (let i = 0; i < first.getDay(); i++) {
-    html += `<div></div>`;
-  }
-
-  for (let d = 1; d <= last.getDate(); d++) {
-    const dd = String(d).padStart(2,"0");
-
-    const isToday =
-      today.getFullYear() === year &&
-      today.getMonth() === month &&
-      today.getDate() === d;
-
-    const isSelected =
-      selectedDate &&
-      selectedDate.getFullYear() === year &&
-      selectedDate.getMonth() === month &&
-      selectedDate.getDate() === d;
-
-    const hasData = daysWithData.includes(dd);
-
-    html += `
-      <div
-        class="calendar-date
-          ${isToday ? "today" : ""}
-          ${isSelected ? "selected" : ""}
-          ${hasData ? "has-data" : ""}"
-        onclick="selectSummaryDate(${year},${month},${d})"
-      >
-        ${d}
-      </div>
-    `;
-  }
-
-  html += `</div></div>`;
-  return html;
-}
-
-/* ===== 月移動 ===== */
-async function changeSummaryMonth(offset) {
-  summaryCalMonth += offset;
-  if (summaryCalMonth < 0) {
-    summaryCalMonth = 11;
-    summaryCalYear--;
-  }
-  if (summaryCalMonth > 11) {
-    summaryCalMonth = 0;
-    summaryCalYear++;
-  }
-
-  const daysWithData = await getSummaryDaysWithData(summaryCalYear, summaryCalMonth);
-
-  document.getElementById("summaryCalendarArea").innerHTML =
-    drawSummaryCalendar(summaryCalYear, summaryCalMonth, null, daysWithData);
-
-  document.getElementById("summaryResult").innerHTML =
-    `<p>日付を選択してください</p>`;
-}
-
-/* ===== 日付クリック ===== */
-async function selectSummaryDate(y, m, d) {
-  const dateStr = `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-
-  const daysWithData = await getSummaryDaysWithData(y, m);
-  document.getElementById("summaryCalendarArea").innerHTML =
-    drawSummaryCalendar(y, m, new Date(y,m,d), daysWithData);
-
-  loadDailySummary(dateStr);
-}
-
-/* =========================================================
-   日別ロスデータ取得 & 表示
-========================================================= */
-async function loadDailySummary(dateStr) {
-  const resultDiv = document.getElementById("summaryResult");
-  resultDiv.innerHTML = `<p>読み込み中…</p>`;
-
-  try {
-    const res  = await fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${dateStr}`);
-    const data = await res.json();
-
-    if (!data.found) {
-      resultDiv.innerHTML = `<p>${dateStr} の出荷または売上データがありません。</p>`;
-      return;
-    }
-
-    const shipDate = data.shipDate;   // 2日前の出荷日
-    const total    = data.total || {};
-    const items    = data.items || [];
-
-    let html = `
-      <h3>${dateStr} の集計</h3>
-      <p style="font-size:0.9em;color:#555;">
-        ※ 出荷日は <b>${shipDate}</b>（2日前の出荷と比較）
-      </p>
-    `;
-
-    // ===== 全体サマリーカード =====
-    html += `
-      <div class="history-card summary-total">
-        <div class="history-title">
-          <span>📊 全体ロス</span>
-          <span class="item-total-badge summary-badge">
-            ${total.lossRate === null
-              ? 'ロス率：ー'
-              : `ロス率：${total.lossRate}%（${total.lossQty}個）`}
-          </span>
-        </div>
-        <div>出荷：<b>${total.shippedQty || 0}個</b></div>
-        <div>売上：<b>${total.soldQty || 0}個</b></div>
-      </div>
-    `;
-
-    // ===== 品目別カード =====
-    items.forEach(it => {
-      const itemName   = it.item;
-      const shippedQty = it.shippedQty || 0;
-      const soldQty    = it.soldQty    || 0;
-      const lossQty    = it.lossQty    || 0;
-      const lossRate   = it.lossRate;
-
-      // 色分け（履歴と同じルール）
-      let cls = "corn";   // デフォルト：トウモロコシ色
-      let badgeCls = "item-total-corn";
-
-      if (itemName.indexOf("白菜") !== -1) {
-        cls = "hakusai";
-        badgeCls = "item-total-hakusai";
-      } else if (itemName.indexOf("キャベツ") !== -1) {
-        cls = "cabbage";
-        badgeCls = "item-total-cabbage";
-      }
-
-      html += `
-        <div class="history-card ${cls}">
-          <div class="history-title">
-            <span>${itemName}</span>
-            <span class="item-total-badge ${badgeCls}">
-              ロス率：
-              ${
-                lossRate === null
-                  ? "ー"
-                  : `${lossRate}%（${lossQty}個）`
-              }
-            </span>
-          </div>
-          <div>出荷：${shippedQty}個 / 売上：${soldQty}個</div>
-          ${
-            it.stores && it.stores.length
-              ? renderStoreAccordion(it.stores)
-              : `<div style="font-size:0.85em;color:#555;margin-top:4px;">
-                   店舗別内訳なし
-                 </div>`
-          }
-        </div>
-      `;
-    });
-
-    resultDiv.innerHTML = html;
-
-    // アコーディオン用イベントを付与
-    attachStoreAccordionEvents();
-
-  } catch (err) {
-    resultDiv.innerHTML = `<p>エラー：${err}</p>`;
-  }
-}
-
-/* ===== 店舗別アコーディオン HTML ===== */
-function renderStoreAccordion(stores) {
-  // stores: [{ name, shippedQty, soldQty, lossQty, lossRate }, ...]
+/* ==== タブ切替ボタン ==== */
+function renderSummaryTabs() {
   return `
-    <div class="store-accordion">
-      <button class="store-accordion-toggle">
-        店舗別内訳を表示
-      </button>
-      <div class="store-accordion-body">
-        ${
-          stores.map(s => `
-            <div class="store-accordion-row">
-              <b>${s.name}</b><br>
-              出荷：${s.shippedQty}個 /
-              売上：${s.soldQty}個 /
-              ロス：
-                ${s.lossRate === null
-                  ? `${s.lossQty}個`
-                  : `${s.lossQty}個（${s.lossRate}%）`}
-            </div>
-          `).join("")
-        }
-      </div>
+    <div class="summary-tabs">
+      <button onclick="changeSummaryView('day')" 
+        class="summary-tab ${currentSummaryView==='day'?'active':''}">日</button>
+
+      <button onclick="changeSummaryView('week')" 
+        class="summary-tab ${currentSummaryView==='week'?'active':''}">週</button>
+
+      <button onclick="changeSummaryView('month')" 
+        class="summary-tab ${currentSummaryView==='month'?'active':''}">月</button>
+
+      <button onclick="changeSummaryView('year')" 
+        class="summary-tab ${currentSummaryView==='year'?'active':''}">年</button>
     </div>
   `;
 }
 
-/* ===== 店舗別アコーディオン動作 ===== */
-function attachStoreAccordionEvents() {
-  const toggles = document.querySelectorAll(".store-accordion-toggle");
-
-  toggles.forEach(btn => {
-    btn.onclick = () => {
-      const body = btn.nextElementSibling;
-      if (!body) return;
-
-      const isOpen = body.classList.contains("open");
-      if (isOpen) {
-        // 閉じる（バネ感を少しだけ）
-        body.style.maxHeight = body.scrollHeight + "px";
-        requestAnimationFrame(() => {
-          body.style.maxHeight = "0px";
-          body.classList.remove("open");
-        });
-      } else {
-        // 開く
-        body.classList.add("open");
-        body.style.maxHeight = body.scrollHeight + "px";
-      }
-    };
-  });
+/* ==== ビュー変更 ==== */
+function changeSummaryView(view) {
+  currentSummaryView = view;
+  document.getElementById("summaryTabArea").innerHTML = renderSummaryTabs();
+  renderSummaryCalendar();
 }
 
+/* ==== 初期呼び出し ==== */
+function activateSummaryFeatures() {
+  const today = new Date();
+  selectedSummaryDate = formatDate(today);
+  renderSummaryCalendar();
+}
+
+/* ==== カレンダー表示（day & week 共有） ==== */
+function renderSummaryCalendar() {
+  const y = selectedSummaryDate.slice(0, 4);
+  const m = selectedSummaryDate.slice(5, 7);
+  const ym = `${y}-${m}`;
+
+  document.getElementById("summaryCalendar").innerHTML = `<p>読み込み中...</p>`;
+
+  google.script.run
+    .withSuccessHandler(days => {
+      drawCalendar(days.days);
+    })
+    .withFailureHandler(err => console.error(err))
+    .doGet({ checkSummaryMonth: ym });
+}
+
+/* ==== カレンダー描画 ==== */
+function drawCalendar(daysWithData) {
+  const d = new Date(selectedSummaryDate + "T00:00:00+09:00");
+  const y = d.getFullYear();
+  const m = d.getMonth();
+  const lastDay = new Date(y, m + 1, 0).getDate();
+
+  let html = `<table class="cal"><tr>`;
+  const week = ["日","月","火","水","木","金","土"];
+  week.forEach(w => html += `<th>${w}</th>`);
+  html += `</tr><tr>`;
+
+  let firstDay = new Date(y, m, 1).getDay();
+  for (let i = 0; i < firstDay; i++) html += `<td></td>`;
+
+  for (let day = 1; day <= lastDay; day++) {
+    const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const has = daysWithData.includes(String(day).padStart(2,'0'));
+
+    if (ds === selectedSummaryDate)
+      html += `<td class="selected" onclick="selectSummaryDate('${ds}')">${day}</td>`;
+    else if (has)
+      html += `<td class="has-data" onclick="selectSummaryDate('${ds}')">${day}</td>`;
+    else
+      html += `<td onclick="selectSummaryDate('${ds}')">${day}</td>`;
+
+    if (new Date(y, m, day).getDay() === 6) html += `</tr><tr>`;
+  }
+
+  html += `</tr></table>`;
+  document.getElementById("summaryCalendar").innerHTML = html;
+
+  loadSummaryResult();
+}
+
+/* ==== 日付選択 ==== */
+function selectSummaryDate(ds) {
+  selectedSummaryDate = ds;
+  renderSummaryCalendar();
+}
+
+/* ==== 集計結果読み込み ==== */
+function loadSummaryResult() {
+  if (currentSummaryView === "day") {
+    loadDailySummary();
+  } else if (currentSummaryView === "week") {
+    loadWeeklySummary();
+  }
+}
+
+/* =========================================================
+   ▼ 日集計 API 呼び出し
+========================================================= */
+function loadDailySummary() {
+  document.getElementById("summaryResult").innerHTML = `<p>取得中...</p>`;
+
+  google.script.run
+    .withSuccessHandler(showDailySummary)
+    .getDailySummary(selectedSummaryDate);
+}
+
+/* 日集計 表示 */
+function showDailySummary(data) {
+  if (!data.found) {
+    document.getElementById("summaryResult").innerHTML = "<p>データなし</p>";
+    return;
+  }
+
+  let html = `
+    <h3>${data.summaryDate}（出荷：${data.shipDate}）</h3>
+    <table class="summary-table">
+      <tr><th>品目</th><th>出荷</th><th>売上</th><th>ロス</th><th>率</th></tr>
+  `;
+
+  data.items.forEach(x => {
+    html += `
+      <tr>
+        <td>${x.item}</td>
+        <td>${x.shippedQty}</td>
+        <td>${x.soldQty}</td>
+        <td>${x.lossQty}</td>
+        <td>${x.lossRate ?? "-"}%</td>
+      </tr>`;
+  });
+
+  html += `</table>`;
+  document.getElementById("summaryResult").innerHTML = html;
+}
+
+/* =========================================================
+   ▼ 週集計 API 呼び出し
+========================================================= */
+function loadWeeklySummary() {
+  document.getElementById("summaryResult").innerHTML = `<p>取得中...</p>`;
+
+  google.script.run
+    .withSuccessHandler(showWeeklySummary)
+    .getWeeklySummary(selectedSummaryDate);
+}
+
+/* 週集計 表示 */
+function showWeeklySummary(data) {
+  if (!data.found) {
+    document.getElementById("summaryResult").innerHTML = "<p>週データなし</p>";
+    return;
+  }
+
+  let html = `
+    <h3>${data.weekStart}週</h3>
+    <table class="summary-table">
+      <tr><th>品目</th><th>出荷</th><th>売上</th><th>ロス</th><th>率</th></tr>
+  `;
+
+  data.items.forEach(x => {
+    const rate = x.shippedQty > 0 ? Math.round((x.lossQty / x.shippedQty) * 100) : "-";
+    html += `
+      <tr>
+        <td>${x.item}</td>
+        <td>${x.shippedQty}</td>
+        <td>${x.soldQty}</td>
+        <td>${x.lossQty}</td>
+        <td>${rate}%</td>
+      </tr>`;
+  });
+
+  html += `</table>`;
+  document.getElementById("summaryResult").innerHTML = html;
+}
+
+/* ==== Util ==== */
+function formatDate(d) {
+  return d.toISOString().slice(0,10);
+}
