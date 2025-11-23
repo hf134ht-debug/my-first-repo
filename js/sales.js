@@ -156,8 +156,10 @@ function normalizeItemNameForView(raw) {
   let s = String(raw).trim();
   const lower = s.toLowerCase();
 
-  // トウモロコシ系
-  if (/[ﾄﾄｳとう][ｳｩう]?ﾓ?ろ?ﾛ?こ?ｺ?し?ｼ?/i.test(s) ||
+  // トウモロコシ系（半角・全角・ひらがな・英語）
+  if (s.indexOf("ﾄｳﾓﾛｺｼ") !== -1 ||
+      s.indexOf("トウモロコシ") !== -1 ||
+      s.indexOf("とうもろこし") !== -1 ||
       s.indexOf("ｺｰﾝ") !== -1 ||
       s.indexOf("コーン") !== -1 ||
       lower.indexOf("corn") !== -1) {
@@ -165,7 +167,7 @@ function normalizeItemNameForView(raw) {
   }
 
   // 白菜系
-  if (s.indexOf("白菜") !== -1 || s.indexOf("はくさい") !== -1 || s.indexOf("ﾊｸｻｲ") !== -1) {
+  if (s.indexOf("白菜") !== -1 || s.indexOf("ﾊｸｻｲ") !== -1 || s.indexOf("はくさい") !== -1) {
     if (s.indexOf("ｶｯﾄ") !== -1 || s.indexOf("カット") !== -1 || lower.indexOf("cut") !== -1) {
       return "白菜カット";
     }
@@ -203,7 +205,7 @@ async function loadSalesData(dateStr) {
     const totalAmount = data.totalAmount || 0;
     const itemsRaw    = data.items       || [];
 
-    // ---- ① 表示順を履歴と同じに揃える ----
+    // 表示順を履歴と同じに揃える
     const order = ["白菜", "白菜カット", "キャベツ", "キャベツカット", "トウモロコシ"];
 
     const items = [...itemsRaw].sort((a, b) => {
@@ -229,7 +231,7 @@ async function loadSalesData(dateStr) {
         </div>
         <div>販売数量：<b>${totalQty}個</b></div>
       </div>
-    ";
+    `;
 
     // ===== 品目別カード =====
     items.forEach(it => {
@@ -240,7 +242,7 @@ async function loadSalesData(dateStr) {
 
       const canonical   = normalizeItemNameForView(itemName);
 
-      // ---- ② 色分け：履歴と完全に同じルール ----
+      // 色分け：履歴と同じルール
       let cls = "corn";
       let badgeCls = "item-total-corn";
 
