@@ -1,71 +1,55 @@
 /* =========================================================
-   summary.js（日／週 集計 UI & API 連携 完全版）
+   summary.js（日 & 週 集計 完全版）
 ========================================================= */
 
-let currentSummaryView = "day"; // 初期ビュー：日
-let selectedSummaryDate = null; // カレンダーで選択された日
+let currentSummaryView = "day";
+let selectedSummaryDate = null;
 
-/* ==== HTML レンダリング ==== */
 function renderSummaryScreen() {
+  const today = new Date();
+  selectedSummaryDate = formatDate(today);
+  renderSummaryTabButtons();
+  renderSummaryCalendar();
+
   return `
     <h2>集計</h2>
-    <div id="summaryTabArea">${renderSummaryTabs()}</div>
+    <div id="summaryTabs"></div>
     <div id="summaryCalendar"></div>
     <div id="summaryResult"></div>
   `;
 }
 
-/* ==== タブ切替ボタン ==== */
-function renderSummaryTabs() {
-  return `
+/* ==== タブ ==== */
+function renderSummaryTabButtons() {
+  document.getElementById("summaryTabs").innerHTML = `
     <div class="summary-tabs">
-      <button onclick="changeSummaryView('day')" 
-        class="summary-tab ${currentSummaryView==='day'?'active':''}">日</button>
-
-      <button onclick="changeSummaryView('week')" 
-        class="summary-tab ${currentSummaryView==='week'?'active':''}">週</button>
-
-      <button onclick="changeSummaryView('month')" 
-        class="summary-tab ${currentSummaryView==='month'?'active':''}">月</button>
-
-      <button onclick="changeSummaryView('year')" 
-        class="summary-tab ${currentSummaryView==='year'?'active':''}">年</button>
+      <button onclick="changeSummaryView('day')" class="summary-tab ${currentSummaryView==='day'?'active':''}">日</button>
+      <button onclick="changeSummaryView('week')" class="summary-tab ${currentSummaryView==='week'?'active':''}">週</button>
     </div>
   `;
 }
 
-/* ==== ビュー変更 ==== */
+/* タブ切替 */
 function changeSummaryView(view) {
   currentSummaryView = view;
-  document.getElementById("summaryTabArea").innerHTML = renderSummaryTabs();
+  renderSummaryTabButtons();
   renderSummaryCalendar();
 }
 
-/* ==== 初期呼び出し ==== */
-function activateSummaryFeatures() {
-  const today = new Date();
-  selectedSummaryDate = formatDate(today);
-  renderSummaryCalendar();
-}
-
-/* ==== カレンダー表示（day & week 共有） ==== */
+/* ==== カレンダー ==== */
 function renderSummaryCalendar() {
-  const y = selectedSummaryDate.slice(0, 4);
-  const m = selectedSummaryDate.slice(5, 7);
+  const y = selectedSummaryDate.slice(0,4);
+  const m = selectedSummaryDate.slice(5,7);
   const ym = `${y}-${m}`;
 
   document.getElementById("summaryCalendar").innerHTML = `<p>読み込み中...</p>`;
 
   google.script.run
-    .withSuccessHandler(days => {
-      drawCalendar(days.days);
-    })
-    .withFailureHandler(err => console.error(err))
-    .doGet({ checkSummaryMonth: ym });
+    .withSuccessHandler(days => drawSummaryCalendar(days.days))
+    .checkSummaryMonth(ym);
 }
 
-/* ==== カレンダー描画 ==== */
-function drawCalendar(daysWithData) {
+function drawSummaryCalendar(daysWithData) {
   const d = new Date(selectedSummaryDate + "T00:00:00+09:00");
   const y = d.getFullYear();
   const m = d.getMonth();
@@ -83,12 +67,13 @@ function drawCalendar(daysWithData) {
     const ds = `${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const has = daysWithData.includes(String(day).padStart(2,'0'));
 
+    let cls = has ? "has-data" : "";
+    let mark = has ? `onclick="selectSummaryDate('${ds}')"` : "";
+
     if (ds === selectedSummaryDate)
-      html += `<td class="selected" onclick="selectSummaryDate('${ds}')">${day}</td>`;
-    else if (has)
-      html += `<td class="has-data" onclick="selectSummaryDate('${ds}')">${day}</td>`;
-    else
-      html += `<td onclick="selectSummaryDate('${ds}')">${day}</td>`;
+      cls = "selected";
+
+    html += `<td class="${cls}" ${mark}>${day}</td>`;
 
     if (new Date(y, m, day).getDay() === 6) html += `</tr><tr>`;
   }
@@ -99,24 +84,21 @@ function drawCalendar(daysWithData) {
   loadSummaryResult();
 }
 
-/* ==== 日付選択 ==== */
 function selectSummaryDate(ds) {
   selectedSummaryDate = ds;
   renderSummaryCalendar();
 }
 
-/* ==== 集計結果読み込み ==== */
+/* ==== 集計API ==== */
 function loadSummaryResult() {
   if (currentSummaryView === "day") {
     loadDailySummary();
-  } else if (currentSummaryView === "week") {
+  } else {
     loadWeeklySummary();
   }
 }
 
-/* =========================================================
-   ▼ 日集計 API 呼び出し
-========================================================= */
+/* 日集計 */
 function loadDailySummary() {
   document.getElementById("summaryResult").innerHTML = `<p>取得中...</p>`;
 
@@ -125,7 +107,6 @@ function loadDailySummary() {
     .getDailySummary(selectedSummaryDate);
 }
 
-/* 日集計 表示 */
 function showDailySummary(data) {
   if (!data.found) {
     document.getElementById("summaryResult").innerHTML = "<p>データなし</p>";
@@ -153,9 +134,7 @@ function showDailySummary(data) {
   document.getElementById("summaryResult").innerHTML = html;
 }
 
-/* =========================================================
-   ▼ 週集計 API 呼び出し
-========================================================= */
+/* 週集計 */
 function loadWeeklySummary() {
   document.getElementById("summaryResult").innerHTML = `<p>取得中...</p>`;
 
@@ -164,7 +143,6 @@ function loadWeeklySummary() {
     .getWeeklySummary(selectedSummaryDate);
 }
 
-/* 週集計 表示 */
 function showWeeklySummary(data) {
   if (!data.found) {
     document.getElementById("summaryResult").innerHTML = "<p>週データなし</p>";
@@ -172,7 +150,7 @@ function showWeeklySummary(data) {
   }
 
   let html = `
-    <h3>${data.weekStart}週</h3>
+    <h3>${data.weekStart} 週</h3>
     <table class="summary-table">
       <tr><th>品目</th><th>出荷</th><th>売上</th><th>ロス</th><th>率</th></tr>
   `;
@@ -193,7 +171,7 @@ function showWeeklySummary(data) {
   document.getElementById("summaryResult").innerHTML = html;
 }
 
-/* ==== Util ==== */
+/* Util */
 function formatDate(d) {
   return d.toISOString().slice(0,10);
 }
