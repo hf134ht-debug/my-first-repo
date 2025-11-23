@@ -602,7 +602,7 @@ async function loadWeeklySummary(weekStartStr) {
 
     const total = data.total || {};
     const itemsRaw = data.items || [];
-    const days = data.days || [];
+    let days = data.days || [];
 
     // 品目を決まった順（白菜→白菜カット→キャベツ→キャベツカット→トウモロコシ）にソート
     const items = [...itemsRaw].sort((a, b) => {
@@ -1114,7 +1114,7 @@ async function loadMonthlySummary(ym) {
 
     const total = data.total || {};
     const itemsRaw = data.items || [];
-    const days = data.days || []; // "YYYY-MM-DD" 一覧
+    let days = data.days || []; // "YYYY-MM-DD" 一覧
 
     // 品目を決まった順にソート
     const items = [...itemsRaw].sort((a, b) => {
@@ -1567,6 +1567,7 @@ function formatDateYmd(d) {
   const day = String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
 }
+
 
 
 
