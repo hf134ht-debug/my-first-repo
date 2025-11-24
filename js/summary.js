@@ -509,7 +509,6 @@ async function changeSummaryWeekMonth(offset) {
   summarySelectedWeekIndex = 0;
   await refreshSummaryWeekChips();
 }
-
 /* 指定月の週チップを再描画 */
 async function refreshSummaryWeekChips() {
   const monthLabel = document.querySelector(".summary-week-month-label");
@@ -537,21 +536,24 @@ async function refreshSummaryWeekChips() {
     .map((w, idx) => {
       const startLabel = `${w.start.getMonth() + 1}/${w.start.getDate()}`;
       const endLabel   = `${w.end.getMonth() + 1}/${w.end.getDate()}`;
-      const activeClass    = idx === summarySelectedWeekIndex ? "active" : "";
+      const hasDataClass = w.hasData ? "has-data" : "no-data";
+      const activeClass  = idx === summarySelectedWeekIndex ? "active" : "";
 
       return `
         <button
-          class="week-pill ${activeClass}"
+          class="week-pill ${hasDataClass} ${activeClass}"
           onclick="selectSummaryWeek(${idx})"
         >
           <div class="week-pill-title">第${idx + 1}週</div>
           <div class="week-pill-range">${startLabel}〜${endLabel}</div>
+          <div class="week-pill-dot-row">
+            <span class="week-pill-dot"></span>
+          </div>
         </button>
       `;
     })
     .join("");
 
-  // 選択中の週の集計を表示
   const weekStart = summaryWeeks[summarySelectedWeekIndex].start;
   const weekStartStr = formatDateYmd(weekStart);
   await loadWeeklySummary(weekStartStr);
