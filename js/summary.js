@@ -1453,11 +1453,9 @@ async function loadMonthlySummary(ym) {
     renderMonthAnalysisCharts(items, days, dailyLossMap, storeTotalMap, storeItemMap);
 
     // ★新：気象分析（月）
-    rrenderMonthWeatherHeatmap(items, weatherInfo);
+    renderMonthWeatherHeatmap(items, weatherInfo);
     renderMonthWeatherCrossTable(items, weatherInfo);
     renderMonthWeatherAI(items, weatherInfo);
-
-    +await renderMonthWeatherAnalysis(days, items);
 
   } catch (err) 
   {
@@ -2089,3 +2087,4 @@ function renderMonthWeatherAI(items, weatherInfo) {
   if (!el) return;
   renderWeekWeatherAI(items, weatherInfo, el);
 }
+
