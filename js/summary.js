@@ -1096,7 +1096,8 @@ function renderWeekAnalysisCharts(items, days, dailyLossMap, storeTotalMap, stor
       };
       const chart = new ApexCharts(elDaily, options);
       chart.render();
-    } else {
+    }
+     else {
       elDaily.innerHTML = `
         <table class="simple-table">
           <tr><th>日付</th><th>ロス個数</th></tr>
@@ -1256,14 +1257,24 @@ async function loadMonthlySummary(ym) {
     });
 
     // ② 日別ロス合計（折れ線グラフ用）
-    const dailyLossMap = {};
-    items.forEach(it => {
-      (it.daily || []).forEach(d => {
-        const ds = d.date;
-        const loss = d.lossQty || 0;
-        dailyLossMap[ds] = (dailyLossMap[ds] || 0) + loss;
-      });
-    });
+// ② 日別ロス合計を summaryDate API で再集計（週と同じ方式）
+const dailyLossMap = {};
+const dailySummaries2 = await Promise.all(
+  days.map(ds =>
+    fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${ds}`)
+      .then(r => r.json())
+      .catch(() => null)
+  )
+);
+
+dailySummaries2.forEach(d => {
+  if (!d || !d.found || !d.items) return;
+  let loss = 0;
+  d.items.forEach(it => {
+    loss += (it.lossQty || 0);
+  });
+  dailyLossMap[d.summaryDate] = loss;
+});
 
     // ▼ 未来日のデータは集計対象外にする
     const todayStr = formatDateYmd(new Date());
@@ -1670,21 +1681,39 @@ function renderMonthAnalysisCharts(items, days, dailyLossMap, storeTotalMap, sto
   /* ▼ 2) 日別ロス推移（月） */
   const elDaily = document.getElementById("monthDailyLossTrend");
   if (elDaily) {
-    const xCats = days.map(ds => ds.slice(5)); // "MM-DD"
-    const yData = days.map(ds => dailyLossMap[ds] || 0);
+    const xCats = days.map(ds => {
+  const d = new Date(ds);
+  const wd = d.getDay();
+  const dd = ds.slice(5); // "MM-DD"
+  if (wd === 0) return `${dd}(日)`;
+  if (wd === 6) return `${dd}(土)`;
+  return dd;
+});
+const yData = days.map(ds => dailyLossMap[ds] || 0);
 
-    if (hasApex) {
-      const options = {
-        chart: { type: "line", height: 260 },
-        series: [{ name: "ロス個数", data: yData }],
-        xaxis: { categories: xCats },
-        dataLabels: { enabled: true },
-        stroke: { width: 3, curve: "smooth" },
-        tooltip: { y: { formatter: v => `${v}個` } }
-      };
-      const chart = new ApexCharts(elDaily, options);
-      chart.render();
-    } else {
+if (hasApex) {
+  const options = {
+    chart: { type: "line", height: 260 },
+    series: [{ name: "ロス個数", data: yData }],
+    xaxis: { categories: xCats },
+    dataLabels: { enabled: true },
+    stroke: { width: 3, curve: "smooth" },
+    markers: {
+      size: 6,
+      colors: days.map(ds => {
+        const wd = new Date(ds).getDay();
+        if (wd === 0) return "#d32f2f"; // 日曜 赤
+        if (wd === 6) return "#1976d2"; // 土曜 青
+        return "#555555";               // 平日
+      }),
+      strokeColors: "#ffffff",
+    },
+    tooltip: { y: { formatter: v => `${v}個` } }
+  };
+  const chart = new ApexCharts(elDaily, options);
+  chart.render();
+} 
+    else {
       elDaily.innerHTML = `
         <table class="simple-table">
           <tr><th>日付</th><th>ロス個数</th></tr>
