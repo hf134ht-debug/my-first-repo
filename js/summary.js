@@ -1238,25 +1238,20 @@ async function refreshSummaryMonthView() {
   await loadMonthlySummary(ym);
 }
 
-/* 月集計データ取得 & 表示（週ビューと同じ構成） */
+/* 月集計データ取得 & 表示（週ビュー同等構成＋気象分析） */
 async function loadMonthlySummary(ym) {
   const resultDiv = document.getElementById("summaryResult");
   resultDiv.innerHTML = `<p>読み込み中…</p>`;
 
   try {
-    // ① 月集計（品目別合計 & 日別）を取得
-    const res  = await fetch(`${SUMMARY_SCRIPT_URL}?summaryMonth=${ym}`);
+    const res = await fetch(`${SUMMARY_SCRIPT_URL}?summaryMonth=${ym}`);
     const data = await res.json();
 
     if (!data.found) {
       resultDiv.innerHTML = `
         <div class="history-card summary-total" style="opacity:0.7;">
-          <div class="history-title">
-            <span>この月のデータはありません</span>
-          </div>
-          <div style="font-size:0.9em;color:#555;">
-            月を切り替えて確認してください。
-          </div>
+          <div class="history-title">この月のデータはありません</div>
+          <div style="font-size:0.9em;color:#555;">月を切り替えて確認してください。</div>
         </div>
       `;
       return;
@@ -1264,200 +1259,156 @@ async function loadMonthlySummary(ym) {
 
     const total    = data.total || {};
     const itemsRaw = data.items || [];
-    let days       = data.days || []; // "YYYY-MM-DD" 一覧
+    let   days     = data.days  || [];
 
-    // 品目を決まった順にソート
+    // 品目を固定順にソート
     const items = [...itemsRaw].sort((a, b) => {
       const ka = getItemKey(a.item);
       const kb = getItemKey(b.item);
-      const ia = ITEM_ORDER.indexOf(ka);
-      const ib = ITEM_ORDER.indexOf(kb);
-      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+      return ITEM_ORDER.indexOf(ka) - ITEM_ORDER.indexOf(kb);
     });
 
-    // ② 日別ロス合計（折れ線グラフ用）
-// ② 日別ロス合計を summaryDate API で再集計（週と同じ方式）
-const dailyLossMap = {};
-const dailySummaries2 = await Promise.all(
-  days.map(ds =>
-    fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${ds}`)
-      .then(r => r.json())
-      .catch(() => null)
-  )
-);
-
-dailySummaries2.forEach(d => {
-  if (!d || !d.found || !d.items) return;
-  let loss = 0;
-  d.items.forEach(it => {
-    loss += (it.lossQty || 0);
-  });
-  dailyLossMap[d.summaryDate] = loss;
-});
-
-    // ▼ 未来日のデータは集計対象外にする
+    // 未来日は除外
     const todayStr = formatDateYmd(new Date());
     days = days.filter(ds => ds <= todayStr);
 
-    // ③ 各日について summaryDate を呼び出し、
-    //    店舗別月合算（店舗×品目）と店舗別トータルを作る
-    const dailyPromises = days.map(ds =>
-      fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${ds}`)
-        .then(r => r.json())
-        .catch(() => null)
+    // ① 日別ロス合計
+    const dailyLossMap = {};
+    const lossData = await Promise.all(
+      days.map(ds => fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${ds}`).then(r => r.json()).catch(() => null))
     );
-    const dailySummaries = await Promise.all(dailyPromises);
+    lossData.forEach(d => {
+      if (!d || !d.items) return;
+      dailyLossMap[d.summaryDate] = d.items.reduce((sum, it) => sum + (it.lossQty || 0), 0);
+    });
 
-    const storeItemMap = {}; // { itemName: { storeName: { shippedQty, soldQty, lossQty } } }
-    const storeTotalMap = {}; // { storeName: { shippedQty, soldQty, lossQty } }
+    // ② 店舗×品目と気象データ集約
+    const dailyAll = await Promise.all(
+      days.map(ds => fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${ds}`).then(r => r.json()).catch(() => null))
+    );
 
-    dailySummaries.forEach(daily => {
-      if (!daily || !daily.found || !daily.items) return;
-      daily.items.forEach(it => {
-        const itemName = it.item;
-        (it.stores || []).forEach(s => {
-          const storeName = s.name;
+    const storeItemMap  = {};
+    const storeTotalMap = {};
+    const weatherInfo   = [];
+
+    dailyAll.forEach(d => {
+      if (!d || !d.items) return;
+
+      // 店舗×品目
+      d.items.forEach(it => {
+        const name = it.item;
+        (it.stores||[]).forEach(s => {
+          const stName  = s.name;
           const shipped = s.shippedQty || 0;
-          const sold    = s.soldQty    || 0;
-          const loss    = s.lossQty    || 0;
+          const sold    = s.soldQty || 0;
+          const loss    = s.lossQty || 0;
 
-          if (!storeItemMap[itemName]) storeItemMap[itemName] = {};
-          if (!storeItemMap[itemName][storeName]) {
-            storeItemMap[itemName][storeName] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
-          }
-          storeItemMap[itemName][storeName].shippedQty += shipped;
-          storeItemMap[itemName][storeName].soldQty    += sold;
-          storeItemMap[itemName][storeName].lossQty    += loss;
+          if (!storeItemMap[name]) storeItemMap[name] = {};
+          if (!storeItemMap[name][stName])
+            storeItemMap[name][stName] = { shippedQty:0, soldQty:0, lossQty:0 };
 
-          if (!storeTotalMap[storeName]) {
-            storeTotalMap[storeName] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
-          }
-          storeTotalMap[storeName].shippedQty += shipped;
-          storeTotalMap[storeName].soldQty    += sold;
-          storeTotalMap[storeName].lossQty    += loss;
+          storeItemMap[name][stName].shippedQty += shipped;
+          storeItemMap[name][stName].soldQty    += sold;
+          storeItemMap[name][stName].lossQty    += loss;
+
+          if (!storeTotalMap[stName])
+            storeTotalMap[stName] = { shippedQty:0, soldQty:0, lossQty:0 };
+
+          storeTotalMap[stName].shippedQty += shipped;
+          storeTotalMap[stName].soldQty    += sold;
+          storeTotalMap[stName].lossQty    += loss;
         });
       });
+
+      // 気象データ
+      const w = d.weather || {};
+      const obj = {
+        date:    d.summaryDate,
+        tempMax: w.tempMax ?? null,
+        tempMin: w.tempMin ?? null,
+        weather: w.type || "不明"
+      };
+      d.items.forEach(it => {
+        if ((it.shippedQty||0) + (it.soldQty||0) === 0) return;
+        obj[it.item] = { shipped: it.shippedQty || 0, sold: it.soldQty || 0 };
+      });
+      weatherInfo.push(obj);
     });
 
-    // 店舗別トータルの lossRate / salesRate を付与
-    Object.keys(storeTotalMap).forEach(name => {
-      const st = storeTotalMap[name];
-      st.lossRate = st.shippedQty > 0
-        ? Math.round((st.lossQty / st.shippedQty) * 100)
-        : null;
-      st.salesRate = st.shippedQty > 0
-        ? Math.round((st.soldQty / st.shippedQty) * 100)
-        : null;
+    // 店舗別率
+    Object.keys(storeTotalMap).forEach(k => {
+      const s = storeTotalMap[k];
+      s.lossRate  = s.shippedQty>0 ? Math.round((s.lossQty/s.shippedQty)*100) : null;
+      s.salesRate = s.shippedQty>0 ? Math.round((s.soldQty/s.shippedQty)*100) : null;
     });
 
-    // ④ AIコメント生成（月版）
-    const aiCommentHtml = buildMonthlyAiComment(total, items, storeTotalMap, ym);
-
-    const totalLossColor = getLossRateColor(total.lossRate);
-    const totalLossStyle = totalLossColor ? ` style="color:${totalLossColor};"` : "";
-
-    // ⑤ HTML構築
+    // UI 描画
     const monthLabel = ym.replace(/-(\d{2})$/, "年 $1月");
     let html = `
       <h3>${monthLabel} の月集計</h3>
-      ${aiCommentHtml}
+      ${buildMonthlyAiComment(total, items, storeTotalMap, ym)}
     `;
 
-    // ▼ 全体サマリーカード（🗓 月合計ロス）
+    // 全体サマリー
+    const tlColor = getLossRateColor(total.lossRate);
     html += `
       <div class="history-card summary-total">
         <div class="history-title">
           <span>🗓 月合計ロス</span>
-          <span class="item-total-badge summary-badge"${totalLossStyle}>
-            ${
-              total.lossRate === null
-                ? 'ロス率：ー'
-                : `ロス率：${total.lossRate}%（${total.lossQty}個）`
-            }
+          <span class="item-total-badge summary-badge" style="color:${tlColor};">
+            ロス率：${total.lossRate ?? "ー"}%（${total.lossQty||0}個）
           </span>
         </div>
-        <div>出荷：<b>${total.shippedQty || 0}個</b></div>
-        <div>売上：<b>${total.soldQty || 0}個</b></div>
+        <div>出荷：<b>${total.shippedQty||0}個</b></div>
+        <div>売上：<b>${total.soldQty||0}個</b></div>
       </div>
     `;
 
-    // ▼ 品目別カード（店舗別アコーディオン付き）※週ビューと同じ構成
+    // 品目別カード（週ビューと同じ）
     items.forEach(it => {
-      const itemName   = it.item;
-      const shippedQty = it.shippedQty || 0;
-      const soldQty    = it.soldQty    || 0;
-      const lossQty    = it.lossQty    || 0;
-      const lossRate   = shippedQty > 0
-        ? Math.round((lossQty / shippedQty) * 100)
-        : null;
+      const itemName = it.item;
+      const shipped  = it.shippedQty || 0;
+      const sold     = it.soldQty  || 0;
+      const loss     = it.lossQty  || 0;
+      const lossRate = shipped>0 ? Math.round((loss/shipped)*100) : null;
 
-      let cls = "corn";
-      let badgeCls = "item-total-corn";
+      let cls = "corn", badge = "item-total-corn";
+      if (itemName.includes("白菜")) { cls="hakusai"; badge="item-total-hakusai"; }
+      if (itemName.includes("キャベツ")) { cls="cabbage"; badge="item-total-cabbage"; }
 
-      if (itemName.indexOf("白菜") !== -1) {
-        cls = "hakusai";
-        badgeCls = "item-total-hakusai";
-      } else if (itemName.indexOf("キャベツ") !== -1) {
-        cls = "cabbage";
-        badgeCls = "item-total-cabbage";
-      }
-
-      const lossColor = getLossRateColor(lossRate);
-      const lossStyle = lossColor ? ` style="color:${lossColor};"` : "";
-
-      const perStoreMap = storeItemMap[itemName] || {};
-      let storeRows = Object.keys(perStoreMap).map(name => {
-        const st = perStoreMap[name];
-        const rate = st.shippedQty > 0
-          ? Math.round((st.lossQty / st.shippedQty) * 100)
-          : null;
-        return {
-          name,
-          shippedQty: st.shippedQty,
-          soldQty: st.soldQty,
-          lossQty: st.lossQty,
-          lossRate: rate
-        };
-      });
-
-      // 店舗順序で並べ替え
-      storeRows.sort((a, b) => {
-        const ka = STORE_ORDER.indexOf(getStoreKey(a.name));
-        const kb = STORE_ORDER.indexOf(getStoreKey(b.name));
-        return (ka === -1 ? 999 : ka) - (kb === -1 ? 999 : kb);
+      const per = storeItemMap[itemName] || {};
+      const rows = Object.keys(per).map(st => ({
+        name: st,
+        shippedQty: per[st].shippedQty,
+        soldQty: per[st].soldQty,
+        lossQty: per[st].lossQty,
+        lossRate: per[st].shippedQty>0 ?
+          Math.round((per[st].lossQty/per[st].shippedQty)*100) : null
+      })).sort((a,b)=>{
+        return STORE_ORDER.indexOf(getStoreKey(a.name)) -
+               STORE_ORDER.indexOf(getStoreKey(b.name));
       });
 
       html += `
         <div class="history-card ${cls}">
           <div class="history-title">
             <span>${itemName}</span>
-            <span class="item-total-badge ${badgeCls}"${lossStyle}>
-              ${
-                lossRate === null
-                  ? `ロス：${lossQty}個`
-                  : `ロス：${lossQty}個（${lossRate}%）`
-              }
+            <span class="item-total-badge ${badge}">
+              ロス：${loss}個（${lossRate ?? "ー"}%）
             </span>
           </div>
-          <div>出荷合計：${shippedQty}個 / 売上合計：${soldQty}個</div>
-          ${
-            storeRows.length
-              ? renderStoreAccordion(storeRows)
-              : `<div style="font-size:0.85em;color:#555;margin-top:4px;">
-                   店舗別内訳なし
-                 </div>`
-          }
+          <div>出荷合計：${shipped}個 / 売上合計：${sold}個</div>
+          ${ rows.length ? renderStoreAccordion(rows) :
+            `<div style="font-size:0.85em;color:#555;margin-top:4px;">内訳なし</div>` }
         </div>
       `;
     });
 
-    // ▼ 店舗別ロス情報（月合計）
     html += renderMonthlyStoreTotalSection(storeTotalMap);
 
-    // ▼ 新分析エリア（月版）
+    // 分析 UI
     html += `
       <div class="analysis-wrapper">
-
         <div class="analysis-card">
           <h4>🏆 店舗別販売率ランキング（上位5店舗）</h4>
           <div id="monthStoreSalesRate"></div>
@@ -1474,48 +1425,32 @@ dailySummaries2.forEach(d => {
         </div>
 
         <div class="analysis-card">
-          <h4>☀ 天候 × 売上 相関（岡山市）</h4>
-          <div id="monthWeatherCorrelation">
-            <p style="font-size:0.85em;color:#666;">
-              ※ 天気データ取得（GAS 側）が整い次第、ここに散布図やコメントを表示します。
-            </p>
-          </div>
+          <h4>☀ 気温 × 売上 効果</h4>
+          <div id="monthWeatherCorrelation"></div>
         </div>
 
         <div class="analysis-card">
           <h4>🤖 販売予測（AI提案）</h4>
-          <div id="monthSalesForecast">
-            <p style="font-size:0.85em;color:#666;">
-              ※ AI による出荷数提案は、今後の拡張で追加予定です。
-            </p>
-          </div>
+          <div id="monthSalesForecast"></div>
         </div>
-
       </div>
     `;
 
     resultDiv.innerHTML = html;
-
-    // アコーディオンにイベント付与
     attachStoreAccordionEvents();
 
-    // 分析3種描画（月版）
+    // 旧の3つのグラフ
     renderMonthAnalysisCharts(items, days, dailyLossMap, storeTotalMap, storeItemMap);
 
-    await renderMonthWeatherAnalysis(days, items);
+    // ★新：気象分析（月）
+    renderWeekWeatherHeatmap(items, weatherInfo);
+    renderWeekWeatherCrossTable(items, weatherInfo);
+    renderWeekWeatherAI(items, weatherInfo);
 
-  } catch (err) {
+  } catch (err) 
+  {
     resultDiv.innerHTML = `
-      <div class="history-card summary-total">
-        <div class="history-title">
-          <span>⚠ データ取得エラー</span>
-        </div>
-        <div style="font-size:0.9em;color:#555;">
-          月集計の取得中にエラーが発生しました。<br>
-          ネットワーク状況を確認して、もう一度お試しください。<br>
-          <span style="font-size:0.8em;color:#999;">詳細: ${err}</span>
-        </div>
-      </div>
+      <p>月ビュー取得エラー：${err}</p>
     `;
   }
 }
@@ -1801,15 +1736,6 @@ if (hasApex) {
     }
   }
 }
-
-/* ▼ 4) 気温ヒートマップ（週） */
-renderWeekWeatherHeatmap(items, weatherInfo);
-
-/* ▼ 5) 天候×気温帯クロス比較表（週） */
-renderWeekWeatherCrossTable(items, weatherInfo);
-
-/* ▼ 6) AIコメント（気象ロジック） */
-renderWeekWeatherAI(items, weatherInfo);
 
 /* =========================================================
    Util
