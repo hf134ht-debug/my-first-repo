@@ -235,7 +235,7 @@ function createItemCard(itemData) {
 function updateShipment(itemData, store, qty) {
   if (!confirm("更新しますか？")) return;
 
-  fetch(SCRIPT_URL, {
+  fetch(HISTORY_SCRIPT_URL, {
     method: "POST",
     body: JSON.stringify({
       action: "updateShipment",
@@ -258,7 +258,7 @@ function updateShipment(itemData, store, qty) {
 function deleteShipment(itemData, store) {
   if (!confirm("削除しますか？")) return;
 
-  fetch(SCRIPT_URL, {
+  fetch(HISTORY_SCRIPT_URL, {
     method: "POST",
     body: JSON.stringify({
       action: "deleteShipment",
@@ -272,3 +272,4 @@ function deleteShipment(itemData, store) {
     loadHistory(currentDate);
   });
 }
+
