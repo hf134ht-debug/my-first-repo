@@ -142,6 +142,8 @@ async function selectHistoryDate(y, m, d) {
 
 /* 履歴データ取得 */
 async function loadHistory(dateStr) {
+  currentDate = dateStr; // ★これ追加（updateShipment用）
+
   const resultDiv = document.getElementById("historyResult");
   resultDiv.innerHTML = `<p>読み込み中…</p>`;
 
@@ -154,26 +156,75 @@ async function loadHistory(dateStr) {
       return;
     }
 
-    let html = `<h3>${dateStr} の履歴</h3>`;
+    resultDiv.innerHTML = `<h3>${dateStr} の履歴</h3>`;
 
     data.items.forEach(item => {
-      let cls = "";
-      if (item.item.includes("白菜")) cls = "hakusai";
-      else if (item.item.includes("キャベツ")) cls = "cabbage";
-      else cls = "corn";
-
-      html += `
-        <div class="history-card ${cls}">
-          <div class="history-title">${item.item}（${item.price}円）</div>
-          ${item.stores.map(s => `<div>・${s.name}：${s.quantity}</div>`).join("")}
-          <div class="history-total">合計：${item.total}個</div>
-        </div>
-      `;
+      const card = createItemCard(item); // ★新UIの表示方式に変更！
+      resultDiv.appendChild(card);
     });
-
-    resultDiv.innerHTML = html;
 
   } catch (err) {
     resultDiv.innerHTML = `<p>エラー：${err}</p>`;
   }
+}
+
+// ===========================================
+// 店舗リスト（数量 + 編集 + 削除）表示
+// ===========================================
+function createItemCard(itemData) {
+  const card = document.createElement('div');
+  card.className = 'item-card';
+
+  const title = document.createElement('h3');
+  title.textContent = `${itemData.item}（${itemData.total}）`;
+  card.appendChild(title);
+
+  const storeList = document.createElement('table');
+  storeList.className = 'store-table';
+
+  itemData.stores.forEach(s => {
+    const tr = document.createElement('tr');
+
+    // 店舗名
+    const tdStore = document.createElement('td');
+    tdStore.textContent = s.name;
+    tr.appendChild(tdStore);
+
+    // 数量入力欄（デフォルトは表示）
+    const tdInput = document.createElement('td');
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.value = s.quantity;
+    input.min = 0;
+    input.className = 'qty-input';
+    tdInput.appendChild(input);
+    tr.appendChild(tdInput);
+
+    // ✏更新ボタン ✨追加
+    const tdUpdate = document.createElement('td');
+    const btnUpdate = document.createElement('button');
+    btnUpdate.textContent = '✏';
+    btnUpdate.className = 'btn-edit';
+    btnUpdate.onclick = () => {
+      updateShipment(itemData, s.name, input.value);
+    };
+    tdUpdate.appendChild(btnUpdate);
+    tr.appendChild(tdUpdate);
+
+    // 🗑削除ボタン ✨追加
+    const tdDelete = document.createElement('td');
+    const btnDelete = document.createElement('button');
+    btnDelete.textContent = '🗑';
+    btnDelete.className = 'btn-delete';
+    btnDelete.onclick = () => {
+      deleteShipment(itemData, s.name);
+    };
+    tdDelete.appendChild(btnDelete);
+    tr.appendChild(tdDelete);
+
+    storeList.appendChild(tr);
+  });
+
+  card.appendChild(storeList);
+  return card;
 }
