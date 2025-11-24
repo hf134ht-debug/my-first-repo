@@ -560,35 +560,40 @@ async function refreshSummaryWeekChips() {
 }
 
 /* 指定月の「月曜始まり」週を計算して配列にする */
+/* 指定月の「月曜始まり」週を計算して配列にする（データ有無対応版） */
 function buildWeeksForMonth(year, month, daysWithData) {
   const weeks = [];
 
   const firstOfMonth = new Date(year, month, 1);
   const firstDayOfWeek = firstOfMonth.getDay(); // 0=日,1=月,...
 
-  // 月曜始まりに合わせて、その月のカレンダーの先頭（月曜日）を求める
-  const diffToMonday = (firstDayOfWeek + 6) % 7; // 日(0)→6, 月(1)→0 ...
+  // 月曜始まり
+  const diffToMonday = (firstDayOfWeek + 6) % 7;
   const firstMonday = new Date(firstOfMonth);
   firstMonday.setDate(firstOfMonth.getDate() - diffToMonday);
 
   let current = new Date(firstMonday);
 
-  for (let w = 0; w < 6; w++) {  // 最大6週分
+  for (let w = 0; w < 6; w++) {
     const start = new Date(current);
-    const end   = new Date(current);
+    const end = new Date(current);
     end.setDate(start.getDate() + 6);
 
-    // この週が対象の月と重なっているか
     const overlapsMonth =
       start.getMonth() === month ||
       end.getMonth() === month;
 
-    // 同じ年で、完全に翌月以降に飛んでいたら打ち切り
-    if (!overlapsMonth && start.getMonth() > month && start.getFullYear() === year) {
-      break;
-    }
+    if (!overlapsMonth && start.getMonth() > month && start.getFullYear() === year) break;
 
-    weeks.push({ start, end });
+    // ▼ この週に1日でもデータがあるか？
+    const hasData = [...Array(7).keys()].some(i => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const ds = formatDateYmd(d);
+      return daysWithData.includes(ds.slice(8));
+    });
+
+    weeks.push({ start, end, hasData });
     current.setDate(current.getDate() + 7);
   }
 
@@ -639,14 +644,24 @@ async function loadWeeklySummary(weekStartStr) {
     });
 
     // ② 日別ロス合計（折れ線グラフ用）
-    const dailyLossMap = {};
-    items.forEach(it => {
-      (it.daily || []).forEach(d => {
-        const ds = d.date;
-        const loss = d.lossQty || 0;
-        dailyLossMap[ds] = (dailyLossMap[ds] || 0) + loss;
-      });
-    });
+    // ② 日別ロス合計を日別APIで正確に算出
+const dailyLossMap = {};
+const dailySummaries2 = await Promise.all(
+  days.map(ds =>
+    fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${ds}`)
+      .then(r => r.json())
+      .catch(() => null)
+  )
+);
+
+dailySummaries2.forEach(d => {
+  if (!d || !d.found || !d.items) return;
+  let dayLoss = 0;
+  d.items.forEach(it => {
+    dayLoss += (it.lossQty || 0);
+  });
+  dailyLossMap[d.summaryDate] = dayLoss;
+});
 
     // ③ 週中の各日について、日別API（summaryDate）を呼び出し、
     //    店舗別週合算（店舗×品目）と店舗別トータルを作る
