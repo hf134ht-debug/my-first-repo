@@ -407,7 +407,6 @@ input, select {
     font-size: 14px;
   }
   .btn-delete { color: red; }
-</style>
 
 /* =========================================================
    集計タブ（新デザイン）
@@ -669,6 +668,7 @@ input, select {
   color: #c62828;
   font-weight: bold;
 }
+
 
 
 
