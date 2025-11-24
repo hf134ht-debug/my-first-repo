@@ -142,7 +142,8 @@ async function selectHistoryDate(y, m, d) {
 
 /* 履歴データ取得 */
 async function loadHistory(dateStr) {
-  currentDate = dateStr; // ★これ追加（updateShipment用）
+  // updateShipment / deleteShipment 用に保持
+  window.currentDate = dateStr;
 
   const resultDiv = document.getElementById("historyResult");
   resultDiv.innerHTML = `<p>読み込み中…</p>`;
@@ -159,7 +160,7 @@ async function loadHistory(dateStr) {
     resultDiv.innerHTML = `<h3>${dateStr} の履歴</h3>`;
 
     data.items.forEach(item => {
-      const card = createItemCard(item); // ★新UIの表示方式に変更！
+      const card = createItemCard(item);
       resultDiv.appendChild(card);
     });
 
@@ -168,19 +169,67 @@ async function loadHistory(dateStr) {
   }
 }
 
-// ===========================================
-// 店舗リスト（数量 + 編集 + 削除）表示
-// ===========================================
+/* =========================================================
+   店舗リスト付きの履歴カード表示（色・レイアウトは従来のまま）
+   ＋ 店舗ごとの ✏ / 🗑 ボタン（①：常に表示）
+========================================================= */
 function createItemCard(itemData) {
   const card = document.createElement('div');
-  card.className = 'item-card';
 
-  const title = document.createElement('h3');
-  title.textContent = `${itemData.item}（${itemData.total}）`;
+  // 品目名からカード色クラスを決定（CSS の .history-card.hakusai 等に対応）
+  let cls = "";
+  if (itemData.item.includes("白菜")) cls = "hakusai";
+  else if (itemData.item.includes("キャベツ")) cls = "cabbage";
+  else if (itemData.item.includes("トウモロコシ") || itemData.item.includes("とうもろこし")) cls = "corn";
+
+  card.className = `history-card ${cls}`;
+
+  // タイトル行（品目＋値段、右側に合計バッジ）
+  const title = document.createElement('div');
+  title.className = 'history-title';
+
+  const titleLeft = document.createElement('span');
+  titleLeft.textContent = `${itemData.item}（${itemData.price}円）`;
+
+  const totalBadge = document.createElement('span');
+  let badgeClass = "";
+  if (cls === "hakusai") badgeClass = "item-total-hakusai";
+  else if (cls === "cabbage") badgeClass = "item-total-cabbage";
+  else if (cls === "corn") badgeClass = "item-total-corn";
+
+  totalBadge.className = `item-total-badge ${badgeClass}`;
+  totalBadge.textContent = `合計 ${itemData.total} 個`;
+
+  title.appendChild(titleLeft);
+  title.appendChild(totalBadge);
   card.appendChild(title);
 
-  const storeList = document.createElement('table');
-  storeList.className = 'store-table';
+  // アコーディオン本体
+  const accordion = document.createElement('div');
+  accordion.className = 'store-accordion';
+
+  const toggle = document.createElement('button');
+  toggle.className = 'store-accordion-toggle';
+  toggle.textContent = '店舗別を表示';
+
+  const body = document.createElement('div');
+  body.className = 'store-accordion-body';
+
+  // 開閉処理（高さアニメーション）
+  toggle.onclick = () => {
+    const isOpen = body.classList.toggle('open');
+    if (isOpen) {
+      body.style.maxHeight = body.scrollHeight + 'px';
+      toggle.textContent = '店舗別を閉じる';
+    } else {
+      body.style.maxHeight = 0;
+      toggle.textContent = '店舗別を表示';
+    }
+  };
+
+  // 店舗ごとのテーブル（数量＋編集＋削除）
+  const table = document.createElement('table');
+  table.className = 'store-table';
 
   itemData.stores.forEach(s => {
     const tr = document.createElement('tr');
@@ -190,17 +239,22 @@ function createItemCard(itemData) {
     tdStore.textContent = s.name;
     tr.appendChild(tdStore);
 
-    // 数量入力欄（デフォルトは表示）
+    // 現在数量の表示（「◯個」）
+    const tdQtyLabel = document.createElement('td');
+    tdQtyLabel.textContent = `${s.quantity} 個`;
+    tr.appendChild(tdQtyLabel);
+
+    // 数量入力欄
     const tdInput = document.createElement('td');
     const input = document.createElement('input');
     input.type = 'number';
-    input.value = s.quantity;
     input.min = 0;
+    input.value = s.quantity;
     input.className = 'qty-input';
     tdInput.appendChild(input);
     tr.appendChild(tdInput);
 
-    // ✏更新ボタン ✨追加
+    // ✏ 更新ボタン（①：常に表示）
     const tdUpdate = document.createElement('td');
     const btnUpdate = document.createElement('button');
     btnUpdate.textContent = '✏';
@@ -211,7 +265,7 @@ function createItemCard(itemData) {
     tdUpdate.appendChild(btnUpdate);
     tr.appendChild(tdUpdate);
 
-    // 🗑削除ボタン ✨追加
+    // 🗑 削除ボタン（①：常に表示）
     const tdDelete = document.createElement('td');
     const btnDelete = document.createElement('button');
     btnDelete.textContent = '🗑';
@@ -222,16 +276,20 @@ function createItemCard(itemData) {
     tdDelete.appendChild(btnDelete);
     tr.appendChild(tdDelete);
 
-    storeList.appendChild(tr);
+    table.appendChild(tr);
   });
 
-  card.appendChild(storeList);
+  body.appendChild(table);
+  accordion.appendChild(toggle);
+  accordion.appendChild(body);
+  card.appendChild(accordion);
+
   return card;
 }
 
-// ===========================================
-// 数量更新（updateShipment）
-// ===========================================
+/* =========================================================
+   数量更新（updateShipment）
+========================================================= */
 function updateShipment(itemData, store, qty) {
   if (!confirm("更新しますか？")) return;
 
@@ -248,13 +306,14 @@ function updateShipment(itemData, store, qty) {
   }).then(() => {
     alert("更新しました");
     loadHistory(currentDate); // 再読込
+  }).catch(err => {
+    alert("エラー: " + err);
   });
 }
 
-
-// ===========================================
-// 削除（deleteShipment）
-// ===========================================
+/* =========================================================
+   削除（deleteShipment）
+========================================================= */
 function deleteShipment(itemData, store) {
   if (!confirm("削除しますか？")) return;
 
@@ -270,6 +329,7 @@ function deleteShipment(itemData, store) {
   }).then(() => {
     alert("削除しました");
     loadHistory(currentDate);
+  }).catch(err => {
+    alert("エラー: " + err);
   });
 }
-
