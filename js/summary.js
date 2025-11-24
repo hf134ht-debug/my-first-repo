@@ -1425,8 +1425,18 @@ async function loadMonthlySummary(ym) {
         </div>
 
         <div class="analysis-card">
-          <h4>☀ 気温 × 売上 効果</h4>
-          <div id="monthWeatherCorrelation"></div>
+        <h4>☀ 気温 × 売上 効果（ヒートマップ）</h4>
+        <div id="monthWeatherHeatmap"></div>
+        </div>
+        
+        <div class="analysis-card">
+        <h4>🌡 シーン別（寒い/普通/暑い）売上傾向</h4>
+        <div id="monthWeatherCrossTable"></div>
+        </div>
+        
+        <div class="analysis-card">
+        <h4>🧠 気象分析コメント</h4>
+        <div id="monthWeatherAI"></div>
         </div>
 
         <div class="analysis-card">
@@ -1443,11 +1453,11 @@ async function loadMonthlySummary(ym) {
     renderMonthAnalysisCharts(items, days, dailyLossMap, storeTotalMap, storeItemMap);
 
     // ★新：気象分析（月）
-    renderWeekWeatherHeatmap(items, weatherInfo);
-    renderWeekWeatherCrossTable(items, weatherInfo);
-    renderWeekWeatherAI(items, weatherInfo);
+    rrenderMonthWeatherHeatmap(items, weatherInfo);
+    renderMonthWeatherCrossTable(items, weatherInfo);
+    renderMonthWeatherAI(items, weatherInfo);
 
-     +await renderMonthWeatherAnalysis(days, items);
+    +await renderMonthWeatherAnalysis(days, items);
 
   } catch (err) 
   {
@@ -2062,3 +2072,20 @@ function renderWeekWeatherAI(items, weatherInfo) {
   area.innerHTML = `<div class="ai-comment-card">${msg.map(m=>`<p>${m}</p>`).join("")}</div>`;
 }
 
+function renderMonthWeatherHeatmap(items, weatherInfo) {
+  const el = document.getElementById("monthWeatherHeatmap");
+  if (!el) return;
+  renderWeekWeatherHeatmap(items, weatherInfo, el);
+}
+
+function renderMonthWeatherCrossTable(items, weatherInfo) {
+  const el = document.getElementById("monthWeatherCrossTable");
+  if (!el) return;
+  renderWeekWeatherCrossTable(items, weatherInfo, el);
+}
+
+function renderMonthWeatherAI(items, weatherInfo) {
+  const el = document.getElementById("monthWeatherAI");
+  if (!el) return;
+  renderWeekWeatherAI(items, weatherInfo, el);
+}
