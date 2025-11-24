@@ -1169,6 +1169,15 @@ function renderWeekAnalysisCharts(items, days, dailyLossMap, storeTotalMap, stor
   }
 }
 
+/* ▼ 4) 気温ヒートマップ（週） */
+renderWeekWeatherHeatmap(items, weatherInfo);
+
+/* ▼ 5) 天候×気温帯クロス比較表（週） */
+renderWeekWeatherCrossTable(items, weatherInfo);
+
+/* ▼ 6) AIコメント（気象ロジック） */
+renderWeekWeatherAI(items, weatherInfo);
+
 /* =========================================================
    ▼ 月ビュー（週ビューと同じ構成：期間だけ1ヶ月）
 ========================================================= */
@@ -1781,6 +1790,15 @@ if (hasApex) {
   }
 }
 
+/* ▼ 4) 気温ヒートマップ（週） */
+renderWeekWeatherHeatmap(items, weatherInfo);
+
+/* ▼ 5) 天候×気温帯クロス比較表（週） */
+renderWeekWeatherCrossTable(items, weatherInfo);
+
+/* ▼ 6) AIコメント（気象ロジック） */
+renderWeekWeatherAI(items, weatherInfo);
+
 /* =========================================================
    Util
 ========================================================= */
@@ -1789,4 +1807,189 @@ function formatDateYmd(d) {
   const m = String(d.getMonth() + 1).padStart(2,"0");
   const day = String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
+}
+
+/* =============================================
+   ▼ 気温ヒートマップ表示（週）
+============================================= */
+function renderWeekWeatherHeatmap(items, weatherInfo) {
+  const el = document.getElementById("weekWeatherCorrelation");
+  if (!el) return;
+
+  if (!weatherInfo || weatherInfo.length === 0) {
+    el.innerHTML += `<p>気象データが不足しています。</p>`;
+    return;
+  }
+
+  const temps = weatherInfo.map(w => w.tempMax).filter(v => v !== null);
+  if (!temps.length) return;
+
+  // 中央値で３分割（冷/普/暑）
+  temps.sort((a,b) => a-b);
+  const n = temps.length;
+  const tCold = temps[Math.floor(n*0.33)];
+  const tHot  = temps[Math.floor(n*0.66)];
+
+  // 商品ごとの差（販売率差）
+  const rows = items.map(it => {
+    const item = it.item;
+    const baseRate = it.shippedQty>0
+      ? it.soldQty/it.shippedQty : 0;
+
+    const effect = { cold:0, mid:0, hot:0, cN:0, mN:0, hN:0 };
+    weatherInfo.forEach(w => {
+      const daily = w[item] || null;
+      if (!daily) return;
+      if (!daily.shipped) return;
+      const r = daily.sold/daily.shipped - baseRate;
+
+      if (w.tempMax <= tCold) {
+        effect.cold += r; effect.cN++;
+      } else if (w.tempMax >= tHot) {
+        effect.hot  += r; effect.hN++;
+      } else {
+        effect.mid  += r; effect.mN++;
+      }
+    });
+
+    function avg(v,c){ return c>0?Math.round(v/c*100):0; }
+
+    return {
+      item,
+      cold: avg(effect.cold,effect.cN),
+      mid : avg(effect.mid,effect.mN),
+      hot : avg(effect.hot,effect.hN)
+    };
+  });
+
+  const cell = (v) => {
+    let arrow = '→';
+    if (v>5) arrow='↑';
+    if (v<-5) arrow='↓';
+
+    const perc = v>0?`+${v}%`:`${v}%`;
+
+    const red   = Math.min(255, Math.max(0, 128+v*3));
+    const blue  = Math.min(255, Math.max(0, 128-v*3));
+    const bg = `rgb(${red},${Math.max(200-blue,0)},${blue})`;
+
+    return `<td style="background:${bg};color:#000;font-weight:600">
+      ${arrow} ${perc}
+    </td>`;
+  };
+
+  el.innerHTML += `
+    <h5 style="margin-top:12px;">🌡 気温帯別 効果量ヒートマップ</h5>
+    <table class="simple-table">
+      <tr><th>品目</th><th>寒い</th><th>普通</th><th>暑い</th></tr>
+      ${
+        rows.map(r=>{
+          return `
+          <tr>
+            <td>${r.item}</td>
+            ${cell(r.cold)}
+            ${cell(r.mid)}
+            ${cell(r.hot)}
+          </tr>
+          `;
+        }).join("")
+      }
+    </table>
+  `;
+}
+
+/* =============================================
+   ▼ 天候×気温帯のクロス比較（週）
+============================================= */
+function renderWeekWeatherCrossTable(items, weatherInfo) {
+  const el = document.getElementById("weekWeatherCorrelation");
+  if (!el) return;
+  if (!weatherInfo || !weatherInfo.length) return;
+
+  const temps = weatherInfo.map(w=>w.tempMax).filter(v=>v!==null);
+  temps.sort((a,b)=>a-b);
+  const n = temps.length;
+  const tCold = temps[Math.floor(n*0.33)];
+  const tHot  = temps[Math.floor(n*0.66)];
+
+  const groups = {}; // {weather:{cold:{sum,cnt},mid:{},hot:{}}}
+  weatherInfo.forEach(w=>{
+    const wt = w.weather;
+    if (!groups[wt]) groups[wt] = {cold:{sum:0,cnt:0},mid:{sum:0,cnt:0},hot:{sum:0,cnt:0}};
+
+    items.forEach(it=>{
+      const v = w[it.item];
+      if (!v || !v.shipped) return;
+      const r = v.sold/v.shipped;
+      if (w.tempMax <= tCold) {
+        groups[wt].cold.sum+=r;groups[wt].cold.cnt++;
+      } else if (w.tempMax >= tHot) {
+        groups[wt].hot.sum+=r;groups[wt].hot.cnt++;
+      } else {
+        groups[wt].mid.sum+=r;groups[wt].mid.cnt++;
+      }
+    });
+  });
+
+  const avg = (x)=> x.cnt?Math.round(x.sum/x.cnt*100):0;
+  const wKeys = Object.keys(groups);
+
+  let html = `
+    <h5 style="margin-top:12px;">⛅ 天候 × 気温帯 効果量</h5>
+    <table class="simple-table">
+      <tr><th>天候</th><th>寒い</th><th>普通</th><th>暑い</th></tr>
+  `;
+
+  wKeys.forEach(wt=>{
+    const g = groups[wt];
+    html += `
+      <tr>
+        <td>${wt}</td>
+        <td>${avg(g.cold)}%</td>
+        <td>${avg(g.mid)}%</td>
+        <td>${avg(g.hot)}%</td>
+      </tr>
+    `;
+  });
+
+  html += `</table>`;
+  el.innerHTML += html;
+}
+
+/* =============================================
+   ▼ AIコメント（週）気象観点
+============================================= */
+function renderWeekWeatherAI(items, weatherInfo) {
+  const area = document.getElementById("weekSalesForecast");
+  if (!area) return;
+  if (!weatherInfo.length) return;
+
+  const temps = weatherInfo.map(w=>w.tempMax).filter(v=>v!==null);
+  const tAvg = temps.reduce((a,b)=>a+b,0)/temps.length;
+
+  const msg = [];
+
+  items.forEach(it=>{
+    const hotDays = weatherInfo.filter(w=>w[it.item] && w[it.item].tempMax >= tAvg);
+    const coldDays = weatherInfo.filter(w=>w[it.item] && w[it.item].tempMax < tAvg);
+
+    const rate = (arr)=>{
+      let s=0,n=0;
+      arr.forEach(w=>{
+        if (!w[it.item]||!w[it.item].shipped) return;
+        s+=w[it.item].sold/w[it.item].shipped;n++;
+      });
+      return n?Math.round(s/n*100):0;
+    };
+
+    const h = rate(hotDays);
+    const c = rate(coldDays);
+
+    if (h-c>=10) msg.push(`${it.item}は気温の高い日に売れやすい傾向（+${h-c}%）です🔥`);
+    else if (c-h>=10) msg.push(`${it.item}は気温の低い日に売れやすい傾向（+${c-h}%）です❄`);
+  });
+
+  if (!msg.length) msg.push("気温との明確な関係はまだ観測できていません。");
+
+  area.innerHTML = `<div class="ai-comment-card">${msg.map(m=>`<p>${m}</p>`).join("")}</div>`;
 }
