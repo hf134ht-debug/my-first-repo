@@ -1447,6 +1447,8 @@ async function loadMonthlySummary(ym) {
     renderWeekWeatherCrossTable(items, weatherInfo);
     renderWeekWeatherAI(items, weatherInfo);
 
+     +await renderMonthWeatherAnalysis(days, items);
+
   } catch (err) 
   {
     resultDiv.innerHTML = `
@@ -2059,3 +2061,4 @@ function renderWeekWeatherAI(items, weatherInfo) {
 
   area.innerHTML = `<div class="ai-comment-card">${msg.map(m=>`<p>${m}</p>`).join("")}</div>`;
 }
+
