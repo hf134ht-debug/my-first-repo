@@ -228,3 +228,47 @@ function createItemCard(itemData) {
   card.appendChild(storeList);
   return card;
 }
+
+// ===========================================
+// 数量更新（updateShipment）
+// ===========================================
+function updateShipment(itemData, store, qty) {
+  if (!confirm("更新しますか？")) return;
+
+  fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "updateShipment",
+      date: currentDate,
+      item: itemData.item,
+      price: itemData.price,
+      store: store,
+      quantity: Number(qty)
+    })
+  }).then(() => {
+    alert("更新しました");
+    loadHistory(currentDate); // 再読込
+  });
+}
+
+
+// ===========================================
+// 削除（deleteShipment）
+// ===========================================
+function deleteShipment(itemData, store) {
+  if (!confirm("削除しますか？")) return;
+
+  fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      action: "deleteShipment",
+      date: currentDate,
+      item: itemData.item,
+      price: itemData.price,
+      store: store
+    })
+  }).then(() => {
+    alert("削除しました");
+    loadHistory(currentDate);
+  });
+}
