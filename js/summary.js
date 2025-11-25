@@ -2071,6 +2071,7 @@ function renderWeekWeatherAI(items, weatherInfo) {
 }
 
 function renderMonthWeatherHeatmap(items, weatherInfo) {
+   console.log("🔥月ヒート呼ばれた", items, weatherInfo);
   const el = document.getElementById("monthWeatherHeatmap");
   if (!el) return;
 
@@ -2080,6 +2081,7 @@ function renderMonthWeatherHeatmap(items, weatherInfo) {
 }
 
 function renderMonthWeatherCrossTable(items, weatherInfo) {
+   console.log("🔥月クロステーブル", items, weatherInfo);
   const el = document.getElementById("monthWeatherCrossTable");
   if (!el) return;
 
@@ -2089,6 +2091,7 @@ function renderMonthWeatherCrossTable(items, weatherInfo) {
 }
 
 function renderMonthWeatherAI(items, weatherInfo) {
+   console.log("🔥月AI呼ばれた", items, weatherInfo);
   const el = document.getElementById("monthWeatherAI");
   if (!el) return;
 
@@ -2096,3 +2099,4 @@ function renderMonthWeatherAI(items, weatherInfo) {
   renderWeekWeatherAI(items, weatherInfo, dummy);
   el.innerHTML = dummy.innerHTML;
 }
+
