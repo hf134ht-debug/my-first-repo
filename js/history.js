@@ -280,4 +280,5 @@ function deleteShipment(item, price, store) {
   }).then(() => loadHistory(currentDate));
 }
 
-
+window.renderHistoryScreen = renderHistoryScreen;
+window.activateHistoryFeatures = activateHistoryFeatures;
