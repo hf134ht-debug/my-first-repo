@@ -1450,12 +1450,15 @@ async function loadMonthlySummary(ym) {
     attachStoreAccordionEvents();
 
     // 旧の3つのグラフ
-    renderMonthAnalysisCharts(items, days, dailyLossMap, storeTotalMap, storeItemMap);
+renderMonthAnalysisCharts(items, days, dailyLossMap, storeTotalMap, storeItemMap);
 
-    // ★新：気象分析（月）
-    renderMonthWeatherHeatmap(items, weatherInfo);
-    renderMonthWeatherCrossTable(items, weatherInfo);
-    renderMonthWeatherAI(items, weatherInfo);
+// --- 販売予測（AI提案）など他全部終わったあと ---
+setTimeout(() => {
+  renderMonthWeatherHeatmap(items, weatherInfo);
+  renderMonthWeatherCrossTable(items, weatherInfo);
+  renderMonthWeatherAI(items, weatherInfo);
+}, 500);
+
 
   } catch (err) 
   {
@@ -2099,4 +2102,5 @@ function renderMonthWeatherAI(items, weatherInfo) {
   renderWeekWeatherAI(items, weatherInfo, dummy);
   el.innerHTML = dummy.innerHTML;
 }
+
 
