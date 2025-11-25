@@ -2075,15 +2075,13 @@ function renderWeekWeatherAI(items, weatherInfo) {
 }
 
 /* =============================================
-   ▼ 月ビュー：気象ヒートマップ
+   ▼ 月ビュー：気象ヒートマップ（カラー適用版）
 ============================================= */
 function renderMonthWeatherHeatmap(items, weatherInfo) {
   console.log("🔥月ヒート呼ばれた", items, weatherInfo);
   const el = document.getElementById("monthWeatherHeatmap");
   if (!el) return;
 
-  // 週ビュー関数が weekWeatherCorrelation に描画してしまうので、
-  // 月ビュー用IDに直接描画するよう再構成
   let html = `
     <h5 style="margin-top:12px;">🌡 気温帯別 効果量ヒートマップ</h5>
     <table class="simple-table">
@@ -2096,40 +2094,60 @@ function renderMonthWeatherHeatmap(items, weatherInfo) {
   const tCold = temps[Math.floor(n*0.33)];
   const tHot  = temps[Math.floor(n*0.66)];
 
-  function cell(v) {
+  /** 週ビューと同じ背景色ロジック */
+  const cell = (v) => {
     let arrow = '→';
-    if (v>5) arrow='↑';
-    if (v<-5) arrow='↓';
-    const perc = v>0?`+${v}%`:`${v}%`;
-    return `<td style="color:${calcEffectColor(v)};font-weight:600">${arrow} ${perc}</td>`;
-  }
+    if (v > 5) arrow = '↑';
+    if (v < -5) arrow = '↓';
+
+    const perc = v > 0 ? `+${v}%` : `${v}%`;
+
+    /* 背景グラデーション：青(売れにくい)〜赤(売れやすい) */
+    const red   = Math.min(255, Math.max(0, 128 + v * 3));
+    const blue  = Math.min(255, Math.max(0, 128 - v * 3));
+    const green = Math.max(180 - Math.abs(v * 2), 0);
+
+    const bg = `rgb(${red},${green},${blue})`;
+
+    return `
+      <td style="
+        background:${bg};
+        color:#000;
+        font-weight:600;
+      ">
+        ${arrow} ${perc}
+      </td>`;
+  };
 
   items.forEach(it => {
     const item = it.item;
     const baseRate = it.shippedQty>0 ? it.soldQty/it.shippedQty : 0;
-    let cold=0, mid=0, hot=0, cN=0, mN=0, hN=0;
 
-    weatherInfo.forEach(w => {
-      const daily = w[item];
-      if (!daily || !daily.shipped) return;
-      const r = daily.sold/daily.shipped - baseRate;
+    let cold=0,mid=0,hot=0,cN=0,mN=0,hN=0;
 
-      if (w.tempMax <= tCold) { cold+=r*100; cN++; }
-      else if (w.tempMax >= tHot) { hot+=r*100; hN++; }
-      else { mid+=r*100; mN++; }
+    weatherInfo.forEach(w=>{
+      const daily=w[item];
+      if(!daily||!daily.shipped) return;
+      const r=daily.sold/daily.shipped-baseRate;
+
+      if(w.tempMax<=tCold){cold+=r*100;cN++;}
+      else if(w.tempMax>=tHot){hot+=r*100;hN++;}
+      else{mid+=r*100;mN++;}
     });
 
-    const avg=(v,c)=> c>0?Math.round(v/c):0;
-    html += `
+    const avg=(v,c)=>c>0?Math.round(v/c):0;
+
+    html+=`
       <tr>
         <td>${item}</td>
         ${cell(avg(cold,cN))}
         ${cell(avg(mid,mN))}
         ${cell(avg(hot,hN))}
-      </tr>`;
+      </tr>
+    `;
   });
 
-  html += `</table>`;
+  html+=`</table>`;
   el.innerHTML = html;
 }
 
@@ -2219,4 +2237,5 @@ function renderMonthWeatherAI(items, weatherInfo) {
 
   el.innerHTML = `<div class="ai-comment-card">${msg.map(m=>`<p>${m}</p>`).join("")}</div>`;
 }
+
 
