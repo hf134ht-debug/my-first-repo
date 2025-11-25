@@ -161,6 +161,8 @@ async function loadHistory(dateStr) {
 const grouped = {};
 
 data.items.forEach(item => {
+   if (!item || !item.item) return; // ← ★空データをスキップ
+   
   const norm = normalizeItemName(item.item);
   const key = `${norm}__${item.price}`; // ← 品目＋値段の複合キー
 
@@ -277,4 +279,5 @@ function deleteShipment(item, price, store) {
     })
   }).then(() => loadHistory(currentDate));
 }
+
 
