@@ -630,9 +630,10 @@ async function loadWeeklySummary(weekStartStr) {
       return;
     }
 
-    const total    = data.total || {};
-    const itemsRaw = data.items || [];
-    let   days     = data.days  || [];
+    const total          = data.total || {};
+    const itemsRaw       = data.items || [];
+    let   days           = data.days  || [];
+    const dailySummaries = data.dailySummaries || []; // ★ GAS からまとめて受け取る
 
     // 品目を固定順（白菜→白菜カット→キャベツ→キャベツカット→トウモロコシ）にソート
     const items = [...itemsRaw].sort((a, b) => {
@@ -643,17 +644,9 @@ async function loadWeeklySummary(weekStartStr) {
       return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
     });
 
-    // ② 日別ロス合計を summaryDate API で再集計（グラフ用）
+    // ② 日別ロス合計を dailySummaries から作成（fetch 廃止）
     const dailyLossMap = {};
-    const dailySummariesForLoss = await Promise.all(
-      days.map(ds =>
-        fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${ds}`)
-          .then(r => r.json())
-          .catch(() => null)
-      )
-    );
-
-    dailySummariesForLoss.forEach(d => {
+    dailySummaries.forEach(d => {
       if (!d || !d.found || !d.items) return;
       let dayLoss = 0;
       d.items.forEach(it => {
@@ -662,20 +655,10 @@ async function loadWeeklySummary(weekStartStr) {
       dailyLossMap[d.summaryDate] = dayLoss;
     });
 
-    // ③ 各日について summaryDate を呼び出し、
-    //    店舗別週合算（店舗×品目）と店舗別トータルを作る
-    const dailyPromises = days.map(ds =>
-      fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${ds}`)
-        .then(r => r.json())
-        .catch(() => null)
-    );
-    const dailySummaries = await Promise.all(dailyPromises);
-
+    // ③ 店舗別週合算（店舗×品目）と店舗別トータル＆気象データ
     const storeItemMap  = {}; // { itemName: { storeName: { shippedQty, soldQty, lossQty } } }
-    const storeTotalMap = {}; // { storeName: { shippedQty, soldQty, lossQty } }
-
-    // ★ ここで同時に「気象＋日別品目売れ方」もまとめる
-    const weatherInfo = [];   // [{ date, tempMax, weather, "白菜": {shipped,sold}, ... }, ...]
+    const storeTotalMap = {}; // { storeName: { shippedQty, soldQty, lossQty, lossRate, salesRate } }
+    const weatherInfo   = []; // [{ date, tempMax, tempMin, weather, itemごとの shipped/sold }, ...]
 
     dailySummaries.forEach(daily => {
       if (!daily || !daily.found || !daily.items) return;
@@ -706,7 +689,7 @@ async function loadWeeklySummary(weekStartStr) {
         });
       });
 
-      // ★ 気象＋品目別販売率用データ
+      // 気象＋品目別販売率用
       const w = daily.weather || {};
       const dayObj = {
         date:    daily.summaryDate,
@@ -716,7 +699,7 @@ async function loadWeeklySummary(weekStartStr) {
       };
 
       daily.items.forEach(it => {
-        const name    = it.item;                 // "白菜" など
+        const name    = it.item;
         const shipped = it.shippedQty || 0;
         const sold    = it.soldQty    || 0;
         if (shipped === 0 && sold === 0) return;
@@ -780,7 +763,6 @@ async function loadWeeklySummary(weekStartStr) {
         ? Math.round((lossQty / shippedQty) * 100)
         : null;
 
-      // 色分け：日ビューと同じ
       let cls = "corn";
       let badgeCls = "item-total-corn";
       if (itemName.indexOf("白菜") !== -1) {
@@ -844,7 +826,7 @@ async function loadWeeklySummary(weekStartStr) {
     // ▼ 店舗別ロス情報（週合計）
     html += renderWeeklyStoreTotalSection(storeTotalMap);
 
-    // ▼ 既存の分析3種（販売率ランキング／日別ロス／ロス率ランキング）
+    // ▼ 既存の分析3種 + 気象分析 + 販売予測
     html += `
       <div class="analysis-wrapper">
 
@@ -884,7 +866,7 @@ async function loadWeeklySummary(weekStartStr) {
     // 既存グラフ3種
     renderWeekAnalysisCharts(items, days, dailyLossMap, storeTotalMap, storeItemMap);
 
-    // ★ 気温ヒートマップ＋クロス表＋AIコメント（気象ロジック）
+    // 気象ヒートマップ＋クロス表＋AIコメント
     renderWeekWeatherHeatmap(items, weatherInfo);
     renderWeekWeatherCrossTable(items, weatherInfo);
     renderWeekWeatherAI(items, weatherInfo);
@@ -1257,9 +1239,10 @@ async function loadMonthlySummary(ym) {
       return;
     }
 
-    const total    = data.total || {};
-    const itemsRaw = data.items || [];
-    let   days     = data.days  || [];
+    const total          = data.total || {};
+    const itemsRaw       = data.items || [];
+    let   days           = data.days  || [];
+    const dailyAll       = data.dailySummaries || []; // ★ 日別集計（GAS側で計算済）
 
     // 品目を固定順にソート
     const items = [...itemsRaw].sort((a, b) => {
@@ -1268,25 +1251,21 @@ async function loadMonthlySummary(ym) {
       return ITEM_ORDER.indexOf(ka) - ITEM_ORDER.indexOf(kb);
     });
 
-    // 未来日は除外
+    // 未来日は除外（念のため）
     const todayStr = formatDateYmd(new Date());
     days = days.filter(ds => ds <= todayStr);
 
-    // ① 日別ロス合計
+    // ① 日別ロス合計（dailyAll から作成）
     const dailyLossMap = {};
-    const lossData = await Promise.all(
-      days.map(ds => fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${ds}`).then(r => r.json()).catch(() => null))
-    );
-    lossData.forEach(d => {
+    dailyAll.forEach(d => {
       if (!d || !d.items) return;
-      dailyLossMap[d.summaryDate] = d.items.reduce((sum, it) => sum + (it.lossQty || 0), 0);
+      dailyLossMap[d.summaryDate] = d.items.reduce(
+        (sum, it) => sum + (it.lossQty || 0),
+        0
+      );
     });
 
     // ② 店舗×品目と気象データ集約
-    const dailyAll = await Promise.all(
-      days.map(ds => fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${ds}`).then(r => r.json()).catch(() => null))
-    );
-
     const storeItemMap  = {};
     const storeTotalMap = {};
     const weatherInfo   = [];
@@ -1294,14 +1273,13 @@ async function loadMonthlySummary(ym) {
     dailyAll.forEach(d => {
       if (!d || !d.items) return;
 
-      // 店舗×品目
       d.items.forEach(it => {
         const name = it.item;
-        (it.stores||[]).forEach(s => {
+        (it.stores || []).forEach(s => {
           const stName  = s.name;
           const shipped = s.shippedQty || 0;
-          const sold    = s.soldQty || 0;
-          const loss    = s.lossQty || 0;
+          const sold    = s.soldQty    || 0;
+          const loss    = s.lossQty    || 0;
 
           if (!storeItemMap[name]) storeItemMap[name] = {};
           if (!storeItemMap[name][stName])
@@ -1330,7 +1308,10 @@ async function loadMonthlySummary(ym) {
       };
       d.items.forEach(it => {
         if ((it.shippedQty||0) + (it.soldQty||0) === 0) return;
-        obj[it.item] = { shipped: it.shippedQty || 0, sold: it.soldQty || 0 };
+        obj[it.item] = {
+          shipped: it.shippedQty || 0,
+          sold:    it.soldQty    || 0
+        };
       });
       weatherInfo.push(obj);
     });
@@ -1373,16 +1354,16 @@ async function loadMonthlySummary(ym) {
       const lossRate = shipped>0 ? Math.round((loss/shipped)*100) : null;
 
       let cls = "corn", badge = "item-total-corn";
-      if (itemName.includes("白菜")) { cls="hakusai"; badge="item-total-hakusai"; }
+      if (itemName.includes("白菜"))    { cls="hakusai";  badge="item-total-hakusai"; }
       if (itemName.includes("キャベツ")) { cls="cabbage"; badge="item-total-cabbage"; }
 
       const per = storeItemMap[itemName] || {};
       const rows = Object.keys(per).map(st => ({
-        name: st,
+        name:      st,
         shippedQty: per[st].shippedQty,
-        soldQty: per[st].soldQty,
-        lossQty: per[st].lossQty,
-        lossRate: per[st].shippedQty>0 ?
+        soldQty:    per[st].soldQty,
+        lossQty:    per[st].lossQty,
+        lossRate:   per[st].shippedQty>0 ?
           Math.round((per[st].lossQty/per[st].shippedQty)*100) : null
       })).sort((a,b)=>{
         return STORE_ORDER.indexOf(getStoreKey(a.name)) -
@@ -1425,18 +1406,18 @@ async function loadMonthlySummary(ym) {
         </div>
 
         <div class="analysis-card">
-        <h4>☀ 気温 × 売上 効果（ヒートマップ）</h4>
-        <div id="monthWeatherHeatmap"></div>
+          <h4>☀ 気温 × 売上 効果（ヒートマップ）</h4>
+          <div id="monthWeatherHeatmap"></div>
         </div>
         
         <div class="analysis-card">
-        <h4>🌡 シーン別（寒い/普通/暑い）売上傾向</h4>
-        <div id="monthWeatherCrossTable"></div>
+          <h4>🌡 シーン別（寒い/普通/暑い）売上傾向</h4>
+          <div id="monthWeatherCrossTable"></div>
         </div>
         
         <div class="analysis-card">
-        <h4>🧠 気象分析コメント</h4>
-        <div id="monthWeatherAI"></div>
+          <h4>🧠 気象分析コメント</h4>
+          <div id="monthWeatherAI"></div>
         </div>
 
         <div class="analysis-card">
@@ -1449,20 +1430,16 @@ async function loadMonthlySummary(ym) {
     resultDiv.innerHTML = html;
     attachStoreAccordionEvents();
 
-// （旧）月分析グラフ描画
-// renderMonthAnalysisCharts(items, days, dailyLossMap, storeTotalMap, storeItemMap);
+    // （旧）月分析グラフ描画
+    setTimeout(() => {
+      renderMonthAnalysisCharts(items, days, dailyLossMap, storeTotalMap, storeItemMap);
 
-// （新）月旧グラフ描画後 → DOMが安定してから気象分析を描画
-setTimeout(() => {
-  renderMonthAnalysisCharts(items, days, dailyLossMap, storeTotalMap, storeItemMap);
+      renderMonthWeatherHeatmap(items, weatherInfo);
+      renderMonthWeatherCrossTable(items, weatherInfo);
+      renderMonthWeatherAI(items, weatherInfo);
+    }, 100);
 
-  renderMonthWeatherHeatmap(items, weatherInfo);
-  renderMonthWeatherCrossTable(items, weatherInfo);
-  renderMonthWeatherAI(items, weatherInfo);
-}, 100);
-
-  } catch (err) 
-  {
+  } catch (err) {
     resultDiv.innerHTML = `
       <p>月ビュー取得エラー：${err}</p>
     `;
