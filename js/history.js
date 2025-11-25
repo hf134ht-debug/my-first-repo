@@ -157,23 +157,44 @@ async function loadHistory(dateStr) {
 
   const order = ["白菜","白菜カット","キャベツ","キャベツカット","トウモロコシ"];
 
-  // ★ normalize & 再グループ化
-  const grouped = {};
+ // ★ normalize & 再グループ化（品目＋値段で分離）
+const grouped = {};
 
-  data.items.forEach(item => {
-    const norm = normalizeItemName(item.item);
-    if (!grouped[norm]) {
-      grouped[norm] = {
-        item: norm,
-        price: item.price,
-        total: 0,
-        stores: []
-      };
-    }
+data.items.forEach(item => {
+  const norm = normalizeItemName(item.item);
+  const key = `${norm}__${item.price}`; // ← 品目＋値段の複合キー
 
-    grouped[norm].total += item.total;
-    grouped[norm].stores = grouped[norm].stores.concat(item.stores);
-  });
+  if (!grouped[key]) {
+    grouped[key] = {
+      item: norm,
+      price: item.price,
+      total: 0,
+      stores: []
+    };
+  }
+
+  grouped[key].total += item.total;
+  grouped[key].stores = grouped[key].stores.concat(item.stores);
+});
+
+// ソート順（品目→値段昇順）
+const sortedKeys = Object.keys(grouped).sort((a, b) => {
+  const [ai, ap] = [normalizeItemName(grouped[a].item), grouped[a].price];
+  const [bi, bp] = [normalizeItemName(grouped[b].item), grouped[b].price];
+
+  const order = ["白菜","白菜カット","キャベツ","キャベツカット","トウモロコシ"];
+  const aiIdx = order.indexOf(ai);
+  const biIdx = order.indexOf(bi);
+
+  if (aiIdx !== biIdx) return aiIdx - biIdx;
+  return ap - bp; // ← 同一品目なら値段順に表示
+});
+
+// カード生成
+sortedKeys.forEach(key => {
+  const card = createItemCard(grouped[key]);
+  container.appendChild(card);
+});
 
   const sortedKeys = Object.keys(grouped).sort((a, b) => {
     const ai = order.indexOf(a);
@@ -256,3 +277,4 @@ function deleteShipment(item, price, store) {
     })
   }).then(() => loadHistory(currentDate));
 }
+
