@@ -2074,35 +2074,150 @@ function renderWeekWeatherAI(items, weatherInfo) {
   area.innerHTML = `<div class="ai-comment-card">${msg.map(m=>`<p>${m}</p>`).join("")}</div>`;
 }
 
+/* =============================================
+   ▼ 月ビュー：気象ヒートマップ
+============================================= */
 function renderMonthWeatherHeatmap(items, weatherInfo) {
-   console.log("🔥月ヒート呼ばれた", items, weatherInfo);
+  console.log("🔥月ヒート呼ばれた", items, weatherInfo);
   const el = document.getElementById("monthWeatherHeatmap");
   if (!el) return;
 
-  const dummy = document.createElement("div");
-  renderWeekWeatherHeatmap(items, weatherInfo, dummy);
-  el.innerHTML = dummy.innerHTML;
+  // 週ビュー関数が weekWeatherCorrelation に描画してしまうので、
+  // 月ビュー用IDに直接描画するよう再構成
+  let html = `
+    <h5 style="margin-top:12px;">🌡 気温帯別 効果量ヒートマップ</h5>
+    <table class="simple-table">
+      <tr><th>品目</th><th>寒い</th><th>普通</th><th>暑い</th></tr>
+  `;
+
+  const temps = weatherInfo.map(w => w.tempMax).filter(v => v !== null);
+  temps.sort((a,b)=>a-b);
+  const n = temps.length;
+  const tCold = temps[Math.floor(n*0.33)];
+  const tHot  = temps[Math.floor(n*0.66)];
+
+  function cell(v) {
+    let arrow = '→';
+    if (v>5) arrow='↑';
+    if (v<-5) arrow='↓';
+    const perc = v>0?`+${v}%`:`${v}%`;
+    return `<td style="color:${calcEffectColor(v)};font-weight:600">${arrow} ${perc}</td>`;
+  }
+
+  items.forEach(it => {
+    const item = it.item;
+    const baseRate = it.shippedQty>0 ? it.soldQty/it.shippedQty : 0;
+    let cold=0, mid=0, hot=0, cN=0, mN=0, hN=0;
+
+    weatherInfo.forEach(w => {
+      const daily = w[item];
+      if (!daily || !daily.shipped) return;
+      const r = daily.sold/daily.shipped - baseRate;
+
+      if (w.tempMax <= tCold) { cold+=r*100; cN++; }
+      else if (w.tempMax >= tHot) { hot+=r*100; hN++; }
+      else { mid+=r*100; mN++; }
+    });
+
+    const avg=(v,c)=> c>0?Math.round(v/c):0;
+    html += `
+      <tr>
+        <td>${item}</td>
+        ${cell(avg(cold,cN))}
+        ${cell(avg(mid,mN))}
+        ${cell(avg(hot,hN))}
+      </tr>`;
+  });
+
+  html += `</table>`;
+  el.innerHTML = html;
 }
 
+/* =============================================
+   ▼ 月ビュー：効果量クロステーブル
+============================================= */
 function renderMonthWeatherCrossTable(items, weatherInfo) {
-   console.log("🔥月クロステーブル", items, weatherInfo);
+  console.log("🔥月クロステーブル", items, weatherInfo);
   const el = document.getElementById("monthWeatherCrossTable");
   if (!el) return;
 
-  const dummy = document.createElement("div");
-  renderWeekWeatherCrossTable(items, weatherInfo, dummy);
-  el.innerHTML = dummy.innerHTML;
+  const temps = weatherInfo.map(w => w.tempMax).filter(v => v !== null);
+  temps.sort((a,b)=>a-b);
+  const n = temps.length;
+  const tCold = temps[Math.floor(n*0.33)];
+  const tHot  = temps[Math.floor(n*0.66)];
+
+  const groups = {}; // {weather:{cold:{sum,cnt},mid:{},hot:{}}}
+  weatherInfo.forEach(w=>{
+    const wt = w.weather;
+    if (!groups[wt]) groups[wt] = {cold:{sum:0,cnt:0},mid:{sum:0,cnt:0},hot:{sum:0,cnt:0}};
+
+    items.forEach(it=>{
+      const v = w[it.item];
+      if (!v || !v.shipped) return;
+      const r = v.sold/v.shipped;
+      if (w.tempMax <= tCold) { groups[wt].cold.sum+=r; groups[wt].cold.cnt++; }
+      else if (w.tempMax >= tHot) { groups[wt].hot.sum+=r; groups[wt].hot.cnt++; }
+      else { groups[wt].mid.sum+=r; groups[wt].mid.cnt++; }
+    });
+  });
+
+  const avg=(x)=> x.cnt?Math.round(x.sum/x.cnt*100):0;
+  const wKeys=Object.keys(groups);
+
+  let html = `
+    <h5 style="margin-top:12px;">⛅ 天候 × 気温帯 効果量</h5>
+    <table class="simple-table">
+      <tr><th>天候</th><th>寒い</th><th>普通</th><th>暑い</th></tr>
+  `;
+  wKeys.forEach(wt=>{
+    const g = groups[wt];
+    html += `
+      <tr>
+        <td>${wt}</td>
+        <td>${avg(g.cold)}%</td>
+        <td>${avg(g.mid)}%</td>
+        <td>${avg(g.hot)}%</td>
+      </tr>`;
+  });
+  html+=`</table>`;
+  el.innerHTML += html;
 }
 
+/* =============================================
+   ▼ 月ビュー：販売予測（AIコメント）
+============================================= */
 function renderMonthWeatherAI(items, weatherInfo) {
-   console.log("🔥月AI呼ばれた", items, weatherInfo);
+  console.log("🔥月AI呼ばれた", items, weatherInfo);
   const el = document.getElementById("monthWeatherAI");
   if (!el) return;
 
-  const dummy = document.createElement("div");
-  renderWeekWeatherAI(items, weatherInfo, dummy);
-  el.innerHTML = dummy.innerHTML;
+  const temps = weatherInfo.map(w=>w.tempMax).filter(v=>v!==null);
+  const tAvg = temps.reduce((a,b)=>a+b,0)/temps.length;
+
+  const msg = [];
+  items.forEach(it=>{
+    const hotDays = weatherInfo.filter(w=>w[it.item] && w.tempMax>=tAvg);
+    const coldDays = weatherInfo.filter(w=>w[it.item] && w.tempMax<tAvg);
+
+    const rate = arr=>{
+      let s=0,n=0;
+      arr.forEach(w=>{
+        if(!w[it.item].shipped) return;
+        s+=w[it.item].sold/w[it.item].shipped;
+        n++;
+      });
+      return n?Math.round(s/n*100):0;
+    };
+
+    const h=rate(hotDays), c=rate(coldDays);
+    if (h-c>=10) msg.push(`${it.item}は暑い日に売れやすい傾向（+${h-c}%）です🔥`);
+    else if (c-h>=10) msg.push(`${it.item}は寒い日に売れやすい傾向（+${c-h}%）です❄`);
+  });
+
+  if(!msg.length) msg.push("気温との明確な関係はまだ観測できていません。");
+
+  el.innerHTML = `<div class="ai-comment-card">${msg.map(m=>`<p>${m}</p>`).join("")}</div>`;
 }
 
-
-
+}
