@@ -2037,41 +2037,139 @@ function renderWeekWeatherCrossTable(items, weatherInfo) {
 }
 
 /* =============================================
-   ▼ AIコメント（週）気象観点
+   ▼ AIコメント（週）気象観点 ＋ 販売予測（過去10日）
 ============================================= */
-function renderWeekWeatherAI(items, weatherInfo) {
-  const area = document.getElementById("weekSalesForecast");
+function renderWeekWeatherAI(items, weatherInfo, overrideEl) {
+  console.log("🔥週AI呼ばれた", items, weatherInfo);
+  const area = overrideEl || document.getElementById("weekSalesForecast");
   if (!area) return;
-  if (!weatherInfo.length) return;
+  if (!weatherInfo || !weatherInfo.length) {
+    area.innerHTML = `
+      <div class="ai-comment-card">
+        <p>気象データが不足しているため、この週の気象分析と販売予測は作成できません。</p>
+      </div>`;
+    return;
+  }
 
-  const temps = weatherInfo.map(w=>w.tempMax).filter(v=>v!==null);
-  const tAvg = temps.reduce((a,b)=>a+b,0)/temps.length;
+  // ---- 直近10日分に絞り込む ----
+  const parsed = weatherInfo
+    .filter(w => w.date && w.tempMax != null)
+    .map(w => ({ ...w, _d: new Date(w.date) }));
+  if (!parsed.length) {
+    area.innerHTML = `
+      <div class="ai-comment-card">
+        <p>気象データが不足しているため、この週の気象分析と販売予測は作成できません。</p>
+      </div>`;
+    return;
+  }
 
-  const msg = [];
+  const maxTime = Math.max(...parsed.map(w => w._d.getTime()));
+  const endDate = new Date(maxTime);
+  const startDate = new Date(endDate);
+  startDate.setDate(startDate.getDate() - 9); // 直近10日間（end を含めて10日）
 
-  items.forEach(it=>{
-    const hotDays = weatherInfo.filter(w=>w[it.item] && w[it.item].tempMax >= tAvg);
-    const coldDays = weatherInfo.filter(w=>w[it.item] && w[it.item].tempMax < tAvg);
+  const target = parsed.filter(w => w._d >= startDate && w._d <= endDate);
+  if (!target.length) {
+    area.innerHTML = `
+      <div class="ai-comment-card">
+        <p>直近10日間に気象データがほとんどないため、この週の分析は行えません。</p>
+      </div>`;
+    return;
+  }
 
-    const rate = (arr)=>{
-      let s=0,n=0;
-      arr.forEach(w=>{
-        if (!w[it.item]||!w[it.item].shipped) return;
-        s+=w[it.item].sold/w[it.item].shipped;n++;
-      });
-      return n?Math.round(s/n*100):0;
-    };
+  const temps = target.map(w => w.tempMax).filter(v => v != null);
+  if (!temps.length) {
+    area.innerHTML = `
+      <div class="ai-comment-card">
+        <p>最高気温データが取得できなかったため、この週の気象分析と販売予測は作成できません。</p>
+      </div>`;
+    return;
+  }
+  const tAvg = temps.reduce((a,b)=>a+b,0) / temps.length;
 
-    const h = rate(hotDays);
-    const c = rate(coldDays);
+  const analysisLines = [];
+  const forecastLines = [];
 
-    if (h-c>=10) msg.push(`${it.item}は気温の高い日に売れやすい傾向（+${h-c}%）です🔥`);
-    else if (c-h>=10) msg.push(`${it.item}は気温の低い日に売れやすい傾向（+${c-h}%）です❄`);
+  items.forEach(it => {
+    const itemName = it.item;
+    // 対象期間内の販売率を「暑い日」「寒い日」に分けて集計
+    let hotSum = 0, hotN = 0;
+    let coldSum = 0, coldN = 0;
+
+    target.forEach(w => {
+      const rec = w[itemName];
+      if (!rec || !rec.shipped) return;
+      const rate = (rec.sold / rec.shipped) * 100; // 販売率[%]
+
+      if (w.tempMax >= tAvg) {
+        hotSum += rate;
+        hotN++;
+      } else {
+        coldSum += rate;
+        coldN++;
+      }
+    });
+
+    if (hotN + coldN < 3) {
+      // 日数が少なすぎる品目はコメント出さない（サイレントスキップ）
+      return;
+    }
+
+    const hotAvg = hotN ? Math.round(hotSum / hotN) : null;
+    const coldAvg = coldN ? Math.round(coldSum / coldN) : null;
+    if (hotAvg == null || coldAvg == null) return;
+
+    const diff = hotAvg - coldAvg; // 正なら「暑い日＞寒い日」
+
+    // 解析コメント（気象分析）
+    if (Math.abs(diff) >= 5) {
+      const dir = diff > 0 ? "気温が高い日" : "気温が低い日";
+      const sign = diff > 0 ? `+${diff}` : `${diff}`;
+      analysisLines.push(
+        `・${itemName}は直近10日間では、${dir}における販売率が平均より約${sign}% 高い傾向があります（高温日${hotN}日／低温日${coldN}日ベース）。`
+      );
+
+      // 販売予測（出荷量調整提案）
+      const absDiff = Math.abs(diff);
+      let up = 0, down = 0;
+      if (absDiff >= 20) { up = 15; down = 10; }
+      else if (absDiff >= 12) { up = 10; down = 5; }
+      else { up = 5; down = 3; }
+
+      if (diff > 0) {
+        // 暑い日に強い
+        forecastLines.push(
+          `・${itemName}は気温が高めに推移する日には、通常出荷に対しておおよそ +${up}% まで増量しても許容範囲と考えられます。一方で気温が低い日には、-${down}% 程度抑えて様子を見るとロス抑制に繋がりやすくなります。`
+        );
+      } else {
+        // 寒い日に強い
+        forecastLines.push(
+          `・${itemName}は気温が低めに推移する日には、通常出荷に対しておおよそ +${up}% まで増量しても許容範囲と考えられます。逆に気温が高い日には、-${down}% 程度抑えて出荷することでロスを抑えやすくなります。`
+        );
+      }
+    }
   });
 
-  if (!msg.length) msg.push("気温との明確な関係はまだ観測できていません。");
+  if (!analysisLines.length) {
+    analysisLines.push(
+      "直近10日間のデータでは、気温高低による明確な販売率の差はまだ大きくありません。今後もデータを蓄積しながら、寒暖差が大きい週に改めて確認するのがおすすめです。"
+    );
+  }
+  if (!forecastLines.length) {
+    forecastLines.push(
+      "現時点では、気温を理由に出荷量を大きく振るよりも、曜日別・店舗別の売れ行きパターンを優先して調整する段階と考えられます。極端に暑い／寒い日のみ、1〜2割の微調整から試すと安全です。"
+    );
+  }
 
-  area.innerHTML = `<div class="ai-comment-card">${msg.map(m=>`<p>${m}</p>`).join("")}</div>`;
+  area.innerHTML = `
+    <div class="ai-comment-card">
+      <p style="font-weight:bold;">【気象分析（直近10日間）】</p>
+      ${analysisLines.map(t => `<p>${t}</p>`).join("")}
+      <hr style="border:none;border-top:1px solid #ddd;margin:8px 0;">
+      <p style="font-weight:bold;">【販売予測（直近10日間）】</p>
+      ${forecastLines.map(t => `<p>${t}</p>`).join("")}
+    </div>
+  `;
 }
 
 /* =============================================
@@ -2203,39 +2301,169 @@ function renderMonthWeatherCrossTable(items, weatherInfo) {
 }
 
 /* =============================================
-   ▼ 月ビュー：販売予測（AIコメント）
+   ▼ AIコメント（月）気象観点 ＋ 販売予測（過去30日）
 ============================================= */
 function renderMonthWeatherAI(items, weatherInfo) {
   console.log("🔥月AI呼ばれた", items, weatherInfo);
-  const el = document.getElementById("monthWeatherAI");
-  if (!el) return;
+  const analysisEl = document.getElementById("monthWeatherAI");
+  const forecastEl = document.getElementById("monthSalesForecast");
+  if (!analysisEl && !forecastEl) return;
+  if (!weatherInfo || !weatherInfo.length) {
+    if (analysisEl) {
+      analysisEl.innerHTML = `
+        <div class="ai-comment-card">
+          <p>気象データが不足しているため、この月の気象分析コメントは作成できません。</p>
+        </div>`;
+    }
+    if (forecastEl) {
+      forecastEl.innerHTML = `
+        <div class="ai-comment-card">
+          <p>販売予測を行うだけの気象データが揃っていません。</p>
+        </div>`;
+    }
+    return;
+  }
 
-  const temps = weatherInfo.map(w=>w.tempMax).filter(v=>v!==null);
-  const tAvg = temps.reduce((a,b)=>a+b,0)/temps.length;
+  // ---- 直近30日分に絞り込む ----
+  const parsed = weatherInfo
+    .filter(w => w.date && w.tempMax != null)
+    .map(w => ({ ...w, _d: new Date(w.date) }));
+  if (!parsed.length) {
+    if (analysisEl) {
+      analysisEl.innerHTML = `
+        <div class="ai-comment-card">
+          <p>気象データが不足しているため、この月の気象分析コメントは作成できません。</p>
+        </div>`;
+    }
+    if (forecastEl) {
+      forecastEl.innerHTML = `
+        <div class="ai-comment-card">
+          <p>販売予測を行うだけの気象データが揃っていません。</p>
+        </div>`;
+    }
+    return;
+  }
 
-  const msg = [];
-  items.forEach(it=>{
-    const hotDays = weatherInfo.filter(w=>w[it.item] && w.tempMax>=tAvg);
-    const coldDays = weatherInfo.filter(w=>w[it.item] && w.tempMax<tAvg);
+  const maxTime = Math.max(...parsed.map(w => w._d.getTime()));
+  const endDate = new Date(maxTime);
+  const startDate = new Date(endDate);
+  startDate.setDate(startDate.getDate() - 29); // 直近30日
 
-    const rate = arr=>{
-      let s=0,n=0;
-      arr.forEach(w=>{
-        if(!w[it.item].shipped) return;
-        s+=w[it.item].sold/w[it.item].shipped;
-        n++;
-      });
-      return n?Math.round(s/n*100):0;
-    };
+  const target = parsed.filter(w => w._d >= startDate && w._d <= endDate);
+  if (!target.length) {
+    if (analysisEl) {
+      analysisEl.innerHTML = `
+        <div class="ai-comment-card">
+          <p>直近30日間に気象データがほとんどないため、この月の分析は行えません。</p>
+        </div>`;
+    }
+    if (forecastEl) {
+      forecastEl.innerHTML = `
+        <div class="ai-comment-card">
+          <p>販売予測を行うだけのデータが不足しています。</p>
+        </div>`;
+    }
+    return;
+  }
 
-    const h=rate(hotDays), c=rate(coldDays);
-    if (h-c>=10) msg.push(`${it.item}は暑い日に売れやすい傾向（+${h-c}%）です🔥`);
-    else if (c-h>=10) msg.push(`${it.item}は寒い日に売れやすい傾向（+${c-h}%）です❄`);
+  const temps = target.map(w => w.tempMax).filter(v => v != null);
+  if (!temps.length) {
+    if (analysisEl) {
+      analysisEl.innerHTML = `
+        <div class="ai-comment-card">
+          <p>最高気温データが取得できなかったため、この月の気象分析コメントは作成できません。</p>
+        </div>`;
+    }
+    if (forecastEl) {
+      forecastEl.innerHTML = `
+        <div class="ai-comment-card">
+          <p>販売予測を行うだけの気象データが揃っていません。</p>
+        </div>`;
+    }
+    return;
+  }
+  const tAvg = temps.reduce((a,b)=>a+b,0) / temps.length;
+
+  const analysisLines = [];
+  const forecastLines = [];
+
+  items.forEach(it => {
+    const itemName = it.item;
+    let hotSum = 0, hotN = 0;
+    let coldSum = 0, coldN = 0;
+
+    target.forEach(w => {
+      const rec = w[itemName];
+      if (!rec || !rec.shipped) return;
+      const rate = (rec.sold / rec.shipped) * 100;
+
+      if (w.tempMax >= tAvg) {
+        hotSum += rate;
+        hotN++;
+      } else {
+        coldSum += rate;
+        coldN++;
+      }
+    });
+
+    if (hotN + coldN < 4) {
+      // 月は少し厳しめに、4日未満ならスキップ
+      return;
+    }
+
+    const hotAvg = hotN ? Math.round(hotSum / hotN) : null;
+    const coldAvg = coldN ? Math.round(coldSum / coldN) : null;
+    if (hotAvg == null || coldAvg == null) return;
+
+    const diff = hotAvg - coldAvg;
+    if (Math.abs(diff) >= 5) {
+      const dir = diff > 0 ? "気温が高い日" : "気温が低い日";
+      const sign = diff > 0 ? `+${diff}` : `${diff}`;
+      analysisLines.push(
+        `・${itemName}は直近30日間の集計では、${dir}における販売率が平均より約${sign}% 高い傾向があります（高温日${hotN}日／低温日${coldN}日ベース）。`
+      );
+
+      const absDiff = Math.abs(diff);
+      let up = 0, down = 0;
+      if (absDiff >= 20) { up = 15; down = 10; }
+      else if (absDiff >= 12) { up = 10; down = 5; }
+      else { up = 5; down = 3; }
+
+      if (diff > 0) {
+        forecastLines.push(
+          `・${itemName}は暖かい時期にやや強い動きが見られます。今後も同程度の気温が続く局面では、平常時に比べて +${up}% 程度の増量を上限に出荷量を試験的に引き上げる余地があります。一方で気温が低めに推移する期間は、-${down}% 程度抑えてロスの様子を見る運用が無難です。`
+        );
+      } else {
+        forecastLines.push(
+          `・${itemName}は冷え込む局面で販売率が高くなる傾向があります。寒い日が続く月は、平常時に比べて +${up}% 程度の増量を検討できます。逆に暖かい日が多い月は、-${down}% 程度抑えた出荷にしておくとロスリスクを抑えられます。`
+        );
+      }
+    }
   });
 
-  if(!msg.length) msg.push("気温との明確な関係はまだ観測できていません。");
+  if (analysisEl) {
+    if (!analysisLines.length) {
+      analysisEl.innerHTML = `
+        <div class="ai-comment-card">
+          <p>直近30日間のデータでは、気温高低による販売率の差はまだ大きくありません。月単位では、まずは曜日別・店舗別の動きを基準にしつつ、極端に暑い／寒い日の傾向を少しずつ確認していく段階と考えられます。</p>
+        </div>`;
+    } else {
+      analysisEl.innerHTML = `
+        <div class="ai-comment-card">
+          ${analysisLines.map(t => `<p>${t}</p>`).join("")}
+        </div>`;
+    }
+  }
 
-  el.innerHTML = `<div class="ai-comment-card">${msg.map(m=>`<p>${m}</p>`).join("")}</div>`;
+  if (forecastEl) {
+    if (!forecastLines.length) {
+      forecastLines.push(
+        "現時点の30日集計では、気温要因だけで大きな出荷変更を行うほどの明確な差は見られていません。通常は曜日・店舗の実績を優先しつつ、特に気温が大きく振れた月に限って1〜2割の微調整から試すのがおすすめです。"
+      );
+    }
+    forecastEl.innerHTML = `
+      <div class="ai-comment-card">
+        ${forecastLines.map(t => `<p>${t}</p>`).join("")}
+      </div>`;
+  }
 }
-
-
