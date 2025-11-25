@@ -39,7 +39,7 @@ function getItemClass(item) {
   if (item.includes("白菜")) return "history-card hakusai";
   if (item.includes("キャベツ")) return "history-card cabbage";
   if (item.includes("トウモロコシ")) return "history-card corn";
-  return "history-card"; // その他
+  return "history-card";
 }
 
 /* 履歴画面 HTML */
@@ -52,10 +52,11 @@ function renderHistoryScreen() {
 }
 
 /* ===============================
-   カレンダー（既存のまま）
+   カレンダー
 =============================== */
 let calYear, calMonth;
 const historyMonthDaysCache = {};
+let currentDate = null;
 
 async function getHistoryDaysWithData(year, month) {
   const ym = `${year}-${String(month + 1).padStart(2, "0")}`;
@@ -81,7 +82,6 @@ async function drawHistoryCalendar(selectedDate = null) {
 }
 
 function drawCalendar(year, month, selectedDate = null, daysWithData = []) {
-  const today = new Date();
   const first = new Date(year, month, 1);
   const last = new Date(year, month + 1, 0);
   const days = ["日","月","火","水","木","金","土"];
@@ -115,10 +115,7 @@ function drawCalendar(year, month, selectedDate = null, daysWithData = []) {
           ${daysWithData.includes(dd) ? "has-data" : ""}
           ${isSelected ? "selected" : ""}"
         onclick="selectHistoryDate(${year},${month},${d})"
-      >
-        ${d}
-      </div>
-    `;
+      >${d}</div>`;
   }
 
   return html + `</div></div>`;
@@ -140,7 +137,6 @@ async function selectHistoryDate(y, m, d) {
 /* ===============================
    履歴データ取得＋表示
 =============================== */
-
 async function loadHistory(dateStr) {
   const container = document.getElementById("historyResult");
   container.innerHTML = `<p>読み込み中…</p>`;
@@ -157,51 +153,33 @@ async function loadHistory(dateStr) {
 
   const order = ["白菜","白菜カット","キャベツ","キャベツカット","トウモロコシ"];
 
- // ★ normalize & 再グループ化（品目＋値段で分離）
-const grouped = {};
+  const grouped = {};
 
-data.items.forEach(item => {
-   if (!item || !item.item) return; // ← ★空データをスキップ
-   
-  const norm = normalizeItemName(item.item);
-  const key = `${norm}__${item.price}`; // ← 品目＋値段の複合キー
+  data.items.forEach(item => {
+    if (!item || !item.item || item.price == null) return;
 
-  if (!grouped[key]) {
-    grouped[key] = {
-      item: norm,
-      price: item.price,
-      total: 0,
-      stores: []
-    };
-  }
+    const norm = normalizeItemName(item.item);
+    const key = `${norm}__${item.price}`;
 
-  grouped[key].total += item.total;
-  grouped[key].stores = grouped[key].stores.concat(item.stores);
-});
+    if (!grouped[key]) {
+      grouped[key] = {
+        item: norm,
+        price: item.price,
+        total: 0,
+        stores: []
+      };
+    }
 
-// ソート順（品目→値段昇順）
-const sortedKeys = Object.keys(grouped).sort((a, b) => {
-  const [ai, ap] = [normalizeItemName(grouped[a].item), grouped[a].price];
-  const [bi, bp] = [normalizeItemName(grouped[b].item), grouped[b].price];
-
-  const order = ["白菜","白菜カット","キャベツ","キャベツカット","トウモロコシ"];
-  const aiIdx = order.indexOf(ai);
-  const biIdx = order.indexOf(bi);
-
-  if (aiIdx !== biIdx) return aiIdx - biIdx;
-  return ap - bp; // ← 同一品目なら値段順に表示
-});
-
-// カード生成
-sortedKeys.forEach(key => {
-  const card = createItemCard(grouped[key]);
-  container.appendChild(card);
-});
+    grouped[key].total += item.total;
+    grouped[key].stores = grouped[key].stores.concat(item.stores);
+  });
 
   const sortedKeys = Object.keys(grouped).sort((a, b) => {
-    const ai = order.indexOf(a);
-    const bi = order.indexOf(b);
-    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    const ai = order.indexOf(grouped[a].item);
+    const bi = order.indexOf(grouped[b].item);
+
+    if (ai !== bi) return ai - bi;
+    return grouped[a].price - grouped[b].price;
   });
 
   sortedKeys.forEach(key => {
@@ -211,9 +189,8 @@ sortedKeys.forEach(key => {
 }
 
 /* ===============================
-   カードUI生成（★従来デザイン）
+   カードUI生成
 =============================== */
-
 function createItemCard(item) {
   const card = document.createElement("div");
   card.className = getItemClass(item.item);
@@ -251,7 +228,6 @@ function createItemCard(item) {
 /* ===============================
    更新 & 削除 API
 =============================== */
-
 function updateShipment(item, price, store) {
   const id = `inp-${item}-${store}`;
   const qty = Number(document.getElementById(id).value || 0);
@@ -280,5 +256,6 @@ function deleteShipment(item, price, store) {
   }).then(() => loadHistory(currentDate));
 }
 
+/* === app.jsから呼べるように公開 === */
 window.renderHistoryScreen = renderHistoryScreen;
 window.activateHistoryFeatures = activateHistoryFeatures;
