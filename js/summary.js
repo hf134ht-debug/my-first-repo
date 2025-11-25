@@ -2074,37 +2074,25 @@ function renderMonthWeatherHeatmap(items, weatherInfo) {
   const el = document.getElementById("monthWeatherHeatmap");
   if (!el) return;
 
-  const oldEl = document.getElementById("weekWeatherCorrelation");
-  if (oldEl) oldEl.id = "monthWeatherCorrelation"; // 一時置換
-
-  renderWeekWeatherHeatmap(items, weatherInfo);
-
-  const revertEl = document.getElementById("monthWeatherCorrelation");
-  if (revertEl) revertEl.id = "weekWeatherCorrelation";
+  const dummy = document.createElement("div");
+  renderWeekWeatherHeatmap(items, weatherInfo, dummy);
+  el.innerHTML = dummy.innerHTML;
 }
 
 function renderMonthWeatherCrossTable(items, weatherInfo) {
   const el = document.getElementById("monthWeatherCrossTable");
   if (!el) return;
 
-  const oldEl = document.getElementById("weekWeatherCorrelation");
-  if (oldEl) oldEl.id = "monthWeatherCrossTable"; // 一時置換
-
-  renderWeekWeatherCrossTable(items, weatherInfo);
-
-  const revertEl = document.getElementById("monthWeatherCrossTable");
-  if (revertEl) revertEl.id = "weekWeatherCorrelation";
+  const dummy = document.createElement("div");
+  renderWeekWeatherCrossTable(items, weatherInfo, dummy);
+  el.innerHTML = dummy.innerHTML;
 }
 
 function renderMonthWeatherAI(items, weatherInfo) {
   const el = document.getElementById("monthWeatherAI");
   if (!el) return;
 
-  const oldEl = document.getElementById("weekSalesForecast");
-  if (oldEl) oldEl.id = "monthWeatherAI"; // 一時置換
-
-  renderWeekWeatherAI(items, weatherInfo);
-
-  const revertEl = document.getElementById("monthWeatherAI");
-  if (revertEl) revertEl.id = "weekSalesForecast";
+  const dummy = document.createElement("div");
+  renderWeekWeatherAI(items, weatherInfo, dummy);
+  el.innerHTML = dummy.innerHTML;
 }
