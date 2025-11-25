@@ -2220,4 +2220,3 @@ function renderMonthWeatherAI(items, weatherInfo) {
   el.innerHTML = `<div class="ai-comment-card">${msg.map(m=>`<p>${m}</p>`).join("")}</div>`;
 }
 
-}
