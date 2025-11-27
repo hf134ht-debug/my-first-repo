@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+
+<!-- ApexCharts（ここで1回だけ） -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/my-first-repo/manifest.json">
+<link rel="apple-touch-icon" href="/my-first-repo/icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+<title>出荷管理アプリ</title>
+<link rel="stylesheet" href="/my-first-repo/css/style.css">
+
+</head>
+<body>
+
+<div id="container">
+  <div id="menuScreen"></div>
+  <div id="tabContent"></div>
+</div>
+
+<div id="bottomTabs"></div>
+
+<script src="/my-first-repo/js/history.js"></script>
+<script src="/my-first-repo/js/shipment.js"></script>
+<script src="/my-first-repo/js/sales.js"></script>
+<script src="/my-first-repo/js/summary.js"></script>
+<script src="/my-first-repo/js/app.js"></script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/my-first-repo/service-worker.js")
+    .then(() => console.log("SW registered"))
+    .catch(err => console.log("SW failed:", err));
+}
+</script>
+
+</body>
+</html>
+
