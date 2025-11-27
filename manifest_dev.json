@@ -1,0 +1,21 @@
+{
+  "name": "出荷管理アプリ",
+  "short_name": "出荷管理",
+  "start_url": "/my-first-repo/index.html",
+  "scope": "/my-first-repo/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffcc80",
+  "icons": [
+    {
+      "src": "/my-first-repo/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/my-first-repo/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
