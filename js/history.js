@@ -1,12 +1,12 @@
 /* =========================================================
    history.js
-   - 履歴画面
+   - 履歴画面（更新・削除は専用APIを使用）
 ========================================================= */
 
 const HISTORY_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
 
-/* 品目統一（GASと同仕様） */
+/* 品目統一 */
 function normalizeItemName(raw) {
   if (!raw) return "";
   let s = String(raw).trim();
@@ -33,7 +33,7 @@ function normalizeItemName(raw) {
   return s;
 }
 
-/* カード色設定 */
+/* カード色 */
 function getItemClass(item) {
   if (!item) return "history-card";
   if (item.includes("白菜")) return "history-card hakusai";
@@ -52,7 +52,7 @@ function renderHistoryScreen() {
 }
 
 /* ===============================
-   カレンダー
+   カレンダー部分
 =============================== */
 let calYear, calMonth;
 const historyMonthDaysCache = {};
@@ -135,7 +135,7 @@ async function selectHistoryDate(y, m, d) {
 }
 
 /* ===============================
-   履歴データ取得＋表示
+   履歴取得
 =============================== */
 async function loadHistory(dateStr) {
   const container = document.getElementById("historyResult");
@@ -151,111 +151,95 @@ async function loadHistory(dateStr) {
 
   container.innerHTML = `<h3>${dateStr} の履歴</h3>`;
 
-  const order = ["白菜","白菜カット","キャベツ","キャベツカット","トウモロコシ"];
-
-  const grouped = {};
-
-  data.items.forEach(item => {
-    if (!item || !item.item || item.price == null) return;
-
-    const norm = normalizeItemName(item.item);
-    const key = `${norm}__${item.price}`;
-
-    if (!grouped[key]) {
-      grouped[key] = {
-        item: norm,
-        price: item.price,
-        total: 0,
-        stores: []
-      };
-    }
-
-    grouped[key].total += item.total;
-    grouped[key].stores = grouped[key].stores.concat(item.stores);
-  });
-
-  const sortedKeys = Object.keys(grouped).sort((a, b) => {
-    const ai = order.indexOf(grouped[a].item);
-    const bi = order.indexOf(grouped[b].item);
-
-    if (ai !== bi) return ai - bi;
-    return grouped[a].price - grouped[b].price;
-  });
-
-  sortedKeys.forEach(key => {
-    const card = createItemCard(grouped[key]);
+  data.items.forEach(itemGroup => {
+    const card = createItemCard(itemGroup);
     container.appendChild(card);
   });
 }
 
 /* ===============================
-   カードUI生成
+   カード生成（行番号を埋め込む）
 =============================== */
-function createItemCard(item) {
+function createItemCard(group) {
   const card = document.createElement("div");
-  card.className = getItemClass(item.item);
+  card.className = getItemClass(group.item);
+
+  let rowsHTML = "";
+
+  group.stores.forEach((s, index) => {
+    const row = s.row;  // ← GAS 側で item.stores[] に row を含める
+    rowsHTML += `
+      <tr>
+        <td>${s.name}</td>
+        <td>
+          <input type="number" value="${s.quantity}" min="0"
+            class="qty-input" id="inp-${group.item}-${s.name}">
+        </td>
+        <td>
+          <button class="btn-edit"
+            onclick="updateHistoryRow(${row},'${group.item}',${group.price},'${s.name}')">
+            ✏
+          </button>
+        </td>
+        <td>
+          <button class="btn-delete"
+            onclick="deleteHistoryRow(${row})">
+            🗑
+          </button>
+        </td>
+      </tr>
+    `;
+  });
 
   card.innerHTML = `
     <div class="history-title">
-      <span>${item.item}（${item.price}円）</span>
-      <span class="item-total-badge">${item.total}個</span>
+      <span>${group.item}（${group.price}円）</span>
     </div>
-    <table class="store-table">
-      ${item.stores.map(s => `
-        <tr>
-          <td>${s.name}</td>
-          <td><input type="number" value="${s.quantity}" min="0"
-              class="qty-input" id="inp-${item.item}-${s.name}">
-          </td>
-          <td>
-            <button class="btn-edit"
-              onclick="updateShipment('${item.item}',${item.price},'${s.name}')">
-              ✏</button>
-          </td>
-          <td>
-            <button class="btn-delete"
-              onclick="deleteShipment('${item.item}',${item.price},'${s.name}')">
-              🗑</button>
-          </td>
-        </tr>
-      `).join("")}
-    </table>
+    <table class="store-table">${rowsHTML}</table>
   `;
 
   return card;
 }
 
 /* ===============================
-   更新 & 削除 API
+   専用 API 呼び出し
 =============================== */
-function updateShipment(item, price, store) {
+async function updateHistoryRow(row, item, price, store) {
   const id = `inp-${item}-${store}`;
   const qty = Number(document.getElementById(id).value || 0);
   if (!confirm("更新しますか？")) return;
 
-  fetch(HISTORY_SCRIPT_URL, {
+  await fetch(HISTORY_SCRIPT_URL, {
     method: "POST",
     body: JSON.stringify({
-      action: "updateShipment",
+      action: "updateHistory",
       date: currentDate,
-      item, price, store, quantity: qty
+      row,
+      item,
+      price,
+      store,
+      quantity: qty
     })
-  }).then(() => loadHistory(currentDate));
+  });
+
+  loadHistory(currentDate);
 }
 
-function deleteShipment(item, price, store) {
+async function deleteHistoryRow(row) {
   if (!confirm("削除しますか？")) return;
 
-  fetch(HISTORY_SCRIPT_URL, {
+  await fetch(HISTORY_SCRIPT_URL, {
     method: "POST",
     body: JSON.stringify({
       action: "deleteShipment",
       date: currentDate,
-      item, price, store
+      row
     })
-  }).then(() => loadHistory(currentDate));
+  });
+
+  loadHistory(currentDate);
 }
 
-/* === app.jsから呼べるように公開 === */
+/* === 公開 === */
 window.renderHistoryScreen = renderHistoryScreen;
 window.activateHistoryFeatures = activateHistoryFeatures;
