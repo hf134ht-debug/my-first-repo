@@ -231,7 +231,7 @@ async function deleteHistoryRow(row) {
   await fetch(HISTORY_SCRIPT_URL, {
     method: "POST",
     body: JSON.stringify({
-      action: "deleteShipment",
+      action: "deleteHistory",   // ★ ここを deleteHistory に
       date: currentDate,
       row
     })
@@ -243,3 +243,4 @@ async function deleteHistoryRow(row) {
 /* === 公開 === */
 window.renderHistoryScreen = renderHistoryScreen;
 window.activateHistoryFeatures = activateHistoryFeatures;
+
