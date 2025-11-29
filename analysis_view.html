@@ -4,37 +4,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI分析</title>
   <link rel="stylesheet" href="/my-first-repo/css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
 <body>
 
 <div class="analysis-container">
 
   <!-- タイトル -->
-  <h1 class="analysis-title">AI分析</h1>
+  <div class="analysis-title-area">
+    <h1 class="analysis-title">AI分析</h1>
+    <span class="analysis-badge">AI powered</span>
+  </div>
 
-  <!-- 4つの大きなタブカード -->
+  <!-- 4つの大きいタブカード -->
   <div class="analysis-mode-tabs">
+
     <div class="analysis-mode-card mode-alloc" data-mode="alloc">
+      <i class="bi bi-shop card-icon"></i>
       <div class="mode-main">店舗配分最適化</div>
       <div class="mode-sub">Optimal Allocation</div>
     </div>
+
     <div class="analysis-mode-card mode-reverse" data-mode="reverse">
+      <i class="bi bi-bullseye card-icon"></i>
       <div class="mode-main">目標販売量リバースエンジン</div>
       <div class="mode-sub">Target Reverse Engine</div>
     </div>
+
     <div class="analysis-mode-card mode-price" data-mode="price">
+      <i class="bi bi-cash-coin card-icon"></i>
       <div class="mode-main">最適価格シミュレーション</div>
       <div class="mode-sub">Price Simulation</div>
     </div>
+
     <div class="analysis-mode-card mode-forecast" data-mode="forecast">
+      <i class="bi bi-graph-up-arrow card-icon"></i>
       <div class="mode-main">需要予測</div>
       <div class="mode-sub">Demand Forecast</div>
     </div>
+
   </div>
 
   <!-- ===== ページ① 店舗配分最適化 ===== -->
   <section id="analysisPage-alloc" class="analysis-page active">
-    <h2 class="analysis-section-title">店舗配分最適化</h2>
+    <h2 class="analysis-section-title">
+      <i class="bi bi-shop section-icon"></i> 店舗配分最適化
+    </h2>
 
     <div class="analysis-input-area">
       <label>品目</label>
@@ -57,11 +72,10 @@
     </div>
   </section>
 
-  <!-- ===== ページ② 目標販売量リバースエンジン ===== -->
+  <!-- ===== ページ② リバースエンジン ===== -->
   <section id="analysisPage-reverse" class="analysis-page">
     <h2 class="analysis-section-title">
-      目標販売量リバースエンジン
-      <span class="analysis-subtitle">Target Reverse Engine</span>
+      <i class="bi bi-bullseye section-icon"></i> 目標販売量リバースエンジン
     </h2>
 
     <div class="analysis-input-area">
@@ -84,7 +98,9 @@
 
   <!-- ===== ページ③ 最適価格シミュレーション ===== -->
   <section id="analysisPage-price" class="analysis-page">
-    <h2 class="analysis-section-title">最適価格シミュレーション</h2>
+    <h2 class="analysis-section-title">
+      <i class="bi bi-cash-coin section-icon"></i> 最適価格シミュレーション
+    </h2>
 
     <div class="analysis-input-area">
       <label>品目</label>
@@ -105,7 +121,9 @@
 
   <!-- ===== ページ④ 需要予測 ===== -->
   <section id="analysisPage-forecast" class="analysis-page">
-    <h2 class="analysis-section-title">需要予測</h2>
+    <h2 class="analysis-section-title">
+      <i class="bi bi-graph-up-arrow section-icon"></i> 需要予測
+    </h2>
 
     <div id="forecastChart" class="analysis-chart"></div>
 
