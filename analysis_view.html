@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI分析</title>
+<link rel="stylesheet" href="/my-first-repo/css/style.css">
+</head>
+
+<body>
+
+<div class="analysis-container">
+
+  <!-- タイトル -->
+  <h1 class="analysis-title">AI分析</h1>
+
+  <!-- ===== ブロック① 店舗配分最適化 ===== -->
+  <section class="analysis-section">
+    <h2 class="analysis-section-title">店舗配分最適化</h2>
+
+    <!-- 入力エリア -->
+    <div class="analysis-input-area">
+      <label>品目</label>
+      <select id="allocItem" class="analysis-input"></select>
+
+      <label>出荷予定数</label>
+      <input id="allocQuantity" type="number" class="analysis-input" placeholder="例：30">
+
+      <label>価格（円）</label>
+      <input id="allocPrice" type="number" class="analysis-input" placeholder="例：150">
+
+      <label>重さ（g・任意）</label>
+      <input id="allocWeight" type="number" class="analysis-input" placeholder="任意">
+    </div>
+
+    <!-- 店舗選択（pill型トグルボタン） -->
+    <div class="store-button-area" id="allocStoreButtons">
+      <!-- JS側で自動生成 -->
+    </div>
+
+    <!-- 結果表示 -->
+    <div class="analysis-result-card" id="allocResult">
+      <p class="analysis-placeholder">ここに配分結果が表示されます</p>
+    </div>
+  </section>
+
+
+
+  <!-- ===== ブロック② 目標販売量リバースエンジン ===== -->
+  <section class="analysis-section">
+    <h2 class="analysis-section-title">
+      目標販売量リバースエンジン
+      <span class="analysis-subtitle">Target Reverse Engine</span>
+    </h2>
+
+    <!-- 入力 -->
+    <div class="analysis-input-area">
+      <label>品目</label>
+      <select id="revItem" class="analysis-input"></select>
+
+      <label>目標販売数</label>
+      <input id="revTarget" type="number" class="analysis-input" placeholder="例：20">
+
+      <label>重さ（g・任意）</label>
+      <input id="revWeight" type="number" class="analysis-input" placeholder="任意">
+    </div>
+
+    <!-- 店舗選択（同じUIを再利用） -->
+    <div class="store-button-area" id="revStoreButtons">
+      <!-- JS側で自動生成 -->
+    </div>
+
+    <!-- 結果表示 -->
+    <div class="analysis-result-card" id="revResult">
+      <p class="analysis-placeholder">ここにAI逆算結果が表示されます</p>
+    </div>
+  </section>
+
+
+
+  <!-- ===== ブロック③ 最適価格シミュレーション ===== -->
+  <section class="analysis-section">
+    <h2 class="analysis-section-title">最適価格シミュレーション</h2>
+
+    <div class="analysis-input-area">
+      <label>品目</label>
+      <select id="simItem" class="analysis-input"></select>
+
+      <label>重さ（g・任意）</label>
+      <input id="simWeight" type="number" class="analysis-input" placeholder="任意">
+
+      <label>価格（78〜500円）</label>
+      <input id="simPrice" type="range" min="78" max="500" value="120" class="analysis-slider">
+      <div id="simPriceLabel">現在の価格：120円</div>
+    </div>
+
+    <div class="analysis-result-card" id="simResult">
+      <p class="analysis-placeholder">価格を動かすと結果が表示されます</p>
+    </div>
+  </section>
+
+
+
+  <!-- ===== ブロック④ 需要予測 ===== -->
+  <section class="analysis-section">
+    <h2 class="analysis-section-title">需要予測</h2>
+
+    <!-- グラフ（ApexCharts） -->
+    <div id="forecastChart" class="analysis-chart"></div>
+
+    <!-- 店舗需要強度（★） -->
+    <div class="analysis-result-card" id="storeDemand">
+      <p class="analysis-placeholder">店舗別需要強度が表示されます</p>
+    </div>
+
+    <!-- AIコメント -->
+    <div class="analysis-result-card" id="forecastComment">
+      <p class="analysis-placeholder">AIコメントが表示されます</p>
+    </div>
+  </section>
+
+</div>
+
+<script src="/my-first-repo/js/analysis.js"></script>
+</body>
+</html>
