@@ -1,7 +1,7 @@
 /* =========================================================
-   history.js（完全版）
-   - 履歴画面（更新・削除は専用APIを使用）
-   - ★規格入力欄（プリセット＋手入力）を追加
+   history.js（完全版・品目統一対応）
+   - 履歴画面（更新・削除は専用API）
+   - ★規格入力欄（プリセット＋手入力）
    - ★規格はグループ単位（品目＋値段）で全行更新
 ========================================================= */
 
@@ -9,41 +9,68 @@ const HISTORY_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
 
 /* =========================================================
-   品目統一
+   品目統一（shipment.js と完全同一仕様）
 ========================================================= */
 function normalizeItemName(raw) {
   if (!raw) return "";
   let s = String(raw).trim();
+
+  // 全角 → 半角
+  const z2h = (str) =>
+    str.replace(/[！-～]/g, (c) =>
+      String.fromCharCode(c.charCodeAt(0) - 0xFEE0)
+    );
+  s = z2h(s);
   const lower = s.toLowerCase();
 
-  if (/[とうトﾄ][う]?も?ろ?こし/.test(s) ||
-      lower.includes("corn") ||
-      s.includes("ｺｰﾝ") || s.includes("コーン")) {
-    return "トウモロコシ";
+  /* --- とうもろこし --- */
+  if (
+    /とう?も?ろ?こし/.test(s) ||
+    lower.includes("corn") ||
+    s.includes("ｺｰﾝ") ||
+    s.includes("コーン") ||
+    /ﾄｳﾓﾛｺｼ|トウモロコシ/.test(s)
+  ) {
+    return "とうもろこし";
   }
+
+  /* --- はくさい --- */
   if (s.includes("白菜") || s.includes("はくさい") || s.includes("ﾊｸｻｲ")) {
-    if (s.includes("ｶｯﾄ") || s.includes("カット") || lower.includes("cut")) {
-      return "白菜カット";
+    if (
+      s.includes("ｶｯﾄ") ||
+      s.includes("カット") ||
+      lower.includes("cut")
+    ) {
+      return "はくさいカット";
     }
-    return "白菜";
+    return "はくさい";
   }
-  if (s.includes("ｷｬﾍﾞﾂ") || s.includes("キャベツ") || s.includes("きゃべつ")) {
-    if (s.includes("ｶｯﾄ") || s.includes("カット") || lower.includes("cut")) {
+
+  /* --- キャベツ --- */
+  if (s.includes("キャベツ") || s.includes("ｷｬﾍﾞﾂ") || s.includes("きゃべつ")) {
+    if (
+      s.includes("ｶｯﾄ") ||
+      s.includes("カット") ||
+      lower.includes("cut")
+    ) {
       return "キャベツカット";
     }
     return "キャベツ";
   }
+
   return s;
 }
 
 /* =========================================================
-   カード色
+   カード色（ひらがなルールに合わせて修正）
 ========================================================= */
 function getItemClass(item) {
   if (!item) return "history-card";
-  if (item.includes("白菜")) return "history-card hakusai";
+
+  if (item.includes("はくさい")) return "history-card hakusai";
   if (item.includes("キャベツ")) return "history-card cabbage";
-  if (item.includes("トウモロコシ")) return "history-card corn";
+  if (item.includes("とうもろこし")) return "history-card corn";
+
   return "history-card";
 }
 
@@ -91,18 +118,18 @@ async function drawHistoryCalendar(selectedDate = null) {
 function drawCalendar(year, month, selectedDate = null, daysWithData = []) {
   const first = new Date(year, month, 1);
   const last = new Date(year, month + 1, 0);
-  const days = ["日","月","火","水","木","金","土"];
+  const days = ["日", "月", "火", "水", "木", "金", "土"];
 
   let html = `
   <div class="calendar-wrapper">
     <div class="calendar-header">
       <button class="cal-btn" onclick="changeMonth(-1)">＜</button>
-      <div><b>${year}年 ${month+1}月</b></div>
+      <div><b>${year}年 ${month + 1}月</b></div>
       <button class="cal-btn" onclick="changeMonth(1)">＞</button>
     </div>
 
     <div class="calendar-grid">
-      ${days.map(d => `<div class="calendar-day">${d}</div>`).join("")}
+      ${days.map((d) => `<div class="calendar-day">${d}</div>`).join("")}
     </div>
 
     <div class="calendar-grid">
@@ -111,8 +138,9 @@ function drawCalendar(year, month, selectedDate = null, daysWithData = []) {
   for (let i = 0; i < first.getDay(); i++) html += `<div></div>`;
 
   for (let d = 1; d <= last.getDate(); d++) {
-    const dd = String(d).padStart(2,'0');
-    const isSelected = selectedDate &&
+    const dd = String(d).padStart(2, "0");
+    const isSelected =
+      selectedDate &&
       selectedDate.getFullYear() === year &&
       selectedDate.getMonth() === month &&
       selectedDate.getDate() === d;
@@ -130,13 +158,22 @@ function drawCalendar(year, month, selectedDate = null, daysWithData = []) {
 
 async function changeMonth(offset) {
   calMonth += offset;
-  if (calMonth < 0) { calMonth = 11; calYear--; }
-  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) {
+    calMonth = 11;
+    calYear--;
+  }
+  if (calMonth > 11) {
+    calMonth = 0;
+    calYear++;
+  }
   drawHistoryCalendar();
 }
 
 async function selectHistoryDate(y, m, d) {
-  currentDate = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+  currentDate = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(
+    2,
+    "0"
+  )}`;
   drawHistoryCalendar(new Date(y, m, d));
   loadHistory(currentDate);
 }
@@ -158,14 +195,17 @@ async function loadHistory(dateStr) {
 
   container.innerHTML = `<h3>${dateStr} の履歴</h3>`;
 
-  data.items.forEach(group => {
-    const card = createItemCard(group);  // ← 表形式カード（A方式）
+  data.items.forEach((group) => {
+    /** ★ 表示前に normalize → UI 全体を完全統一 */
+    group.item = normalizeItemName(group.item);
+
+    const card = createItemCard(group);
     container.appendChild(card);
   });
 }
 
 /* =========================================================
-   ★品目別 規格プリセット
+   ★品目別 規格プリセット（表記統一に合わせて修正）
 ========================================================= */
 const KIKAKU_PRESETS = {
   "キャベツ": [
@@ -175,11 +215,9 @@ const KIKAKU_PRESETS = {
     "1.1〜1.6kg",
     "1.6kg以上",
   ],
-  "キャベツカット": [
-    "1.1〜1.6kg",
-    "1.6kg以上",
-  ],
-  "白菜": [
+  "キャベツカット": ["1.1〜1.6kg", "1.6kg以上"],
+
+  "はくさい": [
     "1kg以下",
     "1〜1.4kg",
     "1.4〜1.8kg",
@@ -187,17 +225,27 @@ const KIKAKU_PRESETS = {
     "1.8〜3kg",
     "3kg以上",
   ],
-  "白菜カット": [
-    "カミサリ不良・普通",
-    "カミサリ不良・軽",
-  ],
-  "トウモロコシ": [
-    "A・黄", "B・黄", "C・黄",
-    "A・白", "B・白", "C・白",
-    "A・ミックス", "B・ミックス", "C・ミックス",
-    "A・黄（2本入り）","B・黄（2本入り）","C・黄（2本入り）",
-    "A・白（2本入り）","B・白（2本入り）","C・白（2本入り）",
-    "A・ミックス（2本入り）","B・ミックス（2本入り）","C・ミックス（2本入り）",
+  "はくさいカット": ["カミサリ不良・普通", "カミサリ不良・軽"],
+
+  "とうもろこし": [
+    "A・黄",
+    "B・黄",
+    "C・黄",
+    "A・白",
+    "B・白",
+    "C・白",
+    "A・ミックス",
+    "B・ミックス",
+    "C・ミックス",
+    "A・黄（2本入り）",
+    "B・黄（2本入り）",
+    "C・黄（2本入り）",
+    "A・白（2本入り）",
+    "B・白（2本入り）",
+    "C・白（2本入り）",
+    "A・ミックス（2本入り）",
+    "B・ミックス（2本入り）",
+    "C・ミックス（2本入り）",
   ],
 };
 
@@ -208,9 +256,9 @@ async function updateKikakuForCard(group, newKikaku) {
   if (!newKikaku) return;
 
   const payload = {
-    mode:  "updateKikaku",
-    date:  group.date,
-    item:  group.item,
+    mode: "updateKikaku",
+    date: group.date,
+    item: group.item,
     price: group.price,
     kikaku: newKikaku,
   };
@@ -218,8 +266,6 @@ async function updateKikakuForCard(group, newKikaku) {
   try {
     const res = await fetch(HISTORY_SCRIPT_URL, {
       method: "POST",
-      // ★ ← ここでヘッダーは付けない（重要）
-      // headers: {"Content-Type": "application/json"},
       body: JSON.stringify(payload),
     });
 
@@ -230,8 +276,6 @@ async function updateKikakuForCard(group, newKikaku) {
       alert("規格更新に失敗しました: " + (json.message || ""));
       return;
     }
-
-    // ここまで来れば成功（バッジ更新は既存の then 側でやる）
   } catch (err) {
     alert("規格更新時にエラーが発生しました");
     console.error(err);
@@ -245,7 +289,7 @@ function createItemCard(group) {
   const card = document.createElement("div");
   card.className = getItemClass(group.item);
 
-  /* ======== タイトル＋バッジ ======== */
+  /* ===== タイトル＋バッジ ===== */
   const header = document.createElement("div");
   header.className = "history-title";
 
@@ -265,7 +309,7 @@ function createItemCard(group) {
   header.appendChild(badge);
   card.appendChild(header);
 
-  /* ======== 規格 UI ======== */
+  /* ===== 規格 UI ===== */
   const kikakuUI = document.createElement("div");
   kikakuUI.className = "kikaku-area";
 
@@ -276,7 +320,7 @@ function createItemCard(group) {
   const controlsDiv = document.createElement("div");
   controlsDiv.className = "kikaku-controls";
 
-  const normalized = normalizeItemName(group.item);
+  const normalized = group.item; // ← すでに normalize 済み
   const presets = KIKAKU_PRESETS[normalized] || [];
 
   const sel = document.createElement("select");
@@ -287,7 +331,7 @@ function createItemCard(group) {
   placeholderOpt.textContent = "プリセットから選択";
   sel.appendChild(placeholderOpt);
 
-  presets.forEach(p => {
+  presets.forEach((p) => {
     const opt = document.createElement("option");
     opt.value = p;
     opt.textContent = p;
@@ -311,12 +355,12 @@ function createItemCard(group) {
 
   card.appendChild(kikakuUI);
 
-  /* ======== 店舗テーブル（innerHTMLで一気に作る） ======== */
+  /* ===== 店舗テーブル ===== */
   const table = document.createElement("table");
   table.className = "store-table";
 
   let rowsHTML = "";
-  group.stores.forEach(s => {
+  group.stores.forEach((s) => {
     const row = s.row;
     rowsHTML += `
       <tr>
@@ -344,7 +388,7 @@ function createItemCard(group) {
   table.innerHTML = rowsHTML;
   card.appendChild(table);
 
-  /* ======== イベント：プリセット変更 ======== */
+  /* ===== 規格：プリセット変更 ===== */
   sel.addEventListener("change", () => {
     const val = sel.value;
     if (!val) return;
@@ -360,7 +404,7 @@ function createItemCard(group) {
     });
   });
 
-  /* ======== イベント：手入力 ======== */
+  /* ===== 規格：手入力 ===== */
   inp.addEventListener("blur", () => {
     const val = inp.value.trim();
     if (!val) return;
@@ -377,9 +421,8 @@ function createItemCard(group) {
   return card;
 }
 
-
 /* =========================================================
-   行単位 更新・削除（既存）
+   行単位 更新・削除
 ========================================================= */
 async function updateHistoryRow(row, item, price, store) {
   const id = `inp-${item}-${store}`;
@@ -395,8 +438,8 @@ async function updateHistoryRow(row, item, price, store) {
       item,
       price,
       store,
-      quantity: qty
-    })
+      quantity: qty,
+    }),
   });
 
   loadHistory(currentDate);
@@ -410,8 +453,8 @@ async function deleteHistoryRow(row) {
     body: JSON.stringify({
       action: "deleteHistory",
       date: currentDate,
-      row
-    })
+      row,
+    }),
   });
 
   loadHistory(currentDate);
