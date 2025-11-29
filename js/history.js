@@ -240,6 +240,76 @@ function createItemCard(group) {
   const card = document.createElement("div");
   card.className = getItemClass(group.item);
 
+  /* ======== タイトル＋バッジ ======== */
+  const header = document.createElement("div");
+  header.className = "history-title";
+
+  const titleSpan = document.createElement("span");
+  titleSpan.textContent = `${group.item}（${group.price}円）`;
+
+  const badge = document.createElement("span");
+  badge.className = "kikaku-badge";
+
+  if (group.kikaku && String(group.kikaku).trim() !== "") {
+    badge.textContent = group.kikaku;
+  } else {
+    badge.style.display = "none";
+  }
+
+  header.appendChild(titleSpan);
+  header.appendChild(badge);
+  card.appendChild(header);
+
+  /* ======== 規格 UI ======== */
+  const kikakuUI = document.createElement("div");
+  kikakuUI.className = "kikaku-area";
+
+  const labelDiv = document.createElement("div");
+  labelDiv.className = "kikaku-label";
+  labelDiv.textContent = "規格：";
+
+  const controlsDiv = document.createElement("div");
+  controlsDiv.className = "kikaku-controls";
+
+  const normalized = normalizeItemName(group.item);
+  const presets = KIKAKU_PRESETS[normalized] || [];
+
+  const sel = document.createElement("select");
+  sel.className = "kikaku-select";
+
+  const placeholderOpt = document.createElement("option");
+  placeholderOpt.value = "";
+  placeholderOpt.textContent = "プリセットから選択";
+  sel.appendChild(placeholderOpt);
+
+  presets.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = p;
+    if (group.kikaku === p) {
+      opt.selected = true;
+      placeholderOpt.selected = false;
+    }
+    sel.appendChild(opt);
+  });
+
+  const inp = document.createElement("input");
+  inp.type = "text";
+  inp.className = "kikaku-input";
+  inp.placeholder = "例）1.2〜1.6kg / 特大";
+  inp.value = group.kikaku || "";
+
+  controlsDiv.appendChild(sel);
+  controlsDiv.appendChild(inp);
+  kikakuUI.appendChild(labelDiv);
+  kikakuUI.appendChild(controlsDiv);
+
+  card.appendChild(kikakuUI);
+
+  /* ======== 店舗テーブル（innerHTMLで一気に作る） ======== */
+  const table = document.createElement("table");
+  table.className = "store-table";
+
   let rowsHTML = "";
   group.stores.forEach(s => {
     const row = s.row;
@@ -266,65 +336,42 @@ function createItemCard(group) {
     `;
   });
 
-  /* ======== 規格 UI 作成 ======== */
-  const kikakuUI = document.createElement("div");
-  kikakuUI.className = "kikaku-area";
+  table.innerHTML = rowsHTML;
+  card.appendChild(table);
 
-  const normalized = normalizeItemName(group.item);
-  const presets = KIKAKU_PRESETS[normalized] || [];
-
-  let presetOptions = `<option value="">プリセットから選択</option>`;
-  presets.forEach(p => {
-    const selected = (group.kikaku === p) ? "selected" : "";
-    presetOptions += `<option value="${p}" ${selected}>${p}</option>`;
-  });
-
-  kikakuUI.innerHTML = `
-    <div class="kikaku-label">規格：</div>
-    <div class="kikaku-controls">
-      <select class="kikaku-select" id="sel-${group.item}-${group.price}">
-        ${presetOptions}
-      </select>
-      <input type="text" class="kikaku-input"
-        id="inp-kikaku-${group.item}-${group.price}"
-        placeholder="例）1.2〜1.6kg / 特大" 
-        value="${group.kikaku || ""}">
-    </div>
-  `;
-
-  /* ======== メイン HTML ======== */
-  const headerHTML = `
-    <div class="history-title">
-      <span>${group.item}（${group.price}円）</span>
-    </div>
-  `;
-
-  const tableHTML = `
-    <table class="store-table">${rowsHTML}</table>
-  `;
-
-  /* ======== 組み立て ======== */
-  card.innerHTML = headerHTML;
-  card.appendChild(kikakuUI);
-  card.innerHTML += tableHTML;
-
-  /* ======== イベント ======== */
-  const sel = kikakuUI.querySelector("select");
-  const inp = kikakuUI.querySelector("input");
-
+  /* ======== イベント：プリセット変更 ======== */
   sel.addEventListener("change", () => {
     const val = sel.value;
+    if (!val) return;
+
     inp.value = val;
-    updateKikakuForCard(group, val);
+
+    updateKikakuForCard(group, val).then(() => {
+      group.kikaku = val;
+      badge.textContent = val;
+      badge.style.display = "inline-block";
+      badge.classList.add("flash");
+      setTimeout(() => badge.classList.remove("flash"), 600);
+    });
   });
 
+  /* ======== イベント：手入力 ======== */
   inp.addEventListener("blur", () => {
     const val = inp.value.trim();
-    if (val) updateKikakuForCard(group, val);
+    if (!val) return;
+
+    updateKikakuForCard(group, val).then(() => {
+      group.kikaku = val;
+      badge.textContent = val;
+      badge.style.display = "inline-block";
+      badge.classList.add("flash");
+      setTimeout(() => badge.classList.remove("flash"), 600);
+    });
   });
 
   return card;
 }
+
 
 /* =========================================================
    行単位 更新・削除（既存）
