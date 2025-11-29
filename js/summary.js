@@ -35,25 +35,94 @@ const STORE_ORDER = [
 ];
 
 /* ===== 品目キー & カラー ===== */
-const ITEM_ORDER = ["はくさい", "はくさいカット", "キャベツ", "キャベツカット", "とうもろこし"];
+/* 内部はすべて
+   はくさい / はくさいカット / キャベツ / キャベツカット / とうもろこし
+   に揃える
+*/
+const ITEM_ORDER = [
+  "はくさい",
+  "はくさいカット",
+  "キャベツ",
+  "キャベツカット",
+  "とうもろこし",
+];
+
 const ITEM_COLOR_MAP = {
-  "白菜":          "#B5E48C", // 黄緑
-  "白菜カット":    "#99D98C", // 少し濃い黄緑
-  "キャベツ":      "#52B788", // 緑
+  "はくさい":       "#B5E48C", // 黄緑
+  "はくさいカット": "#99D98C", // やや濃い黄緑
+  "キャベツ":       "#52B788", // 緑
   "キャベツカット": "#168AAD", // 青緑寄り
-  "トウモロコシ":   "#FFE66D"  // 薄黄色
+  "とうもろこし":   "#FFE66D", // 薄黄色
 };
 
 /* 品目名から正規のキーを取得（グラフ・並び順用） */
 function getItemKey(name) {
-  if (!name) return "";
-  const s = String(name);
-  if (s.indexOf("白菜カット") !== -1) return "白菜カット";
-  if (s.indexOf("白菜") !== -1)       return "白菜";
-  if (s.indexOf("キャベツカット") !== -1) return "キャベツカット";
-  if (s.indexOf("キャベツ") !== -1)       return "キャベツ";
-  if (s.indexOf("トウモロコシ") !== -1 || s.indexOf("とうもろこし") !== -1) return "トウモロコシ";
+  return normalizeItemName(name);
+}
+
+/* =========================================================
+   品目表記統一（出荷・履歴・売上・集計すべて共通）
+========================================================= */
+function normalizeItemName(raw) {
+  if (!raw) return "";
+  let s = String(raw).trim();
+  const lower = s.toLowerCase();
+
+  // とうもろこし（表記ゆれ全部→ とうもろこし）
+  if (
+    /[とうトﾄ][う]?も?ろ?こし/.test(s) ||
+    lower.includes("corn") ||
+    s.includes("ｺｰﾝ") || s.includes("コーン")
+  ) {
+    return "とうもろこし";
+  }
+
+  // はくさいカット
+  if (
+    s.includes("白菜カット") ||
+    s.includes("はくさいカット") ||
+    s.includes("ﾊｸｻｲ ｶｯﾄ")
+  ) {
+    return "はくさいカット";
+  }
+
+  // はくさい（漢字／ひらがな／半角カナ → はくさい）
+  if (
+    s.includes("白菜") ||
+    s.includes("はくさい") ||
+    s.includes("ﾊｸｻｲ")
+  ) {
+    return "はくさい";
+  }
+
+  // キャベツカット
+  if (
+    s.includes("キャベツカット") ||
+    s.includes("ｷｬﾍﾞﾂ ｶｯﾄ")
+  ) {
+    return "キャベツカット";
+  }
+
+  // キャベツ
+  if (
+    s.includes("キャベツ") ||
+    s.includes("ｷｬﾍﾞﾂ")
+  ) {
+    return "キャベツ";
+  }
+
   return s;
+}
+
+/* 集計ビュー用：品目 → CSSクラス変換（ひらがな対応） */
+function getItemClassForSummary(name) {
+  const n = normalizeItemName(name);
+
+  if (n === "はくさい" || n === "はくさいカット") return "hakusai";
+  if (n === "キャベツ" || n === "キャベツカット") return "cabbage";
+  if (n === "とうもろこし") return "corn";
+
+  return "";
 }
 
 /* 店舗名の基底キー（最後の「店」を取る） */
@@ -84,46 +153,6 @@ function getSalesRateColor(rate) {
   if (rate >= 80) return "#388e3c";  // 緑：優秀
   if (rate >= 50) return "#f57c00";  // オレンジ：改善余地
   return "#d32f2f";                  // 赤：要改善
-}
-
-/* =========================================================
-   品目表記統一（出荷・履歴・売上・集計すべて共通）
-========================================================= */
-function normalizeItemName(raw) {
-  if (!raw) return "";
-  let s = String(raw).trim();
-  const lower = s.toLowerCase();
-
-  // とうもろこし（表記ゆれ全部→とうもろこし）
-  if (
-    /[とうトﾄ][う]?も?ろ?こし/.test(s) ||
-    lower.includes("corn") ||
-    s.includes("ｺｰﾝ") || s.includes("コーン")
-  ) {
-    return "とうもろこし";
-  }
-
-  // はくさいカット
-  if (s.includes("白菜カット") || s.includes("はくさいカット") || s.includes("ﾊｸｻｲ ｶｯﾄ")) {
-    return "はくさいカット";
-  }
-
-  // はくさい（漢字／ひらがな／半角カナ全部→はくさい）
-  if (s.includes("白菜") || s.includes("はくさい") || s.includes("ﾊｸｻｲ")) {
-    return "はくさい";
-  }
-
-  // キャベツカット
-  if (s.includes("キャベツカット") || s.includes("ｷｬﾍﾞﾂ ｶｯﾄ")) {
-    return "キャベツカット";
-  }
-
-  // キャベツ（ｷｬﾍﾞﾂ→キャベツ）
-  if (s.includes("キャベツ") || s.includes("ｷｬﾍﾞﾂ")) {
-    return "キャベツ";
-  }
-
-  return s;
 }
 
 /* =========================================================
@@ -389,17 +418,11 @@ async function loadDailySummary(dateStr) {
       const lossQty    = it.lossQty    || 0;
       const lossRate   = it.lossRate;
 
-      // 色分け（履歴と同じ）
-      let cls = "corn";   // デフォルト：トウモロコシ色
-      let badgeCls = "item-total-corn";
-
-      if (itemName.indexOf("白菜") !== -1) {
-        cls = "hakusai";
-        badgeCls = "item-total-hakusai";
-      } else if (itemName.indexOf("キャベツ") !== -1) {
-        cls = "cabbage";
-        badgeCls = "item-total-cabbage";
-      }
+      const cls = getItemClassForSummary(itemName);
+      const badgeCls =
+        cls === "hakusai" ? "item-total-hakusai" :
+        cls === "cabbage" ? "item-total-cabbage" :
+        "item-total-corn";
 
       const lossColor = getLossRateColor(lossRate);
       const lossStyle = lossColor ? ` style="color:${lossColor};"` : "";
@@ -672,13 +695,15 @@ async function loadWeeklySummary(weekStartStr) {
 
     const total          = data.total || {};
     const itemsRaw       = data.items || [];
+    let   days           = data.days  || [];
     // ★ 品目名をすべて統一
+    const dailySummaries = data.dailySummaries || [];
+
     itemsRaw.forEach(it => it.item = normalizeItemName(it.item));
     dailySummaries.forEach(d =>
-     d.items?.forEach(it => it.item = normalizeItemName(it.item))
+    d.items?.forEach(it => it.item = normalizeItemName(it.item))
     );
-    let   days           = data.days  || [];
-    const dailySummaries = data.dailySummaries || []; // ★ GAS からまとめて受け取る
+
 
     // 品目を固定順（白菜→白菜カット→キャベツ→キャベツカット→トウモロコシ）にソート
     const items = [...itemsRaw].sort((a, b) => {
@@ -800,7 +825,7 @@ async function loadWeeklySummary(weekStartStr) {
 
     // ▼ 品目別カード（店舗別アコーディオン付き）
     items.forEach(it => {
-      const itemName   = it.item;
+      const itemName   = it.item; // すでに normalize 済み
       const shippedQty = it.shippedQty || 0;
       const soldQty    = it.soldQty    || 0;
       const lossQty    = it.lossQty    || 0;
@@ -808,15 +833,11 @@ async function loadWeeklySummary(weekStartStr) {
         ? Math.round((lossQty / shippedQty) * 100)
         : null;
 
-      let cls = "corn";
-      let badgeCls = "item-total-corn";
-      if (itemName.indexOf("白菜") !== -1) {
-        cls = "hakusai";
-        badgeCls = "item-total-hakusai";
-      } else if (itemName.indexOf("キャベツ") !== -1) {
-        cls = "cabbage";
-        badgeCls = "item-total-cabbage";
-      }
+      const cls = getItemClassForSummary(itemName);
+      const badgeCls =
+        cls === "hakusai" ? "item-total-hakusai" :
+        cls === "cabbage" ? "item-total-cabbage" :
+        "item-total-corn";
 
       const lossColor = getLossRateColor(lossRate);
       const lossStyle = lossColor ? ` style="color:${lossColor};"` : "";
@@ -867,6 +888,7 @@ async function loadWeeklySummary(weekStartStr) {
         </div>
       `;
     });
+
 
     // ▼ 店舗別ロス情報（週合計）
     html += renderWeeklyStoreTotalSection(storeTotalMap);
@@ -1396,27 +1418,30 @@ async function loadMonthlySummary(ym) {
       </div>
     `;
 
-    // 品目別カード（週ビューと同じ）
+        // 品目別カード（週ビューと同じ）
     items.forEach(it => {
       const itemName = it.item;
       const shipped  = it.shippedQty || 0;
-      const sold     = it.soldQty  || 0;
-      const loss     = it.lossQty  || 0;
-      const lossRate = shipped>0 ? Math.round((loss/shipped)*100) : null;
+      const sold     = it.soldQty    || 0;
+      const loss     = it.lossQty    || 0;
+      const lossRate = shipped > 0 ? Math.round((loss / shipped) * 100) : null;
 
-      let cls = "corn", badge = "item-total-corn";
-      if (itemName.includes("白菜"))    { cls="hakusai";  badge="item-total-hakusai"; }
-      if (itemName.includes("キャベツ")) { cls="cabbage"; badge="item-total-cabbage"; }
+      const cls = getItemClassForSummary(itemName);
+      const badge =
+        cls === "hakusai" ? "item-total-hakusai" :
+        cls === "cabbage" ? "item-total-cabbage" :
+        "item-total-corn";
 
       const per = storeItemMap[itemName] || {};
       const rows = Object.keys(per).map(st => ({
-        name:      st,
+        name:       st,
         shippedQty: per[st].shippedQty,
         soldQty:    per[st].soldQty,
         lossQty:    per[st].lossQty,
-        lossRate:   per[st].shippedQty>0 ?
-          Math.round((per[st].lossQty/per[st].shippedQty)*100) : null
-      })).sort((a,b)=>{
+        lossRate:   per[st].shippedQty > 0
+          ? Math.round((per[st].lossQty / per[st].shippedQty) * 100)
+          : null
+      })).sort((a,b) => {
         return STORE_ORDER.indexOf(getStoreKey(a.name)) -
                STORE_ORDER.indexOf(getStoreKey(b.name));
       });
@@ -1430,8 +1455,11 @@ async function loadMonthlySummary(ym) {
             </span>
           </div>
           <div>出荷合計：${shipped}個 / 売上合計：${sold}個</div>
-          ${ rows.length ? renderStoreAccordion(rows) :
-            `<div style="font-size:0.85em;color:#555;margin-top:4px;">内訳なし</div>` }
+          ${
+            rows.length
+              ? renderStoreAccordion(rows)
+              : `<div style="font-size:0.85em;color:#555;margin-top:4px;">内訳なし</div>`
+          }
         </div>
       `;
     });
