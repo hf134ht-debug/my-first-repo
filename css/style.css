@@ -699,7 +699,24 @@ input, select {
   padding: 2px 4px;
 }
 
+.kikaku-badge {
+  display: inline-block;
+  background: #4caf50;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  animation: none;
+}
 
+/* 保存後に光るアニメーション */
+@keyframes badgeFlash {
+  0% { background:#4caf50; }
+  50% { background:#81c784; }
+  100% { background:#4caf50; }
+}
 
-
-
+.kikaku-badge.flash {
+  animation: badgeFlash 0.7s ease;
+}
