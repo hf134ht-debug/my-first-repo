@@ -35,7 +35,7 @@ const STORE_ORDER = [
 ];
 
 /* ===== 品目キー & カラー ===== */
-const ITEM_ORDER = ["白菜", "白菜カット", "キャベツ", "キャベツカット", "トウモロコシ"];
+const ITEM_ORDER = ["はくさい", "はくさいカット", "キャベツ", "キャベツカット", "とうもろこし"];
 const ITEM_COLOR_MAP = {
   "白菜":          "#B5E48C", // 黄緑
   "白菜カット":    "#99D98C", // 少し濃い黄緑
@@ -84,6 +84,46 @@ function getSalesRateColor(rate) {
   if (rate >= 80) return "#388e3c";  // 緑：優秀
   if (rate >= 50) return "#f57c00";  // オレンジ：改善余地
   return "#d32f2f";                  // 赤：要改善
+}
+
+/* =========================================================
+   品目表記統一（出荷・履歴・売上・集計すべて共通）
+========================================================= */
+function normalizeItemName(raw) {
+  if (!raw) return "";
+  let s = String(raw).trim();
+  const lower = s.toLowerCase();
+
+  // とうもろこし（表記ゆれ全部→とうもろこし）
+  if (
+    /[とうトﾄ][う]?も?ろ?こし/.test(s) ||
+    lower.includes("corn") ||
+    s.includes("ｺｰﾝ") || s.includes("コーン")
+  ) {
+    return "とうもろこし";
+  }
+
+  // はくさいカット
+  if (s.includes("白菜カット") || s.includes("はくさいカット") || s.includes("ﾊｸｻｲ ｶｯﾄ")) {
+    return "はくさいカット";
+  }
+
+  // はくさい（漢字／ひらがな／半角カナ全部→はくさい）
+  if (s.includes("白菜") || s.includes("はくさい") || s.includes("ﾊｸｻｲ")) {
+    return "はくさい";
+  }
+
+  // キャベツカット
+  if (s.includes("キャベツカット") || s.includes("ｷｬﾍﾞﾂ ｶｯﾄ")) {
+    return "キャベツカット";
+  }
+
+  // キャベツ（ｷｬﾍﾞﾂ→キャベツ）
+  if (s.includes("キャベツ") || s.includes("ｷｬﾍﾞﾂ")) {
+    return "キャベツ";
+  }
+
+  return s;
 }
 
 /* =========================================================
@@ -343,7 +383,7 @@ async function loadDailySummary(dateStr) {
 
     // ▼ 品目別カード
     items.forEach(it => {
-      const itemName   = it.item;
+      const itemName   = normalizeItemName(it.item);
       const shippedQty = it.shippedQty || 0;
       const soldQty    = it.soldQty    || 0;
       const lossQty    = it.lossQty    || 0;
@@ -632,6 +672,11 @@ async function loadWeeklySummary(weekStartStr) {
 
     const total          = data.total || {};
     const itemsRaw       = data.items || [];
+    // ★ 品目名をすべて統一
+    itemsRaw.forEach(it => it.item = normalizeItemName(it.item));
+    dailySummaries.forEach(d =>
+     d.items?.forEach(it => it.item = normalizeItemName(it.item))
+    );
     let   days           = data.days  || [];
     const dailySummaries = data.dailySummaries || []; // ★ GAS からまとめて受け取る
 
@@ -1243,6 +1288,12 @@ async function loadMonthlySummary(ym) {
     const itemsRaw       = data.items || [];
     let   days           = data.days  || [];
     const dailyAll       = data.dailySummaries || []; // ★ 日別集計（GAS側で計算済）
+    // ★ 品目名統一
+    itemsRaw.forEach(it => it.item = normalizeItemName(it.item));
+    dailyAll.forEach(d =>
+     d.items?.forEach(it => it.item = normalizeItemName(it.item))
+    );
+
 
     // 品目を固定順にソート
     const items = [...itemsRaw].sort((a, b) => {
