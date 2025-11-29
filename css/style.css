@@ -1,3 +1,11 @@
+:root {
+  --hakusai-main: linear-gradient(135deg,#f1ffcf,#d4ff8a);
+  --hakusai-border: #a5d6a7;
+
+  --hakusai-badge: linear-gradient(135deg,#b7e87a,#9ddf5a);
+  --hakusai-badge-text: #2c4a00;
+}
+
 /* =========================================================
    全体背景
 ========================================================= */
@@ -8,9 +16,10 @@ body::before {
   width: 100%; height: 100%;
   background-image: url('https://takatanouen.com/wp-content/uploads/2021/11/6f139b5aff6b0b56ebea56609d4ca516.png');
   background-size: contain;
-  background-position: center;
+  background-position: cover;
   background-repeat: no-repeat;
   opacity: 0.25;
+  filter: opacity(0.25);
   z-index: -1;
 }
 
@@ -146,9 +155,8 @@ input, select {
 }
 
 .item-button.selected.hakusai {
-  background: linear-gradient(135deg,#f4ffcd,#d9ff93);
-  box-shadow: 0 0 12px rgba(200,255,150,0.9);
-  transform: scale(1.05);
+  background: var(--hakusai-main);
+  box-shadow: 0 0 12px rgba(170,255,120,0.9);
 }
 
 .item-button.selected.cabbage {
@@ -316,7 +324,7 @@ input, select {
 }
 
 .history-card.hakusai {
-  background: linear-gradient(135deg,#f7ffdb,#e5ffb0);
+  background: var(--hakusai-main) !important;
 }
 
 .history-card.cabbage {
@@ -345,8 +353,8 @@ input, select {
 }
 
 .item-total-hakusai {
-  background: linear-gradient(135deg,#b7e87a,#8cd856);
-  color: #2c4a00;
+  background: var(--hakusai-badge);
+  color: var(--hakusai-badge-text);
 }
 
 .item-total-cabbage {
@@ -720,4 +728,3 @@ input, select {
 .kikaku-badge.flash {
   animation: badgeFlash 0.7s ease;
 }
-
