@@ -46,9 +46,10 @@ body {
 
 .menu-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
   justify-items: center;
-  gap: 20px;
+  gap: 16px 24px;
+  margin-top: 10px;
 }
 
 .menu-btn {
@@ -982,4 +983,11 @@ input, select {
 .menu-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+}
+
+.menu-btn.btn-analysis {
+  background: #e8d7ff;    /* 可愛いパステル紫 */
+  color: #6b4ab7;         /* 柔らかいラベンダー文字 */
+  box-shadow: 0 4px 10px rgba(150, 120, 230, 0.30);
+  border-radius: 20px;
 }
