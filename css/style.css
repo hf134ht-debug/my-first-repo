@@ -731,42 +731,96 @@ input, select {
 }
 
 /* =========================================================
-   AI分析タブ 全体テーマ（明るくポップ・紫ベース）
+   AI分析タブ 全体テーマ（ポップ＆カラフル）
 ========================================================= */
 
-/* 全体コンテナ */
 .analysis-container {
   padding: 16px;
-  background: #ffffff;
+  background: linear-gradient(180deg, #fdfbff 0%, #f7f0ff 100%);
   font-family: "Arial", sans-serif;
 }
 
 /* タイトル */
 .analysis-title {
   text-align: center;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: bold;
-  color: #7b4bcc; /* 優しい紫 */
-  margin-bottom: 20px;
+  color: #7b4bcc;
+  margin-bottom: 16px;
 }
 
-/* 各セクション（白背景カード） */
-.analysis-section {
-  background: #fff;
+/* ===== 4つの大きなタブカード ===== */
+.analysis-mode-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.analysis-mode-card {
+  padding: 14px 16px;
   border-radius: 18px;
-  padding: 16px;
-  margin-bottom: 24px;
+  color: #444;
+  cursor: pointer;
   box-shadow: 0 3px 8px rgba(0,0,0,0.08);
-  border: 2px solid #e6d9ff; /* 薄紫 */
+  border: 2px solid transparent;
+  text-align: left;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s;
 }
 
-/* セクション見出し */
+.analysis-mode-card .mode-main {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.analysis-mode-card .mode-sub {
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* 色分け */
+.mode-alloc {
+  background: #ffe1f1;
+  border-color: #f7a6d2;
+}
+
+.mode-reverse {
+  background: #ffe9c9;
+  border-color: #ffc78f;
+}
+
+.mode-price {
+  background: #dcfae3;
+  border-color: #9deaa2;
+}
+
+.mode-forecast {
+  background: #e0f4ff;
+  border-color: #9ed8ff;
+}
+
+/* アクティブ */
+.analysis-mode-card.active {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+}
+
+/* ===== ページ本体 ===== */
+.analysis-page {
+  display: none;
+  margin-top: 8px;
+}
+
+.analysis-page.active {
+  display: block;
+}
+
 .analysis-section-title {
-  font-size: 22px;
+  font-size: 20px;
   color: #6f3ed6;
-  margin-bottom: 12px;
-  border-left: 6px solid #b493ff;
-  padding-left: 10px;
+  margin-bottom: 10px;
+  border-left: 5px solid #b493ff;
+  padding-left: 8px;
 }
 
 .analysis-subtitle {
@@ -774,25 +828,25 @@ input, select {
   color: #8c6ddf;
 }
 
-/* 入力エリア */
+/* 入力エリア共通 */
 .analysis-input-area {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
 .analysis-input-area label {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: bold;
   color: #6f3ed6;
 }
 
 .analysis-input {
-  padding: 8px 12px;
-  border: 2px solid #c7b3ff;
+  padding: 7px 10px;
   border-radius: 12px;
-  font-size: 16px;
+  border: 2px solid #c7b3ff;
+  font-size: 15px;
   outline: none;
 }
 
@@ -804,23 +858,21 @@ input, select {
 /* スライダー */
 .analysis-slider {
   width: 100%;
-  margin-top: 10px;
 }
 
-/* スライダー見た目（ブラウザ共通） */
 .analysis-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   background: #b493ff;
   border-radius: 50%;
   cursor: pointer;
 }
 
 #simPriceLabel {
-  margin-top: 8px;
-  font-size: 14px;
+  margin-top: 6px;
+  font-size: 13px;
   color: #6f3ed6;
   font-weight: bold;
 }
@@ -828,10 +880,10 @@ input, select {
 /* 結果カード */
 .analysis-result-card {
   background: #faf7ff;
+  border-radius: 14px;
   border: 2px solid #e6d9ff;
-  border-radius: 16px;
-  padding: 12px;
-  margin-top: 12px;
+  padding: 10px;
+  margin-top: 10px;
   box-shadow: 0 3px 6px rgba(0,0,0,0.05);
 }
 
@@ -839,77 +891,70 @@ input, select {
 .analysis-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
+  margin-top: 6px;
 }
 
 .analysis-table th {
   background: #d8c7ff;
   color: #4d2bb3;
-  padding: 8px;
-  border-radius: 6px;
+  padding: 6px;
+  font-size: 13px;
 }
 
 .analysis-table td {
-  padding: 8px;
-  text-align: center;
+  padding: 6px;
+  font-size: 13px;
   border-bottom: 1px solid #e4d7ff;
+  text-align: center;
 }
 
 .analysis-placeholder {
   color: #a48fe2;
   text-align: center;
-  padding: 10px 0;
 }
 
-/* グラフ用 */
+/* グラフ */
 .analysis-chart {
   width: 100%;
   height: 220px;
-  margin-top: 10px;
+  margin-top: 4px;
 }
 
-
-/* =========================================================
-   店舗選択  pill型ボタン（最も重要）
-========================================================= */
-
+/* ===== 店舗選択 pillボタン ===== */
 .store-button-area {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 14px;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
-/* ON状態（選択中） */
 .store-pill-btn.store-pill-on {
   background: #b493ff;
-  color: white;
-  padding: 10px 18px;
-  border-radius: 999px; /* pill型 */
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 999px;
   border: none;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: bold;
-  box-shadow: 0 2px 5px rgba(140, 87, 255, 0.3);
+  box-shadow: 0 2px 5px rgba(140,87,255,0.3);
   cursor: pointer;
-  transition: 0.15s ease;
 }
 
-.store-pill-btn.store-pill-on:hover {
-  background: #a076ff;
-}
-
-/* OFF状態（除外） */
 .store-pill-btn.store-pill-off {
   background: #e6e6e6;
   color: #777;
-  padding: 10px 18px;
+  padding: 8px 16px;
   border-radius: 999px;
   border: 1px solid #c8c8c8;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
-  transition: 0.15s ease;
 }
 
-.store-pill-btn.store-pill-off:hover {
-  background: #d7d7d7;
+/* =========================================================
+   下部タブの AI分析 ボタン色（紫基調）
+========================================================= */
+
+.tab-btn.analysis {
+  background: #e5d4ff;   /* 薄い紫 */
+  color: #5b3aa8;        /* 文字は少し濃い紫 */
 }
