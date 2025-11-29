@@ -1,16 +1,67 @@
 /* =========================================================
    analysis.js
    AI分析タブ（4つのモード切替 + UI制御）
-   ゆめかわ完全対応版
+   規格プリセット対応・ゆめかわ完全版
 ========================================================= */
 
-/* ===== 店舗一覧 ===== */
+/* =========================================================
+   ▼ 品目 → 規格プリセット一覧
+========================================================= */
+const KIKAKU_PRESETS = {
+  "キャベツ": [
+    "0.7kg以下",
+    "0.7kg以下（2,3個入り）",
+    "0.7〜1.1kg",
+    "1.1〜1.6kg",
+    "1.6kg以上",
+  ],
+
+  "キャベツカット": [
+    "1.1〜1.6kg",
+    "1.6kg以上",
+  ],
+
+  "白菜": [   /* ※はくさい → 白菜 に統一 */
+    "1kg以下",
+    "1〜1.4kg",
+    "1.4〜1.8kg",
+    "1.0〜1.8kg",
+    "1.8〜3kg",
+    "3kg以上",
+  ],
+
+  "白菜カット": [
+    "カミサリ不良・普通",
+    "カミサリ不良・軽",
+  ],
+
+  "トウモロコシ": [
+    "A・黄", "B・黄", "C・黄",
+    "A・白", "B・白", "C・白",
+    "A・ミックス", "B・ミックス", "C・ミックス",
+    "A・黄（2本入り）",
+    "B・黄（2本入り）",
+    "C・黄（2本入り）",
+    "A・白（2本入り）",
+    "B・白（2本入り）",
+    "C・白（2本入り）",
+    "A・ミックス（2本入り）",
+    "B・ミックス（2本入り）",
+    "C・ミックス（2本入り）",
+  ],
+};
+
+/* =========================================================
+   ▼ 店舗一覧
+========================================================= */
 const ANALYSIS_STORES = [
   "連島店", "津高店", "茶屋町店", "大安寺店",
   "中庄店", "総社南店", "円山店", "児島店"
 ];
 
-/* ===== 品目一覧 ===== */
+/* =========================================================
+   ▼ 品目一覧（analysis 用）
+========================================================= */
 const ANALYSIS_ITEMS = [
   "白菜",
   "白菜カット",
@@ -45,13 +96,14 @@ function loadAnalysisView() {
 function setupAnalysisView() {
   setupModeTabs();
   setupItemDropdowns();
+  setupSpecPresetLogic();              // ← 規格プリセットセットアップ追加
   setupStoreButtons("allocStoreButtons");
   setupStoreButtons("revStoreButtons");
   setupSimulationSlider();
 }
 
 /* =========================================================
-   ▼ 4種類の大タブ（店舗配分 / リバース / 価格 / 予測）
+   ▼ 4つの大タブ
 ========================================================= */
 function setupModeTabs() {
   const cards = document.querySelectorAll(".analysis-mode-card");
@@ -61,35 +113,29 @@ function setupModeTabs() {
     });
   });
 
-  // デフォルトは店舗配分最適化
   showAnalysisPage("alloc");
 }
 
 function showAnalysisPage(mode) {
-  // 全ページ非表示
   document.querySelectorAll(".analysis-page").forEach(p => p.classList.remove("active"));
-
-  // 対象だけ表示
-  let page = document.getElementById(`analysisPage-${mode}`);
+  const page = document.getElementById(`analysisPage-${mode}`);
   if (page) page.classList.add("active");
 
-  // タブの見た目変更
   document.querySelectorAll(".analysis-mode-card").forEach(c => c.classList.remove("active"));
-  let target = document.querySelector(`.analysis-mode-card[data-mode="${mode}"]`);
+  const target = document.querySelector(`.analysis-mode-card[data-mode="${mode}"]`);
   if (target) target.classList.add("active");
 }
 
 /* =========================================================
-   ▼ プルダウン生成（品目）
+   ▼ 品目プルダウン
 ========================================================= */
 function setupItemDropdowns() {
   ["allocItem", "revItem", "simItem"].forEach(id => {
-    let sel = document.getElementById(id);
+    const sel = document.getElementById(id);
     if (!sel) return;
-
     sel.innerHTML = "";
     ANALYSIS_ITEMS.forEach(item => {
-      let opt = document.createElement("option");
+      const opt = document.createElement("option");
       opt.value = item;
       opt.textContent = item;
       sel.appendChild(opt);
@@ -98,7 +144,43 @@ function setupItemDropdowns() {
 }
 
 /* =========================================================
-   ▼ pill型 店舗ボタン生成
+   ▼ 規格プリセット ロジック
+========================================================= */
+function setupSpecPresetLogic() {
+  setupSpecPresetFor("allocItem", "allocSpecPreset");
+  setupSpecPresetFor("revItem", "revSpecPreset");
+  setupSpecPresetFor("simItem", "simSpecPreset");
+}
+
+/* 品目の選択に応じてプリセットを更新する */
+function setupSpecPresetFor(itemId, presetId) {
+  const itemSel = document.getElementById(itemId);
+  const presetSel = document.getElementById(presetId);
+
+  if (!itemSel || !presetSel) return;
+
+  function updatePreset() {
+    const item = itemSel.value;
+    const presets = KIKAKU_PRESETS[item] || [];
+
+    presetSel.innerHTML = "";
+    presets.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p;
+      opt.textContent = p;
+      presetSel.appendChild(opt);
+    });
+  }
+
+  // 初期セット
+  updatePreset();
+
+  // 品目変更時
+  itemSel.addEventListener("change", updatePreset);
+}
+
+/* =========================================================
+   ▼ 店舗 pill ボタン
 ========================================================= */
 function setupStoreButtons(containerId) {
   const container = document.getElementById(containerId);
@@ -121,7 +203,6 @@ function setupStoreButtons(containerId) {
   });
 }
 
-/* 店舗取得（ONだけ） */
 function getSelectedStores(containerId) {
   const c = document.getElementById(containerId);
   if (!c) return [];
@@ -129,11 +210,11 @@ function getSelectedStores(containerId) {
 }
 
 /* =========================================================
-   ▼ 価格スライダー（ゆめかわ対応）
+   ▼ 価格スライダー
 ========================================================= */
 function setupSimulationSlider() {
   const slider = document.getElementById("simPrice");
-  const label  = document.getElementById("simPriceLabel");
+  const label = document.getElementById("simPriceLabel");
   const result = document.getElementById("simResult");
 
   if (!slider || !label) return;
@@ -142,18 +223,18 @@ function setupSimulationSlider() {
 
   slider.addEventListener("input", () => {
     label.textContent = `現在の価格：${slider.value}円`;
-
     result.innerHTML = `
       <p class="analysis-placeholder">
-        価格 ${slider.value} 円での予測結果は、AIモデル接続後にここへ表示されます。
+        価格 ${slider.value} 円での予測結果は、AI接続後にここに表示されます。
       </p>
     `;
   });
 }
 
 /* =========================================================
-   ▼ ① 店舗配分最適化：表示
+   ▼ 結果表示（今後AIモデルに接続）
 ========================================================= */
+
 function renderAllocationResult(list) {
   const area = document.getElementById("allocResult");
   if (!area) return;
@@ -181,9 +262,7 @@ function renderAllocationResult(list) {
   area.innerHTML = html;
 }
 
-/* =========================================================
-   ▼ ② リバースエンジン：表示
-========================================================= */
+
 function renderReverseEngineResult(data) {
   const area = document.getElementById("revResult");
   if (!area) return;
@@ -218,22 +297,21 @@ function renderReverseEngineResult(data) {
   area.innerHTML = html;
 }
 
-/* =========================================================
-   ▼ ③ 需要予測：表示
-========================================================= */
+
 function renderForecast(data) {
-  // グラフ
   if (data.chart && document.querySelector("#forecastChart")) {
     const op = {
       chart: { type: "line", height: 220 },
       series: [{ name: "売れ行き予測", data: data.chart }],
       xaxis: { categories: ["今日","明日","3日後","4日後","5日後","6日後","7日後"] }
     };
-    const chart = new ApexCharts(document.querySelector("#forecastChart"), op);
+    const chart = new ApexCharts(
+      document.querySelector("#forecastChart"),
+      op
+    );
     chart.render();
   }
 
-  // 店舗別
   if (data.stores && document.getElementById("storeDemand")) {
     let html = `
       <table class="analysis-table">
@@ -252,7 +330,6 @@ function renderForecast(data) {
     document.getElementById("storeDemand").innerHTML = html;
   }
 
-  // コメント
   if (data.comment && document.getElementById("forecastComment")) {
     document.getElementById("forecastComment").innerHTML =
       `<p>${data.comment}</p>`;
