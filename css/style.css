@@ -46,9 +46,9 @@ body {
 
 .menu-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   justify-items: center;
-  gap: 16px;
+  gap: 20px;
 }
 
 .menu-btn {
@@ -964,4 +964,22 @@ input, select {
   background: #e5d4ff;  /* 可愛い薄紫 */
   color: #5f3cc7;       /* 少し濃いラベンダー */
   box-shadow: 0 3px 8px rgba(140,87,255,0.22);
+}
+
+/* ===== メニュー（最初の画面）用ボタンのデザインを固定 ===== */
+.menu-btn {
+  width: 150px;
+  padding: 15px 0;
+  border-radius: 25px;
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.menu-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.18);
 }
