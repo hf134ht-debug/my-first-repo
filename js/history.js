@@ -1,12 +1,16 @@
 /* =========================================================
-   history.js
+   history.js（完全版）
    - 履歴画面（更新・削除は専用APIを使用）
+   - ★規格入力欄（プリセット＋手入力）を追加
+   - ★規格はグループ単位（品目＋値段）で全行更新
 ========================================================= */
 
 const HISTORY_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
 
-/* 品目統一 */
+/* =========================================================
+   品目統一
+========================================================= */
 function normalizeItemName(raw) {
   if (!raw) return "";
   let s = String(raw).trim();
@@ -29,11 +33,12 @@ function normalizeItemName(raw) {
     }
     return "キャベツ";
   }
-
   return s;
 }
 
-/* カード色 */
+/* =========================================================
+   カード色
+========================================================= */
 function getItemClass(item) {
   if (!item) return "history-card";
   if (item.includes("白菜")) return "history-card hakusai";
@@ -42,7 +47,9 @@ function getItemClass(item) {
   return "history-card";
 }
 
-/* 履歴画面 HTML */
+/* =========================================================
+   履歴画面 HTML
+========================================================= */
 function renderHistoryScreen() {
   return `
     <h2>履歴</h2>
@@ -134,9 +141,9 @@ async function selectHistoryDate(y, m, d) {
   loadHistory(currentDate);
 }
 
-/* ===============================
+/* =========================================================
    履歴取得
-=============================== */
+========================================================= */
 async function loadHistory(dateStr) {
   const container = document.getElementById("historyResult");
   container.innerHTML = `<p>読み込み中…</p>`;
@@ -151,23 +158,91 @@ async function loadHistory(dateStr) {
 
   container.innerHTML = `<h3>${dateStr} の履歴</h3>`;
 
-  data.items.forEach(itemGroup => {
-    const card = createItemCard(itemGroup);
+  data.items.forEach(group => {
+    const card = createItemCard(group);  // ← 表形式カード（A方式）
     container.appendChild(card);
   });
 }
 
-/* ===============================
-   カード生成（行番号を埋め込む）
-=============================== */
+/* =========================================================
+   ★品目別 規格プリセット
+========================================================= */
+const KIKAKU_PRESETS = {
+  "キャベツ": [
+    "0.7kg以下",
+    "0.7kg以下（2,3個入り）",
+    "0.7〜1.1kg",
+    "1.1〜1.6kg",
+    "1.6kg以上",
+  ],
+  "キャベツカット": [
+    "1.1〜1.6kg",
+    "1.6kg以上",
+  ],
+  "白菜": [
+    "1kg以下",
+    "1〜1.4kg",
+    "1.4〜1.8kg",
+    "1.0〜1.8kg",
+    "1.8〜3kg",
+    "3kg以上",
+  ],
+  "白菜カット": [
+    "カミサリ不良・普通",
+    "カミサリ不良・軽",
+  ],
+  "トウモロコシ": [
+    "A・黄", "B・黄", "C・黄",
+    "A・白", "B・白", "C・白",
+    "A・ミックス", "B・ミックス", "C・ミックス",
+    "A・黄（2本入り）","B・黄（2本入り）","C・黄（2本入り）",
+    "A・白（2本入り）","B・白（2本入り）","C・白（2本入り）",
+    "A・ミックス（2本入り）","B・ミックス（2本入り）","C・ミックス（2本入り）",
+  ],
+};
+
+/* =========================================================
+   ★ 規格更新 API 呼び出し（全行更新）
+========================================================= */
+async function updateKikakuForCard(group, newKikaku) {
+  if (!newKikaku) return;
+
+  const payload = {
+    mode: "updateKikaku",
+    date: group.date,
+    item: group.item,
+    price: group.price,
+    kikaku: newKikaku,
+  };
+
+  try {
+    const res = await fetch(HISTORY_SCRIPT_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload),
+    });
+
+    const json = await res.json();
+    if (json.status !== "ok") {
+      alert("規格更新に失敗しました: " + (json.message || ""));
+      return;
+    }
+  } catch (err) {
+    alert("規格更新時にエラーが発生しました");
+    console.error(err);
+  }
+}
+
+/* =========================================================
+   ★ 表形式カード（A方式）＋ 規格欄追加
+========================================================= */
 function createItemCard(group) {
   const card = document.createElement("div");
   card.className = getItemClass(group.item);
 
   let rowsHTML = "";
-
-  group.stores.forEach((s, index) => {
-    const row = s.row;  // ← GAS 側で item.stores[] に row を含める
+  group.stores.forEach(s => {
+    const row = s.row;
     rowsHTML += `
       <tr>
         <td>${s.name}</td>
@@ -191,19 +266,69 @@ function createItemCard(group) {
     `;
   });
 
-  card.innerHTML = `
+  /* ======== 規格 UI 作成 ======== */
+  const kikakuUI = document.createElement("div");
+  kikakuUI.className = "kikaku-area";
+
+  const normalized = normalizeItemName(group.item);
+  const presets = KIKAKU_PRESETS[normalized] || [];
+
+  let presetOptions = `<option value="">プリセットから選択</option>`;
+  presets.forEach(p => {
+    const selected = (group.kikaku === p) ? "selected" : "";
+    presetOptions += `<option value="${p}" ${selected}>${p}</option>`;
+  });
+
+  kikakuUI.innerHTML = `
+    <div class="kikaku-label">規格：</div>
+    <div class="kikaku-controls">
+      <select class="kikaku-select" id="sel-${group.item}-${group.price}">
+        ${presetOptions}
+      </select>
+      <input type="text" class="kikaku-input"
+        id="inp-kikaku-${group.item}-${group.price}"
+        placeholder="例）1.2〜1.6kg / 特大" 
+        value="${group.kikaku || ""}">
+    </div>
+  `;
+
+  /* ======== メイン HTML ======== */
+  const headerHTML = `
     <div class="history-title">
       <span>${group.item}（${group.price}円）</span>
     </div>
+  `;
+
+  const tableHTML = `
     <table class="store-table">${rowsHTML}</table>
   `;
+
+  /* ======== 組み立て ======== */
+  card.innerHTML = headerHTML;
+  card.appendChild(kikakuUI);
+  card.innerHTML += tableHTML;
+
+  /* ======== イベント ======== */
+  const sel = kikakuUI.querySelector("select");
+  const inp = kikakuUI.querySelector("input");
+
+  sel.addEventListener("change", () => {
+    const val = sel.value;
+    inp.value = val;
+    updateKikakuForCard(group, val);
+  });
+
+  inp.addEventListener("blur", () => {
+    const val = inp.value.trim();
+    if (val) updateKikakuForCard(group, val);
+  });
 
   return card;
 }
 
-/* ===============================
-   専用 API 呼び出し
-=============================== */
+/* =========================================================
+   行単位 更新・削除（既存）
+========================================================= */
 async function updateHistoryRow(row, item, price, store) {
   const id = `inp-${item}-${store}`;
   const qty = Number(document.getElementById(id).value || 0);
@@ -231,7 +356,7 @@ async function deleteHistoryRow(row) {
   await fetch(HISTORY_SCRIPT_URL, {
     method: "POST",
     body: JSON.stringify({
-      action: "deleteHistory",   // ★ ここを deleteHistory に
+      action: "deleteHistory",
       date: currentDate,
       row
     })
@@ -240,7 +365,8 @@ async function deleteHistoryRow(row) {
   loadHistory(currentDate);
 }
 
-/* === 公開 === */
+/* =========================================================
+   公開
+========================================================= */
 window.renderHistoryScreen = renderHistoryScreen;
 window.activateHistoryFeatures = activateHistoryFeatures;
-
