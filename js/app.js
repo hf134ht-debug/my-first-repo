@@ -11,6 +11,7 @@ function renderMenuScreen() {
       <div class="menu-btn btn-history"  onclick="openTab('history')">履歴</div>
       <div class="menu-btn btn-sales"    onclick="openTab('sales')">売上</div>
       <div class="menu-btn btn-summary"  onclick="openTab('summary')">集計</div>
+      <div class="menu-btn btn-analysis" onclick="openTab('analysis')">AI分析</div>
     </div>
   `;
 }
@@ -85,4 +86,5 @@ function initApp() {
   document.getElementById("tabContent").style.display = "none";
 }
 initApp();
+
 
