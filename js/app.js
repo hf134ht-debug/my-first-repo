@@ -22,6 +22,7 @@ function renderBottomTabs() {
     <button class="tab-btn history"  onclick="openTab('history')">履歴</button>
     <button class="tab-btn sales"    onclick="openTab('sales')">売上</button>
     <button class="tab-btn summary"  onclick="openTab('summary')">集計</button>
+    <button class="tab-btn analysis" onclick="openTab('analysis')">AI分析</button>
   `;
 }
 document.getElementById("bottomTabs").innerHTML = renderBottomTabs();
@@ -66,6 +67,13 @@ function openTab(tab) {
     return;
   }
 
+  // AI分析
+  if (tab === "analysis") {
+     loadAnalysisView(); // ← analysis.js の関数
+     return;
+  }
+ 
+
   // 未実装タブ用
   tc.innerHTML = `<h2>${tab}（開発中）</h2>`;
 }
@@ -77,3 +85,4 @@ function initApp() {
   document.getElementById("tabContent").style.display = "none";
 }
 initApp();
+
