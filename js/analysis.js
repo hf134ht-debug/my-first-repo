@@ -1,6 +1,7 @@
 /* =========================================================
    analysis.js
    AI分析タブ（4つのモード切替 + UI制御）
+   ゆめかわ完全対応版
 ========================================================= */
 
 /* ===== 店舗一覧 ===== */
@@ -9,7 +10,7 @@ const ANALYSIS_STORES = [
   "中庄店", "総社南店", "円山店", "児島店"
 ];
 
-/* ===== 品目一覧（必要に応じて後でGASから差し替えOK） ===== */
+/* ===== 品目一覧 ===== */
 const ANALYSIS_ITEMS = [
   "白菜",
   "白菜カット",
@@ -19,7 +20,7 @@ const ANALYSIS_ITEMS = [
 ];
 
 /* =========================================================
-   ▼ AI分析タブの読み込み（app.js の openTab から呼ばれる）
+   ▼ メイン呼び出し（openTab('analysis') から）
 ========================================================= */
 function loadAnalysisView() {
   fetch("/my-first-repo/analysis_view.html")
@@ -28,70 +29,67 @@ function loadAnalysisView() {
       const tc = document.getElementById("tabContent");
       tc.innerHTML = html;
 
-      // HTML挿入後に各種セットアップ
+      // セットアップ
       setupAnalysisView();
     })
     .catch(err => {
-      console.error("AI分析ビュー読み込みエラー", err);
+      console.error("AI分析の読み込みエラー:", err);
       document.getElementById("tabContent").innerHTML =
         "<p>AI分析画面の読み込みに失敗しました。</p>";
     });
 }
 
 /* =========================================================
-   ▼ 画面全体の初期設定
+   ▼ 初期セットアップ
 ========================================================= */
 function setupAnalysisView() {
-  setupModeTabs();          // 4つの大きなタブ
-  setupItemDropdowns();     // 品目プルダウン
+  setupModeTabs();
+  setupItemDropdowns();
   setupStoreButtons("allocStoreButtons");
   setupStoreButtons("revStoreButtons");
-  setupSimulationSlider();  // 価格スライダー
+  setupSimulationSlider();
 }
 
 /* =========================================================
-   ▼ 4つのモードタブ（大きな長方形カード）
+   ▼ 4種類の大タブ（店舗配分 / リバース / 価格 / 予測）
 ========================================================= */
 function setupModeTabs() {
   const cards = document.querySelectorAll(".analysis-mode-card");
   cards.forEach(card => {
     card.addEventListener("click", () => {
-      const mode = card.dataset.mode;
-      showAnalysisPage(mode);
+      showAnalysisPage(card.dataset.mode);
     });
   });
 
-  // デフォルトは 店舗配分最適化
+  // デフォルトは店舗配分最適化
   showAnalysisPage("alloc");
 }
 
 function showAnalysisPage(mode) {
-  // ページ切替
-  document.querySelectorAll(".analysis-page").forEach(p => {
-    p.classList.remove("active");
-  });
-  const page = document.getElementById(`analysisPage-${mode}`);
+  // 全ページ非表示
+  document.querySelectorAll(".analysis-page").forEach(p => p.classList.remove("active"));
+
+  // 対象だけ表示
+  let page = document.getElementById(`analysisPage-${mode}`);
   if (page) page.classList.add("active");
 
-  // タブカードの見た目切替
-  document.querySelectorAll(".analysis-mode-card").forEach(card => {
-    card.classList.remove("active");
-  });
-  const activeCard = document.querySelector(`.analysis-mode-card[data-mode="${mode}"]`);
-  if (activeCard) activeCard.classList.add("active");
+  // タブの見た目変更
+  document.querySelectorAll(".analysis-mode-card").forEach(c => c.classList.remove("active"));
+  let target = document.querySelector(`.analysis-mode-card[data-mode="${mode}"]`);
+  if (target) target.classList.add("active");
 }
 
 /* =========================================================
-   ▼ 品目プルダウン
+   ▼ プルダウン生成（品目）
 ========================================================= */
 function setupItemDropdowns() {
-  const ids = ["allocItem", "revItem", "simItem"];
-  ids.forEach(id => {
-    const sel = document.getElementById(id);
+  ["allocItem", "revItem", "simItem"].forEach(id => {
+    let sel = document.getElementById(id);
     if (!sel) return;
+
     sel.innerHTML = "";
     ANALYSIS_ITEMS.forEach(item => {
-      const opt = document.createElement("option");
+      let opt = document.createElement("option");
       opt.value = item;
       opt.textContent = item;
       sel.appendChild(opt);
@@ -109,8 +107,8 @@ function setupStoreButtons(containerId) {
   container.innerHTML = "";
 
   ANALYSIS_STORES.forEach(store => {
-    const btn = document.createElement("button");
-    btn.className = "store-pill-btn store-pill-on";  // デフォルトON
+    let btn = document.createElement("button");
+    btn.className = "store-pill-btn store-pill-on";
     btn.textContent = store;
     btn.dataset.store = store;
 
@@ -123,129 +121,134 @@ function setupStoreButtons(containerId) {
   });
 }
 
-/* 選択中店舗一覧を取得（後でGAS/Python連携で使う） */
+/* 店舗取得（ONだけ） */
 function getSelectedStores(containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return [];
-  return [...container.querySelectorAll(".store-pill-on")].map(b => b.dataset.store);
+  const c = document.getElementById(containerId);
+  if (!c) return [];
+  return [...c.querySelectorAll(".store-pill-on")].map(b => b.dataset.store);
 }
 
 /* =========================================================
-   ▼ 価格スライダー（ブロック③）
+   ▼ 価格スライダー（ゆめかわ対応）
 ========================================================= */
 function setupSimulationSlider() {
   const slider = document.getElementById("simPrice");
   const label  = document.getElementById("simPriceLabel");
   const result = document.getElementById("simResult");
 
-  if (!slider || !label || !result) return;
+  if (!slider || !label) return;
 
   label.textContent = `現在の価格：${slider.value}円`;
 
   slider.addEventListener("input", () => {
     label.textContent = `現在の価格：${slider.value}円`;
+
     result.innerHTML = `
       <p class="analysis-placeholder">
-        価格 ${slider.value} 円での予測結果は、今後AI予測を組み込んだときにここに表示されます。
+        価格 ${slider.value} 円での予測結果は、AIモデル接続後にここへ表示されます。
       </p>
     `;
   });
 }
 
 /* =========================================================
-   ▼ ブロック①：店舗配分結果を表示（AI接続後に使用）
+   ▼ ① 店舗配分最適化：表示
 ========================================================= */
-function renderAllocationResult(data) {
+function renderAllocationResult(list) {
   const area = document.getElementById("allocResult");
   if (!area) return;
 
-  if (!data || data.length === 0) {
-    area.innerHTML = `<p class="analysis-placeholder">結果がありません</p>`;
+  if (!list || list.length === 0) {
+    area.innerHTML = `<p class="analysis-placeholder">結果がありません。</p>`;
     return;
   }
 
   let html = `
     <table class="analysis-table">
-      <tr><th>店舗</th><th>配分個数</th><th>販売率</th></tr>
+      <tr><th>店舗</th><th>個数</th><th>販売率</th></tr>
   `;
-  data.forEach(row => {
+  list.forEach(r => {
     html += `
       <tr>
-        <td>${row.store}</td>
-        <td>${row.qty}</td>
-        <td>${row.rate}%</td>
+        <td>${r.store}</td>
+        <td>${r.qty}</td>
+        <td>${r.rate}%</td>
       </tr>
     `;
   });
-  html += `</table>`;
+  html += "</table>";
+
   area.innerHTML = html;
 }
 
 /* =========================================================
-   ▼ ブロック②：リバースエンジン結果を表示
+   ▼ ② リバースエンジン：表示
 ========================================================= */
 function renderReverseEngineResult(data) {
   const area = document.getElementById("revResult");
   if (!area) return;
 
   if (!data) {
-    area.innerHTML = `<p class="analysis-placeholder">結果がありません</p>`;
+    area.innerHTML = `<p class="analysis-placeholder">結果がありません。</p>`;
     return;
   }
 
   let html = `
-    <div>最適価格：<strong>${data.price}円</strong></div>
-    <div>販売率：${data.rate}%</div>
-    <div>ロス率：${data.loss}%</div>
+    <div class="rev-summary">
+      <div><strong>最適価格：</strong>${data.price}円</div>
+      <div><strong>販売率：</strong>${data.rate}%</div>
+      <div><strong>ロス率：</strong>${data.loss}%</div>
+    </div>
     <hr>
-    <h4>店舗配分</h4>
+    <h4>店舗配分結果</h4>
     <table class="analysis-table">
-      <tr><th>店舗</th><th>配分</th><th>販売率</th></tr>
+      <tr><th>店舗</th><th>個数</th><th>販売率</th></tr>
   `;
-  (data.alloc || []).forEach(row => {
+  (data.alloc || []).forEach(r => {
     html += `
       <tr>
-        <td>${row.store}</td>
-        <td>${row.qty}</td>
-        <td>${row.rate}%</td>
+        <td>${r.store}</td>
+        <td>${r.qty}</td>
+        <td>${r.rate}%</td>
       </tr>
     `;
   });
-  html += `</table>`;
+  html += "</table>";
+
   area.innerHTML = html;
 }
 
 /* =========================================================
-   ▼ ブロック④：需要予測表示（簡易版）
+   ▼ ③ 需要予測：表示
 ========================================================= */
 function renderForecast(data) {
   // グラフ
   if (data.chart && document.querySelector("#forecastChart")) {
-    const options = {
+    const op = {
       chart: { type: "line", height: 220 },
       series: [{ name: "売れ行き予測", data: data.chart }],
       xaxis: { categories: ["今日","明日","3日後","4日後","5日後","6日後","7日後"] }
     };
-    const chart = new ApexCharts(document.querySelector("#forecastChart"), options);
+    const chart = new ApexCharts(document.querySelector("#forecastChart"), op);
     chart.render();
   }
 
-  // 店舗別需要★
+  // 店舗別
   if (data.stores && document.getElementById("storeDemand")) {
     let html = `
       <table class="analysis-table">
-        <tr><th>店舗</th><th>需要強度</th><th>コメント</th></tr>
+        <tr><th>店舗</th><th>需要★</th><th>コメント</th></tr>
     `;
-    data.stores.forEach(row => {
+    data.stores.forEach(r => {
       html += `
         <tr>
-          <td>${row.store}</td>
-          <td>${row.star}</td>
-          <td>${row.comment}</td>
+          <td>${r.store}</td>
+          <td>${r.star}</td>
+          <td>${r.comment}</td>
         </tr>
       `;
     });
-    html += `</table>`;
+    html += "</table>";
     document.getElementById("storeDemand").innerHTML = html;
   }
 
