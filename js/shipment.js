@@ -1,11 +1,63 @@
 /* =========================================================
    shipment.js
-   出荷管理画面
+   出荷管理画面（★ 品目表記統一込み 完全版 ★）
 ========================================================= */
 
-/* ★★★ あなたの Apps Script の exec URL ★★★ */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
+/* ====== 品目統一関数（全画面共通で使用） ====== */
+function normalizeItemName(raw) {
+  if (!raw) return "";
+  let s = String(raw).trim();
 
+  // 全角 → 半角
+  const z2h = (str) =>
+    str.replace(/[！-～]/g, (c) =>
+      String.fromCharCode(c.charCodeAt(0) - 0xFEE0)
+    );
+  s = z2h(s);
+
+  const lower = s.toLowerCase();
+
+  /* --- とうもろこし --- */
+  if (
+    /とう?も?ろ?こし/.test(s) ||
+    lower.includes("corn") ||
+    s.includes("ｺｰﾝ") ||
+    s.includes("コーン") ||
+    /ﾄｳﾓﾛｺｼ|トウモロコシ/.test(s)
+  ) {
+    return "とうもろこし";
+  }
+
+  /* --- はくさい --- */
+  if (s.includes("白菜") || s.includes("はくさい") || s.includes("ﾊｸｻｲ")) {
+    if (
+      s.includes("ｶｯﾄ") ||
+      s.includes("カット") ||
+      lower.includes("cut")
+    ) {
+      return "はくさいカット";
+    }
+    return "はくさい";
+  }
+
+  /* --- キャベツ --- */
+  if (s.includes("キャベツ") || s.includes("ｷｬﾍﾞﾂ")) {
+    if (
+      s.includes("ｶｯﾄ") ||
+      s.includes("カット") ||
+      lower.includes("cut")
+    ) {
+      return "キャベツカット";
+    }
+    return "キャベツ";
+  }
+
+  return s;
+}
+
+/* ★★★ Apps Script の exec URL ★★★ */
+const SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
 
 /* ===== 出荷画面 HTML ===== */
 function renderShipmentScreen() {
@@ -27,7 +79,9 @@ function renderShipmentScreen() {
       <div class="item-button" data-item="はくさいカット" data-type="hakusai">はくさいカット</div>
       <div class="item-button" data-item="キャベツ" data-type="cabbage">キャベツ</div>
       <div class="item-button" data-item="キャベツカット" data-type="cabbage">キャベツカット</div>
-      <div class="item-button" data-item="トウモロコシ" data-type="corn">トウモロコシ</div>
+
+      <!-- ★ ここを “とうもろこし”（ひらがな）へ統一 ★ -->
+      <div class="item-button" data-item="とうもろこし" data-type="corn">とうもろこし</div>
     </div>
 
     <label>値段</label>
@@ -43,8 +97,7 @@ function renderShipmentScreen() {
   `;
 }
 
-
-/* ===== 店舗行テンプレ（削除ボタン付き） ===== */
+/* ===== 店舗行テンプレ ===== */
 function renderStoreRow() {
   return `
     <div class="store-row">
@@ -65,103 +118,101 @@ function renderStoreRow() {
   `;
 }
 
-
 /* ===== 画面読み込み後のイベント設定 ===== */
 function activateShipmentFeatures() {
-
-  /* --- 品目ボタン --- */
+  /** --- 品目ボタン --- */
   let selectedItem = null;
   const itemButtons = document.querySelectorAll(".item-button");
 
-  itemButtons.forEach(btn => {
+  itemButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      // すべてリセット
-      itemButtons.forEach(b =>
+      itemButtons.forEach((b) =>
         b.classList.remove("selected", "hakusai", "cabbage", "corn")
       );
 
       const type = btn.dataset.type;
-      selectedItem = btn.dataset.item;
+      const rawItem = btn.dataset.item;
 
-      // 選択時の色付け
+      /** ★ normalize を適用して統一表記に変換 ★ */
+      selectedItem = normalizeItemName(rawItem);
+
       btn.classList.add("selected", type);
     });
   });
 
-  /* --- 店舗追加ボタン --- */
+  /** --- 店舗追加ボタン --- */
   document.getElementById("addStoreBtn").addEventListener("click", () => {
     document
       .getElementById("storesContainer")
       .insertAdjacentHTML("beforeend", renderStoreRow());
   });
 
-  /* --- 店舗行削除（中サイズボタン + フェードアウト）--- */
-  document
-    .getElementById("storesContainer")
-    .addEventListener("click", (e) => {
-      const btn = e.target.closest(".store-remove-btn");
-      if (!btn) return;
+  /** --- 店舗行削除 --- */
+  document.getElementById("storesContainer").addEventListener("click", (e) => {
+    const btn = e.target.closest(".store-remove-btn");
+    if (!btn) return;
 
-      const row = btn.closest(".store-row");
-      if (!row) return;
+    const row = btn.closest(".store-row");
+    if (!row) return;
 
-      // フェードアウト → 削除
-      row.classList.add("removing");
-      setTimeout(() => {
-        row.remove();
-      }, 200);
-    });
+    row.classList.add("removing");
 
-  /* --- 登録ボタン --- */
-  document.getElementById("submitShipment").addEventListener("click", async () => {
-
-    const date  = document.getElementById("shipDate").value;
-    const price = document.getElementById("priceInput").value;
-
-    if (!selectedItem) {
-      alert("品目を選択してください");
-      return;
-    }
-    if (!price) {
-      alert("値段を入力してください");
-      return;
-    }
-
-    // 店舗データ取得
-    const rows = Array.from(document.querySelectorAll(".store-row"));
-    const stores = rows.map(r => ({
-      name: r.querySelector(".store-name").value,
-      quantity: r.querySelector(".store-qty").value
-    })).filter(s => s.quantity); // 個数未入力は送らない
-
-    if (stores.length === 0) {
-      alert("店舗の個数を1つ以上入力してください");
-      return;
-    }
-
-    const payload = {
-      date: date,
-      item: selectedItem,
-      price: Number(price),
-      stores: stores
-    };
-
-    try {
-      await fetch(SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      alert("登録完了！");
-
-      // 画面リセット
-      document.getElementById("tabContent").innerHTML = renderShipmentScreen();
-      activateShipmentFeatures();
-
-    } catch (err) {
-      alert("通信エラー：" + err);
-    }
+    setTimeout(() => row.remove(), 200);
   });
+
+  /** --- 登録ボタン --- */
+  document
+    .getElementById("submitShipment")
+    .addEventListener("click", async () => {
+      const date = document.getElementById("shipDate").value;
+      const price = document.getElementById("priceInput").value;
+
+      if (!selectedItem) {
+        alert("品目を選択してください");
+        return;
+      }
+      if (!price) {
+        alert("値段を入力してください");
+        return;
+      }
+
+      const rows = Array.from(document.querySelectorAll(".store-row"));
+      const stores = rows
+        .map((r) => ({
+          name: r.querySelector(".store-name").value,
+          quantity: r.querySelector(".store-qty").value,
+        }))
+        .filter((s) => s.quantity);
+
+      if (stores.length === 0) {
+        alert("店舗の個数を1つ以上入力してください");
+        return;
+      }
+
+      /** ★ 送信前に item をもう一度 normalize（絶対ズレないように） */
+      const payload = {
+        date: date,
+        item: normalizeItemName(selectedItem),
+        price: Number(price),
+        stores: stores,
+      };
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        alert("登録完了！");
+
+        // 画面リセット
+        document.getElementById("tabContent").innerHTML =
+          renderShipmentScreen();
+        activateShipmentFeatures();
+      } catch (err) {
+        alert("通信エラー：" + err);
+      }
+    });
 }
