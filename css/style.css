@@ -669,6 +669,36 @@ input, select {
   font-weight: bold;
 }
 
+.history-kikaku-block {
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-top: 1px dashed #ccc;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.history-kikaku-label {
+  font-size: 12px;
+  color: #555;
+}
+
+.history-kikaku-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.kikaku-select {
+  flex: 1;
+  font-size: 12px;
+}
+
+.kikaku-input {
+  flex: 1.5;
+  font-size: 12px;
+  padding: 2px 4px;
+}
+
 
 
 
