@@ -315,7 +315,7 @@ input, select {
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
-..history-card.hakusai {
+.history-card.hakusai {
   background: linear-gradient(135deg,#f7ffdb,#e5ffb0);
 }
 
@@ -345,7 +345,7 @@ input, select {
 }
 
 .item-total-hakusai {
-  background: linear-gradient(135deg,#d9ff93,#b7f76a);
+  background: linear-gradient(135deg,#b7e87a,#8cd856);
   color: #2c4a00;
 }
 
@@ -720,3 +720,4 @@ input, select {
 .kikaku-badge.flash {
   animation: badgeFlash 0.7s ease;
 }
+
