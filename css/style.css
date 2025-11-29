@@ -733,84 +733,132 @@ input, select {
 }
 
 /* =========================================================
-   AI分析タブ 全体テーマ（ポップ＆カラフル）
+   🌸 ゆめかわ AI分析タブ 全体デザインテーマ 🌸
+   ピンク × ラベンダー × パステル × 丸くてふんわり
 ========================================================= */
 
+/* 背景（薄ピンク × ラベンダー） */
 .analysis-container {
   padding: 16px;
-  background: linear-gradient(180deg, #fdfbff 0%, #f7f0ff 100%);
-  font-family: "Arial", sans-serif;
+  background: linear-gradient(
+    180deg,
+    #fff5fb 0%,
+    #f7e9ff 45%,
+    #f5ddff 100%
+  );
+  font-family: "Arial", "Hiragino Sans", sans-serif;
 }
 
 /* タイトル */
-.analysis-title {
+.analysis-title-area {
   text-align: center;
-  font-size: 26px;
-  font-weight: bold;
-  color: #7b4bcc;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
-/* ===== 4つの大きなタブカード ===== */
+.analysis-title {
+  font-size: 28px;
+  font-weight: bold;
+  color: #b37bff;       /* かわいいラベンダー */
+  margin: 0 0 4px;
+  text-shadow: 0 1px 2px rgba(150, 120, 240, 0.3);
+}
+
+/* ゆめかわバッジ */
+.analysis-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 14px;
+  background: #e6d2ff;
+  color: #6b3fb8;
+  box-shadow: 0 2px 4px rgba(130, 90, 200, 0.25);
+}
+
+/* =========================================================
+   🌸 大カードタブ（4つ：店舗配分 / 目標 / 価格 / 予測）
+========================================================= */
 .analysis-mode-tabs {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 14px;
+  margin-bottom: 20px;
 }
 
+/* カード共通 */
 .analysis-mode-card {
-  padding: 14px 16px;
-  border-radius: 18px;
-  color: #444;
-  cursor: pointer;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+  padding: 18px 18px;
+  border-radius: 20px;
+  background: #ffffffaa;
   border: 2px solid transparent;
-  text-align: left;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s;
+  box-shadow: 0 4px 10px rgba(120, 100, 200, 0.12);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: 0.15s ease;
 }
 
-.analysis-mode-card .mode-main {
+/* カード内アイコン */
+.card-icon {
+  font-size: 28px;
+  margin-bottom: 6px;
+  display: block;
+  color: #8866dd;
+}
+
+/* メイン文字 */
+.mode-main {
   font-size: 18px;
   font-weight: bold;
+  color: #5a4b92;
 }
 
-.analysis-mode-card .mode-sub {
+/* サブ文字 */
+.mode-sub {
   font-size: 12px;
-  margin-top: 2px;
+  margin-top: 3px;
+  color: #7d6bb8;
 }
 
-/* 色分け */
+/* カード色別テーマ */
 .mode-alloc {
-  background: #ffe1f1;
-  border-color: #f7a6d2;
+  background: #ffe6f3;
+  border-color: #f7b8d9;
 }
 
 .mode-reverse {
-  background: #ffe9c9;
-  border-color: #ffc78f;
+  background: #ffe8d1;
+  border-color: #ffd1a0;
 }
 
 .mode-price {
-  background: #dcfae3;
-  border-color: #9deaa2;
+  background: #dcffe9;
+  border-color: #a8f2c2;
 }
 
 .mode-forecast {
-  background: #e0f4ff;
-  border-color: #9ed8ff;
+  background: #e3f3ff;
+  border-color: #b7e2ff;
 }
 
-/* アクティブ */
+/* アクティブでふわっと浮く */
 .analysis-mode-card.active {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 12px rgba(0,0,0,0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgba(160, 130, 240, 0.25);
+  border-width: 3px;
 }
 
-/* ===== ページ本体 ===== */
+/* ホバーアニメ（PC用） */
+@media (hover: hover) {
+  .analysis-mode-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* =========================================================
+   🌸 ページ見出し
+========================================================= */
 .analysis-page {
   display: none;
-  margin-top: 8px;
 }
 
 .analysis-page.active {
@@ -819,74 +867,92 @@ input, select {
 
 .analysis-section-title {
   font-size: 20px;
-  color: #6f3ed6;
+  font-weight: bold;
+  color: #7c5fd4;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   margin-bottom: 10px;
-  border-left: 5px solid #b493ff;
-  padding-left: 8px;
 }
 
-.analysis-subtitle {
-  font-size: 12px;
-  color: #8c6ddf;
+/* 見出しアイコン */
+.section-icon {
+  font-size: 20px;
+  color: #a281ff;
 }
 
-/* 入力エリア共通 */
+/* =========================================================
+   🌸 入力フォーム
+========================================================= */
 .analysis-input-area {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 14px;
 }
 
 .analysis-input-area label {
   font-size: 13px;
   font-weight: bold;
-  color: #6f3ed6;
+  color: #865fd9;
 }
 
 .analysis-input {
-  padding: 7px 10px;
-  border-radius: 12px;
-  border: 2px solid #c7b3ff;
+  padding: 8px 12px;
+  border-radius: 18px;
+  border: 2px solid #d7c7ff;
   font-size: 15px;
+  background: #ffffffdd;
   outline: none;
+  box-shadow: 0 2px 4px rgba(150, 120, 240, 0.12);
 }
 
 .analysis-input:focus {
-  border-color: #9c7aff;
-  box-shadow: 0 0 4px rgba(156,122,255,0.4);
+  border-color: #bba0ff;
+  box-shadow: 0 0 6px rgba(180, 150, 255, 0.4);
 }
 
-/* スライダー */
+/* =========================================================
+   🌸 価格スライダー
+========================================================= */
 .analysis-slider {
   width: 100%;
+  accent-color: #b58eff; /* ピンク紫 */
 }
 
 .analysis-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 22px;
-  height: 22px;
-  background: #b493ff;
+  width: 26px;
+  height: 26px;
+  background: #c1a0ff;
   border-radius: 50%;
   cursor: pointer;
+  box-shadow: 0 2px 4px rgba(130, 100, 200, 0.3);
 }
 
 #simPriceLabel {
   margin-top: 6px;
   font-size: 13px;
-  color: #6f3ed6;
+  color: #865fd9;
   font-weight: bold;
 }
 
-/* 結果カード */
+/* =========================================================
+   🌸 結果カード
+========================================================= */
 .analysis-result-card {
-  background: #faf7ff;
-  border-radius: 14px;
-  border: 2px solid #e6d9ff;
-  padding: 10px;
-  margin-top: 10px;
-  box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+  background: #ffffffcc;
+  border-radius: 16px;
+  border: 2px solid #e2d6ff;
+  padding: 14px;
+  margin-top: 12px;
+  box-shadow: 0 3px 8px rgba(140, 100, 230, 0.1);
+}
+
+.analysis-placeholder {
+  color: #a08cd2;
+  text-align: center;
 }
 
 /* テーブル */
@@ -897,68 +963,58 @@ input, select {
 }
 
 .analysis-table th {
-  background: #d8c7ff;
+  background: #e9ddff;
   color: #4d2bb3;
-  padding: 6px;
+  padding: 8px;
+  border-radius: 8px 8px 0 0;
   font-size: 13px;
 }
 
 .analysis-table td {
-  padding: 6px;
+  padding: 6px 8px;
   font-size: 13px;
-  border-bottom: 1px solid #e4d7ff;
+  border-bottom: 1px solid #e6d7ff;
   text-align: center;
 }
 
-.analysis-placeholder {
-  color: #a48fe2;
-  text-align: center;
-}
-
-/* グラフ */
-.analysis-chart {
-  width: 100%;
-  height: 220px;
-  margin-top: 4px;
-}
-
-/* ===== 店舗選択 pillボタン ===== */
+/* =========================================================
+   🌸 店舗 pill ボタン
+========================================================= */
 .store-button-area {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 10px;
 }
 
 .store-pill-btn.store-pill-on {
-  background: #b493ff;
+  background: #c9b2ff;
   color: #fff;
   padding: 8px 16px;
   border-radius: 999px;
   border: none;
   font-size: 13px;
   font-weight: bold;
-  box-shadow: 0 2px 5px rgba(140,87,255,0.3);
+  box-shadow: 0 2px 6px rgba(120, 80, 200, 0.28);
   cursor: pointer;
 }
 
 .store-pill-btn.store-pill-off {
-  background: #e6e6e6;
-  color: #777;
+  background: #f2eaff;
+  color: #8a7bb8;
   padding: 8px 16px;
   border-radius: 999px;
-  border: 1px solid #c8c8c8;
+  border: 1px solid #d5c6ff;
   font-size: 13px;
   cursor: pointer;
 }
 
 /* =========================================================
-   下部タブの AI分析 ボタン色（紫基調）
+   🌸 下のAI分析タブ（薄紫）
 ========================================================= */
-
 .tab-btn.analysis {
-  background: #e5d4ff;   /* 薄い紫 */
-  color: #5b3aa8;        /* 文字は少し濃い紫 */
+  background: #e5d4ff;
+  color: #5f3cc7;
 }
 
 .menu-btn.btn-analysis {
@@ -991,3 +1047,4 @@ input, select {
   box-shadow: 0 4px 10px rgba(150, 120, 230, 0.30);
   border-radius: 20px;
 }
+
