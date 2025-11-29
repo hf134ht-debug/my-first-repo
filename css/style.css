@@ -740,12 +740,7 @@ input, select {
 /* 背景（薄ピンク × ラベンダー） */
 .analysis-container {
   padding: 16px;
-  background: linear-gradient(
-    180deg,
-    #fff5fb 0%,
-    #f7e9ff 45%,
-    #f5ddff 100%
-  );
+  background: transparent !important;
   font-family: "Arial", "Hiragino Sans", sans-serif;
 }
 
@@ -852,6 +847,27 @@ input, select {
   .analysis-mode-card:hover {
     transform: translateY(-2px);
   }
+}
+
+/* アクティブ（選択時）の反応を強める */
+.analysis-mode-card.active {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 10px 20px rgba(160, 130, 240, 0.35);
+  border-width: 3px;
+}
+
+/* ホバー反応（PC）もさらに可愛く */
+@media (hover: hover) {
+  .analysis-mode-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 8px 16px rgba(160, 130, 240, 0.30);
+  }
+}
+
+/* クリック時に“ぽよん”と揺れる */
+.analysis-mode-card:active {
+  transform: scale(0.96);
+  transition: transform 0.05s;
 }
 
 /* =========================================================
@@ -1047,5 +1063,6 @@ input, select {
   box-shadow: 0 4px 10px rgba(150, 120, 230, 0.30);
   border-radius: 20px;
 }
+
 
 
