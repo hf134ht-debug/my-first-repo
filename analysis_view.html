@@ -61,9 +61,12 @@
       <label>価格（円）</label>
       <input id="allocPrice" type="number" class="analysis-input" placeholder="例：150">
 
-      <label>重さ（g・任意）</label>
-      <input id="allocWeight" type="number" class="analysis-input" placeholder="任意">
-    </div>
+      <label>規格（プリセット or 手入力）</label>
+      
+      <div class="spec-input-wrapper">
+        <select id="allocSpecPreset" class="analysis-input spec-select"></select>
+        <input id="allocSpecCustom" type="text" class="analysis-input spec-input" placeholder="自由入力">
+      </div>
 
     <div class="store-button-area" id="allocStoreButtons"></div>
 
@@ -140,3 +143,4 @@
 
 </body>
 </html>
+
