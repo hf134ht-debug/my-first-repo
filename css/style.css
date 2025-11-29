@@ -730,3 +730,186 @@ input, select {
   animation: badgeFlash 0.7s ease;
 }
 
+/* =========================================================
+   AI分析タブ 全体テーマ（明るくポップ・紫ベース）
+========================================================= */
+
+/* 全体コンテナ */
+.analysis-container {
+  padding: 16px;
+  background: #ffffff;
+  font-family: "Arial", sans-serif;
+}
+
+/* タイトル */
+.analysis-title {
+  text-align: center;
+  font-size: 28px;
+  font-weight: bold;
+  color: #7b4bcc; /* 優しい紫 */
+  margin-bottom: 20px;
+}
+
+/* 各セクション（白背景カード） */
+.analysis-section {
+  background: #fff;
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+  border: 2px solid #e6d9ff; /* 薄紫 */
+}
+
+/* セクション見出し */
+.analysis-section-title {
+  font-size: 22px;
+  color: #6f3ed6;
+  margin-bottom: 12px;
+  border-left: 6px solid #b493ff;
+  padding-left: 10px;
+}
+
+.analysis-subtitle {
+  font-size: 12px;
+  color: #8c6ddf;
+}
+
+/* 入力エリア */
+.analysis-input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.analysis-input-area label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #6f3ed6;
+}
+
+.analysis-input {
+  padding: 8px 12px;
+  border: 2px solid #c7b3ff;
+  border-radius: 12px;
+  font-size: 16px;
+  outline: none;
+}
+
+.analysis-input:focus {
+  border-color: #9c7aff;
+  box-shadow: 0 0 4px rgba(156,122,255,0.4);
+}
+
+/* スライダー */
+.analysis-slider {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* スライダー見た目（ブラウザ共通） */
+.analysis-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  background: #b493ff;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#simPriceLabel {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #6f3ed6;
+  font-weight: bold;
+}
+
+/* 結果カード */
+.analysis-result-card {
+  background: #faf7ff;
+  border: 2px solid #e6d9ff;
+  border-radius: 16px;
+  padding: 12px;
+  margin-top: 12px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+}
+
+/* テーブル */
+.analysis-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.analysis-table th {
+  background: #d8c7ff;
+  color: #4d2bb3;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.analysis-table td {
+  padding: 8px;
+  text-align: center;
+  border-bottom: 1px solid #e4d7ff;
+}
+
+.analysis-placeholder {
+  color: #a48fe2;
+  text-align: center;
+  padding: 10px 0;
+}
+
+/* グラフ用 */
+.analysis-chart {
+  width: 100%;
+  height: 220px;
+  margin-top: 10px;
+}
+
+
+/* =========================================================
+   店舗選択  pill型ボタン（最も重要）
+========================================================= */
+
+.store-button-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+/* ON状態（選択中） */
+.store-pill-btn.store-pill-on {
+  background: #b493ff;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 999px; /* pill型 */
+  border: none;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 0 2px 5px rgba(140, 87, 255, 0.3);
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.store-pill-btn.store-pill-on:hover {
+  background: #a076ff;
+}
+
+/* OFF状態（除外） */
+.store-pill-btn.store-pill-off {
+  background: #e6e6e6;
+  color: #777;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid #c8c8c8;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.15s ease;
+}
+
+.store-pill-btn.store-pill-off:hover {
+  background: #d7d7d7;
+}
