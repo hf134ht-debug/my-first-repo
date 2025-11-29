@@ -146,8 +146,8 @@ input, select {
 }
 
 .item-button.selected.hakusai {
-  background: linear-gradient(135deg,#d4ff8a,#a7ff4d);
-  box-shadow: 0 0 12px rgba(170,255,120,0.9);
+  background: linear-gradient(135deg,#f4ffcd,#d9ff93);
+  box-shadow: 0 0 12px rgba(200,255,150,0.9);
   transform: scale(1.05);
 }
 
@@ -315,8 +315,8 @@ input, select {
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
-.history-card.hakusai {
-  background: linear-gradient(135deg,#f1ffcf,#d4ff8a);
+..history-card.hakusai {
+  background: linear-gradient(135deg,#f7ffdb,#e5ffb0);
 }
 
 .history-card.cabbage {
@@ -345,8 +345,8 @@ input, select {
 }
 
 .item-total-hakusai {
-  background: linear-gradient(135deg,#b7e87a,#8cd856);
-  color: #1a3300;
+  background: linear-gradient(135deg,#d9ff93,#b7f76a);
+  color: #2c4a00;
 }
 
 .item-total-cabbage {
