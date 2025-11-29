@@ -208,9 +208,9 @@ async function updateKikakuForCard(group, newKikaku) {
   if (!newKikaku) return;
 
   const payload = {
-    mode: "updateKikaku",
-    date: group.date,
-    item: group.item,
+    mode:  "updateKikaku",
+    date:  group.date,
+    item:  group.item,
     price: group.price,
     kikaku: newKikaku,
   };
@@ -218,15 +218,20 @@ async function updateKikakuForCard(group, newKikaku) {
   try {
     const res = await fetch(HISTORY_SCRIPT_URL, {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
+      // ★ ← ここでヘッダーは付けない（重要）
+      // headers: {"Content-Type": "application/json"},
       body: JSON.stringify(payload),
     });
 
     const json = await res.json();
+    console.log("updateKikaku response:", json);
+
     if (json.status !== "ok") {
       alert("規格更新に失敗しました: " + (json.message || ""));
       return;
     }
+
+    // ここまで来れば成功（バッジ更新は既存の then 側でやる）
   } catch (err) {
     alert("規格更新時にエラーが発生しました");
     console.error(err);
