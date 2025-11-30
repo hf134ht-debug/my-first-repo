@@ -1,178 +1,222 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI分析</title>
-  <link rel="stylesheet" href="/my-first-repo/css/style.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-</head>
+/*************************************************************
+ * analysis.gs（v3・spec正規化対応版）
+ * AI分析タブ専用 GAS API
+*************************************************************/
 
-<script src="/my-first-repo/js/analysis.js?v=999999"></script>  
-<body>
+/* ============================================================
+   ▼ 品目正規化
+============================================================ */
+function aiNormalizeItemName(raw) {
+  if (!raw) return '';
+  let s = String(raw).trim();
+  const lower = s.toLowerCase();
 
-<div class="analysis-container">
+  if (
+    /[とうトﾄ][う]?も?ろ?こし/.test(s) ||
+    lower.includes('corn') ||
+    s.includes('ｺｰﾝ') || s.includes('コーン')
+  ) {
+    return 'とうもろこし';
+  }
 
-  <!-- タイトル -->
-  <div class="analysis-title-area">
-    <h1 class="analysis-title">AI分析</h1>
-    <span class="analysis-badge">AI powered</span>
-  </div>
+  if (s.includes('白菜カット') || s.includes('はくさいカット') || s.includes('ﾊｸｻｲ ｶｯﾄ')) {
+    return 'はくさいカット';
+  }
 
-  <!-- 4つの大きいタブカード -->
-  <div class="analysis-mode-tabs">
+  if (s.includes('白菜') || s.includes('はくさい') || s.includes('ﾊｸｻｲ')) {
+    return 'はくさい';
+  }
 
-    <div class="analysis-mode-card mode-alloc" data-mode="alloc">
-      <i class="bi bi-shop card-icon"></i>
-      <div class="mode-main">店舗配分最適化</div>
-      <div class="mode-sub">Optimal Allocation</div>
-    </div>
+  if (s.includes('キャベツカット') || s.includes('ｷｬﾍﾞﾂ ｶｯﾄ')) {
+    return 'キャベツカット';
+  }
 
-    <div class="analysis-mode-card mode-reverse" data-mode="reverse">
-      <i class="bi bi-bullseye card-icon"></i>
-      <div class="mode-main">目標販売量リバースエンジン</div>
-      <div class="mode-sub">Target Reverse Engine</div>
-    </div>
+  if (s.includes('キャベツ') || s.includes('ｷｬﾍﾞﾂ')) {
+    return 'キャベツ';
+  }
 
-    <div class="analysis-mode-card mode-price" data-mode="price">
-      <i class="bi bi-cash-coin card-icon"></i>
-      <div class="mode-main">最適価格シミュレーション</div>
-      <div class="mode-sub">Price Simulation</div>
-    </div>
+  return s;
+}
 
-    <div class="analysis-mode-card mode-forecast" data-mode="forecast">
-      <i class="bi bi-graph-up-arrow card-icon"></i>
-      <div class="mode-main">需要予測</div>
-      <div class="mode-sub">Demand Forecast</div>
-    </div>
+/* ============================================================
+   ▼ 規格 spec 正規化（analysis.js と完全一致）
+============================================================ */
+function normSpec(s) {
+  return String(s || "")
+    .trim()
+    .replace(/\s+/g, "")
+    .replace(/〜/g, "~")
+    .replace(/－/g, "-")
+    .replace(/ー/g, "-");
+}
 
-  </div>
+/* ============================================================
+   ▼ ① 店舗配分最適化 API
+============================================================ */
+function apiAllocation(e) {
+  const item   = aiNormalizeItemName(e.parameter.item);
+  const qty    = Number(e.parameter.qty);
+  const price  = Number(e.parameter.price);
+  const spec   = normSpec(e.parameter.spec || '');
+  const stores = (e.parameter.stores || '').split(',').filter(s => s);
 
+  const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('AI_Allocation');
+  if (!sh) return jsonOut([]);
 
-  <!-- ======================== ページ① 店舗配分最適化 ======================== -->
-  <section id="analysisPage-alloc" class="analysis-page active">
-    <h2 class="analysis-section-title">
-      <i class="bi bi-shop section-icon"></i> 店舗配分最適化
-    </h2>
+  const values = sh.getDataRange().getValues();
+  const header = values.shift();
 
-    <div class="analysis-input-area">
+  const result = [];
 
-      <label>品目</label>
-      <select id="allocItem" class="analysis-input"></select>
+  values.forEach(r => {
+    const o = rowObj(header, r);
 
-      <label>出荷予定数</label>
-      <input id="allocQuantity" type="number" class="analysis-input" placeholder="例：30">
+    if (aiNormalizeItemName(o.item) !== item) return;
+    if (Number(o.totalQty) !== qty) return;
+    if (Number(o.price) !== price) return;
+    if (normSpec(o.spec) !== spec) return;
+    if (!stores.includes(o.store)) return;
 
-      <label>価格（円）</label>
-      <input id="allocPrice" type="number" class="analysis-input" placeholder="例：150">
+    result.push({
+      store: o.store,
+      qty: Number(o.storeQty),
+      rate: Number(o.rate),
+    });
+  });
 
-      <label>規格（プリセット or 手入力）</label>
-      <div class="spec-input-wrapper">
-        <select id="allocSpecPreset" class="analysis-input spec-select"></select>
-        <input id="allocSpecCustom" type="text" class="analysis-input spec-input" placeholder="自由入力">
-      </div>
+  return jsonOut(result);
+}
 
-    </div>
+/* ============================================================
+   ▼ ② 逆算 API
+============================================================ */
+function apiReverse(e) {
+  const item   = aiNormalizeItemName(e.parameter.item);
+  const target = Number(e.parameter.target);
+  const spec   = normSpec(e.parameter.spec || '');
 
-    <!-- ★ AI実行ボタン -->
-    <button id="allocRunBtn" class="analysis-run-btn">
-      AIに店舗配分を提案させる
-    </button>
+  const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('AI_TargetReverse');
+  if (!sh) return jsonOut({});
 
-    <div class="store-button-area" id="allocStoreButtons"></div>
+  const values = sh.getDataRange().getValues();
+  const header = values.shift();
 
-    <div class="analysis-result-card" id="allocResult">
-      <p class="analysis-placeholder">ここに配分結果が表示されます</p>
-    </div>
-  </section>
+  let best = null;
 
+  values.forEach(r => {
+    const o = rowObj(header, r);
 
-  <!-- ======================== ページ② 目標販売量リバースエンジン ======================== -->
-  <section id="analysisPage-reverse" class="analysis-page">
-    <h2 class="analysis-section-title">
-      <i class="bi bi-bullseye section-icon"></i> 目標販売量リバースエンジン
-    </h2>
+    if (aiNormalizeItemName(o.item) !== item) return;
+    if (Number(o.targetSales) !== target) return;
+    if (normSpec(o.spec) !== spec) return;
 
-    <div class="analysis-input-area">
+    if (!best) {
+      best = {
+        price: Number(o.bestPrice),
+        rate: Number(o.rate),
+        loss: Number(o.loss),
+        alloc: []
+      };
+    }
 
-      <label>品目</label>
-      <select id="revItem" class="analysis-input"></select>
+    best.alloc.push({
+      store: o.store,
+      qty: Number(o.qty),
+      rate: Number(o.storeRate),
+    });
+  });
 
-      <label>目標販売数</label>
-      <input id="revTarget" type="number" class="analysis-input" placeholder="例：20">
+  return jsonOut(best || {});
+}
 
-      <label>規格（プリセット or 手入力）</label>
-      <div class="spec-input-wrapper">
-        <select id="revSpecPreset" class="analysis-input spec-select"></select>
-        <input id="revSpecCustom" type="text" class="analysis-input spec-input" placeholder="自由入力">
-      </div>
+/* ============================================================
+   ▼ ③ 価格シミュレーション API
+============================================================ */
+function apiPriceSim(e) {
+  const item  = aiNormalizeItemName(e.parameter.item);
+  const price = Number(e.parameter.price);
+  const spec  = normSpec(e.parameter.spec || '');
 
-    </div>
+  const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('AI_PriceCurve');
+  if (!sh) return jsonOut({});
 
-    <!-- ★ AI実行ボタン -->
-    <button id="revRunBtn" class="analysis-run-btn">
-      AIに最適価格を計算させる
-    </button>
+  const values = sh.getDataRange().getValues();
+  const header = values.shift();
 
-    <div class="store-button-area" id="revStoreButtons"></div>
+  for (let r of values) {
+    const o = rowObj(header, r);
 
-    <div class="analysis-result-card" id="revResult">
-      <p class="analysis-placeholder">ここにAI逆算結果が表示されます</p>
-    </div>
-  </section>
+    if (aiNormalizeItemName(o.item) !== item) continue;
+    if (normSpec(o.spec) !== spec) continue;
+    if (Number(o.price) !== price) continue;
 
+    return jsonOut({
+      price: price,
+      sales: Number(o.sales),
+      rate: Number(o.rate),
+      loss: Number(o.loss),
+      profit: Number(o.profit),
+      comment: o.comment || '',
+    });
+  }
 
-  <!-- ======================== ページ③ 最適価格シミュレーション ======================== -->
-  <section id="analysisPage-price" class="analysis-page">
-    <h2 class="analysis-section-title">
-      <i class="bi bi-cash-coin section-icon"></i> 最適価格シミュレーション
-    </h2>
+  return jsonOut({});
+}
 
-    <div class="analysis-input-area">
+/* ============================================================
+   ▼ ④ 需要予測 API
+============================================================ */
+function apiForecast(e) {
+  const item = aiNormalizeItemName(e.parameter.item || '');
 
-      <label>品目</label>
-      <select id="simItem" class="analysis-input"></select>
+  const sh = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName('AI_7DaysForecast');
+  if (!sh) return jsonOut({});
 
-      <label>規格（プリセット or 手入力）</label>
-      <div class="spec-input-wrapper">
-        <select id="simSpecPreset" class="analysis-input spec-select"></select>
-        <input id="simSpecCustom" type="text" class="analysis-input spec-input" placeholder="自由入力">
-      </div>
+  const values = sh.getDataRange().getValues();
+  const header = values.shift();
 
-      <label>価格（78〜500円）</label>
-      <input id="simPrice" type="range" min="78" max="500" value="120" class="analysis-slider">
-      <div id="simPriceLabel">現在の価格：120円</div>
+  let chart = [0,0,0,0,0,0,0];
+  let stores = [];
+  let generalComment = '';
 
-    </div>
+  values.forEach(r => {
+    const o = rowObj(header, r);
 
-    <div class="analysis-result-card" id="simResult">
-      <p class="analysis-placeholder">価格を動かすと結果が表示されます</p>
-    </div>
-  </section>
+    if (item && aiNormalizeItemName(o.item) !== item) return;
 
+    const di = Number(o.dayIndex);
+    if (di >= 0 && di <= 6) chart[di] = Number(o.forecastSales);
 
-  <!-- ======================== ページ④ 需要予測 ======================== -->
-  <section id="analysisPage-forecast" class="analysis-page">
-    <h2 class="analysis-section-title">
-      <i class="bi bi-graph-up-arrow section-icon"></i> 需要予測
-    </h2>
+    if (o.store)
+      stores.push({
+        store: o.store,
+        star: o.star,
+        comment: o.comment
+      });
 
-    <!-- ★ 再計算ボタン（任意） -->
-    <button id="forecastRunBtn" class="analysis-run-btn">
-      需要予測を再計算
-    </button>
+    if (o.generalComment) generalComment = o.generalComment;
+  });
 
-    <div id="forecastChart" class="analysis-chart"></div>
+  return jsonOut({
+    chart,
+    stores,
+    comment: generalComment
+  });
+}
 
-    <div class="analysis-result-card" id="storeDemand">
-      <p class="analysis-placeholder">店舗別需要強度が表示されます</p>
-    </div>
+/* ============================================================
+   ▼ Helper: 行→オブジェクト
+============================================================ */
+function rowObj(header, arr) {
+  const o = {};
+  header.forEach((h, i) => o[h] = arr[i]);
+  return o;
+}
 
-    <div class="analysis-result-card" id="forecastComment">
-      <p class="analysis-placeholder">AIコメントが表示されます</p>
-    </div>
-  </section>
-
-</div>
-
-</body>
-</html>
+/* ============================================================
+   ▼ Helper: JSON出力
+============================================================ */
+function jsonOut(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
