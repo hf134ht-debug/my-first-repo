@@ -191,6 +191,7 @@ function activateShipmentFeatures() {
 
       /** ★ 送信前に item をもう一度 normalize（絶対ズレないように） */
       const payload = {
+        action: "saveShipment", 
         date: date,
         item: normalizeItemName(selectedItem),
         price: Number(price),
@@ -215,4 +216,5 @@ function activateShipmentFeatures() {
       }
     });
 }
+
 
