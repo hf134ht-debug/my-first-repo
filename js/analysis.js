@@ -72,6 +72,13 @@ const ANALYSIS_ITEMS = [
 ];
 
 /* =========================================================
+   ▼ ★ GAS（AI分析用）URL ★
+========================================================= */
+const ANALYSIS_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
+
+
+/* =========================================================
    ▼ メイン呼び出し（openTab('analysis') から）
 ========================================================= */
 function loadAnalysisView() {
@@ -81,7 +88,6 @@ function loadAnalysisView() {
       const tc = document.getElementById("tabContent");
       tc.innerHTML = html;
 
-      // ▼ DOM構築後に実行（最重要）
       requestAnimationFrame(() => {
         setupAnalysisView();
       });
@@ -99,20 +105,17 @@ function loadAnalysisView() {
 ========================================================= */
 function setupAnalysisView() {
    console.log("=== DEBUG START ===");
-   console.log("KIKAKU_PRESETS =", KIKAKU_PRESETS);
-   console.log("allocItem =", document.getElementById("allocItem"));
-   console.log("allocSpecPreset =", document.getElementById("allocSpecPreset"));
-   console.log("revSpecPreset =", document.getElementById("revSpecPreset"));
-   console.log("simSpecPreset =", document.getElementById("simSpecPreset"));
-   console.log("analysis_view loaded =", document.querySelector(".analysis-container"));
 
   setupModeTabs();
   setupItemDropdowns();
-  setupSpecPresetLogic();              // ← 規格プリセットセットアップ追加
+  setupSpecPresetLogic();
   setupStoreButtons("allocStoreButtons");
   setupStoreButtons("revStoreButtons");
   setupSimulationSlider();
+
+  setupAnalysisActions();   // ★ AI実行ボタン紐付け
 }
+
 
 /* =========================================================
    ▼ 4つの大タブ
@@ -129,14 +132,24 @@ function setupModeTabs() {
 }
 
 function showAnalysisPage(mode) {
-  document.querySelectorAll(".analysis-page").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".analysis-page")
+    .forEach(p => p.classList.remove("active"));
+
   const page = document.getElementById(`analysisPage-${mode}`);
   if (page) page.classList.add("active");
 
-  document.querySelectorAll(".analysis-mode-card").forEach(c => c.classList.remove("active"));
+  document.querySelectorAll(".analysis-mode-card")
+    .forEach(c => c.classList.remove("active"));
+
   const target = document.querySelector(`.analysis-mode-card[data-mode="${mode}"]`);
   if (target) target.classList.add("active");
+
+  // ▼ 需要予測タブを開いたら自動実行
+  if (mode === "forecast") {
+    runForecast();
+  }
 }
+
 
 /* =========================================================
    ▼ 品目プルダウン
@@ -154,6 +167,7 @@ function setupItemDropdowns() {
     });
   });
 }
+
 
 /* =========================================================
    ▼ 規格プリセット ロジック
@@ -184,12 +198,20 @@ function setupSpecPresetFor(itemId, presetId) {
     });
   }
 
-  // 初期セット
   updatePreset();
-
-  // 品目変更時
   itemSel.addEventListener("change", updatePreset);
 }
+
+
+/* =========================================================
+   ▼ 規格（プリセット＋手入力）を 1つにまとめる
+========================================================= */
+function buildSpecValue(presetId, customId) {
+  const preset = document.getElementById(presetId)?.value.trim() || "";
+  const custom = document.getElementById(customId)?.value.trim() || "";
+  return custom || preset || "";
+}
+
 
 /* =========================================================
    ▼ 店舗 pill ボタン
@@ -221,32 +243,172 @@ function getSelectedStores(containerId) {
   return [...c.querySelectorAll(".store-pill-on")].map(b => b.dataset.store);
 }
 
+
 /* =========================================================
-   ▼ 価格スライダー
+   ▼ 価格スライダー（AI接続版）
 ========================================================= */
 function setupSimulationSlider() {
   const slider = document.getElementById("simPrice");
   const label = document.getElementById("simPriceLabel");
   const result = document.getElementById("simResult");
 
-  if (!slider || !label) return;
+  if (!slider || !label || !result) return;
 
-  label.textContent = `現在の価格：${slider.value}円`;
+  const updateLabel = (value) => {
+    label.textContent = `現在の価格：${value}円`;
+  };
+
+  const runSim = async (value) => {
+    const itemSel = document.getElementById("simItem");
+    if (!itemSel) return;
+
+    const item = itemSel.value;
+    const spec = buildSpecValue("simSpecPreset", "simSpecCustom");
+
+    result.innerHTML =
+      `<p class="analysis-placeholder">AIが価格 ${value} 円で計算中…</p>`;
+
+    try {
+      const params = new URLSearchParams({
+        ai: "price",
+        item,
+        price: String(value),
+        spec
+      });
+
+      const res = await fetch(`${ANALYSIS_SCRIPT_URL}?${params.toString()}`);
+      const json = await res.json();
+
+      result.innerHTML = `
+        <div class="rev-summary">
+          <div><strong>価格：</strong>${json.price}円</div>
+          <div><strong>予測販売数：</strong>${json.sales}</div>
+          <div><strong>販売率：</strong>${json.rate}%</div>
+          <div><strong>ロス率：</strong>${json.loss}%</div>
+          <div><strong>利益：</strong>${json.profit}円</div>
+        </div>
+        ${json.comment ? `<p class="analysis-comment">${json.comment}</p>` : ""}
+      `;
+
+    } catch (e) {
+      result.innerHTML = `<p class="analysis-placeholder">AI計算エラー：${e.message}</p>`;
+    }
+  };
+
+  updateLabel(slider.value);
 
   slider.addEventListener("input", () => {
-    label.textContent = `現在の価格：${slider.value}円`;
-    result.innerHTML = `
-      <p class="analysis-placeholder">
-        価格 ${slider.value} 円での予測結果は、AI接続後にここに表示されます。
-      </p>
-    `;
+    const v = slider.value;
+    updateLabel(v);
+    runSim(v);
   });
 }
 
-/* =========================================================
-   ▼ 結果表示（今後AIモデルに接続）
-========================================================= */
 
+/* =========================================================
+   ▼ 各モード実行ボタン紐付け ★
+========================================================= */
+function setupAnalysisActions() {
+  const allocBtn = document.getElementById("allocRunBtn");
+  if (allocBtn) allocBtn.addEventListener("click", runAllocation);
+
+  const revBtn = document.getElementById("revRunBtn");
+  if (revBtn) revBtn.addEventListener("click", runReverseEngine);
+
+  const forecastBtn = document.getElementById("forecastRunBtn");
+  if (forecastBtn) forecastBtn.addEventListener("click", runForecast);
+}
+
+
+/* =========================================================
+   ▼ ① 店舗配分最適化：AIへ送信
+========================================================= */
+async function runAllocation() {
+  const item = document.getElementById("allocItem").value;
+  const qty = Number(document.getElementById("allocQuantity").value);
+  const price = Number(document.getElementById("allocPrice").value);
+  const spec = buildSpecValue("allocSpecPreset", "allocSpecCustom");
+  const stores = getSelectedStores("allocStoreButtons");
+  const area = document.getElementById("allocResult");
+
+  area.innerHTML = `<p class="analysis-placeholder">AI計算中…</p>`;
+
+  try {
+    const params = new URLSearchParams({
+      ai: "allocation",
+      item,
+      qty,
+      price,
+      spec,
+      stores: stores.join(",")
+    });
+
+    const res = await fetch(`${ANALYSIS_SCRIPT_URL}?${params.toString()}`);
+    renderAllocationResult(await res.json());
+
+  } catch (e) {
+    area.innerHTML =
+      `<p class="analysis-placeholder">エラー：${e.message}</p>`;
+  }
+}
+
+
+/* =========================================================
+   ▼ ② 目標販売量逆算：AIへ送信
+========================================================= */
+async function runReverseEngine() {
+  const item = document.getElementById("revItem").value;
+  const target = Number(document.getElementById("revTarget").value);
+  const spec = buildSpecValue("revSpecPreset", "revSpecCustom");
+  const stores = getSelectedStores("revStoreButtons");
+  const area = document.getElementById("revResult");
+
+  area.innerHTML = `<p class="analysis-placeholder">AI計算中…</p>`;
+
+  try {
+    const params = new URLSearchParams({
+      ai: "reverse",
+      item,
+      target,
+      spec,
+      stores: stores.join(",")
+    });
+
+    const res = await fetch(`${ANALYSIS_SCRIPT_URL}?${params.toString()}`);
+    renderReverseEngineResult(await res.json());
+
+  } catch (e) {
+    area.innerHTML =
+      `<p class="analysis-placeholder">エラー：${e.message}</p>`;
+  }
+}
+
+
+/* =========================================================
+   ▼ ③ 需要予測：AIへ送信（タブ切替で自動）
+========================================================= */
+async function runForecast() {
+  const area = document.getElementById("forecastComment");
+  if (area) {
+    area.innerHTML = `<p class="analysis-placeholder">AI計算中…</p>`;
+  }
+
+  try {
+    const params = new URLSearchParams({ ai: "forecast" });
+
+    const res = await fetch(`${ANALYSIS_SCRIPT_URL}?${params.toString()}`);
+    renderForecast(await res.json());
+
+  } catch (e) {
+    if (area)
+      area.innerHTML = `<p class="analysis-placeholder">エラー：${e.message}</p>`;
+  }
+}
+
+
+/* =========================================================
+   ▼ 結果表示（既存）
+========================================================= */
 function renderAllocationResult(list) {
   const area = document.getElementById("allocResult");
   if (!area) return;
@@ -347,8 +509,3 @@ function renderForecast(data) {
       `<p>${data.comment}</p>`;
   }
 }
-
-
-
-
-
