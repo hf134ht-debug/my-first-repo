@@ -2,17 +2,19 @@
    service-worker.js（GitHub Pages用・sales.js対応 完全版）
 ========================================================= */
 
-const CACHE_NAME = "shukka-app-v4";
+const CACHE_NAME = "shukka-app-v5";
 const BASE = "/my-first-repo";
 
 const ASSETS = [
   `${BASE}/`,
   `${BASE}/index.html`,
   `${BASE}/css/style.css`,
-  `${BASE}/js/app.js`,
+  `${BASE}/js/app.js?v=202501`,
+  `${BASE}/js/analysis.js?v=202501`,   // ←★絶対必要
   `${BASE}/js/shipment.js`,
   `${BASE}/js/history.js`,
-  `${BASE}/js/sales.js`,   // ★ 追加
+  `${BASE}/js/sales.js`,
+  `${BASE}/js/summary.js`,            // ←★これも追加
   `${BASE}/manifest.json`,
   `${BASE}/icons/icon-192.png`,
   `${BASE}/icons/icon-512.png`
@@ -49,6 +51,7 @@ self.addEventListener("fetch", e => {
 
 /* ===== fetch（オンライン優先 + オフライン fallback） ===== */
 self.addEventListener("f
+
 
 
 
