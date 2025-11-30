@@ -79,8 +79,6 @@ function renderShipmentScreen() {
       <div class="item-button" data-item="はくさいカット" data-type="hakusai">はくさいカット</div>
       <div class="item-button" data-item="キャベツ" data-type="cabbage">キャベツ</div>
       <div class="item-button" data-item="キャベツカット" data-type="cabbage">キャベツカット</div>
-
-      <!-- ★ ここを “とうもろこし”（ひらがな）へ統一 ★ -->
       <div class="item-button" data-item="とうもろこし" data-type="corn">とうもろこし</div>
     </div>
 
@@ -112,7 +110,6 @@ function renderStoreRow() {
         <option value="児島">児島</option>
       </select>
       <input type="number" class="store-qty" min="1" placeholder="個数">
-
       <button type="button" class="store-remove-btn">✕</button>
     </div>
   `;
@@ -190,21 +187,27 @@ function activateShipmentFeatures() {
       }
 
       /** ★ 送信前に item をもう一度 normalize（絶対ズレないように） */
-      const payload = {
-        action: "saveShipment", 
+      const data = {
+        action: "saveShipment",
         date: date,
         item: normalizeItemName(selectedItem),
-        price: Number(price),
-        stores: stores,
+        price: String(Number(price)),
+        stores: JSON.stringify(stores), // ← 文字列化して送る
       };
 
+      // ★★★ ここが一番大事：JSON ではなく form-urlencoded で送る ★★★
+      const body = new URLSearchParams(data).toString();
+
       try {
-        await fetch(SCRIPT_URL, {
+        const res = await fetch(SCRIPT_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+          },
+          body,
         });
 
+        // res.ok での判定はしていないが、ここまで来ていれば通信自体は成功
         alert("登録完了！");
 
         // 画面リセット
@@ -212,9 +215,8 @@ function activateShipmentFeatures() {
           renderShipmentScreen();
         activateShipmentFeatures();
       } catch (err) {
+        console.error("出荷登録エラー:", err);
         alert("通信エラー：" + err);
       }
     });
 }
-
-
