@@ -45,13 +45,15 @@
 
   </div>
 
-  <!-- ===== ページ① 店舗配分最適化 ===== -->
+
+  <!-- ======================== ページ① 店舗配分最適化 ======================== -->
   <section id="analysisPage-alloc" class="analysis-page active">
     <h2 class="analysis-section-title">
       <i class="bi bi-shop section-icon"></i> 店舗配分最適化
     </h2>
 
     <div class="analysis-input-area">
+
       <label>品目</label>
       <select id="allocItem" class="analysis-input"></select>
 
@@ -62,11 +64,12 @@
       <input id="allocPrice" type="number" class="analysis-input" placeholder="例：150">
 
       <label>規格（プリセット or 手入力）</label>
-      
       <div class="spec-input-wrapper">
         <select id="allocSpecPreset" class="analysis-input spec-select"></select>
         <input id="allocSpecCustom" type="text" class="analysis-input spec-input" placeholder="自由入力">
       </div>
+
+    </div> <!-- ←★ 閉じタグ 修正済み -->
 
     <div class="store-button-area" id="allocStoreButtons"></div>
 
@@ -75,13 +78,15 @@
     </div>
   </section>
 
-  <!-- ===== ページ② リバースエンジン ===== -->
+
+  <!-- ======================== ページ② 目標販売量リバースエンジン ======================== -->
   <section id="analysisPage-reverse" class="analysis-page">
     <h2 class="analysis-section-title">
       <i class="bi bi-bullseye section-icon"></i> 目標販売量リバースエンジン
     </h2>
 
     <div class="analysis-input-area">
+
       <label>品目</label>
       <select id="revItem" class="analysis-input"></select>
 
@@ -94,6 +99,7 @@
         <input id="revSpecCustom" type="text" class="analysis-input spec-input" placeholder="自由入力">
       </div>
 
+    </div> <!-- ←★ 閉じタグ 修正済み -->
 
     <div class="store-button-area" id="revStoreButtons"></div>
 
@@ -102,13 +108,15 @@
     </div>
   </section>
 
-  <!-- ===== ページ③ 最適価格シミュレーション ===== -->
+
+  <!-- ======================== ページ③ 最適価格シミュレーション ======================== -->
   <section id="analysisPage-price" class="analysis-page">
     <h2 class="analysis-section-title">
       <i class="bi bi-cash-coin section-icon"></i> 最適価格シミュレーション
     </h2>
 
     <div class="analysis-input-area">
+
       <label>品目</label>
       <select id="simItem" class="analysis-input"></select>
 
@@ -121,14 +129,16 @@
       <label>価格（78〜500円）</label>
       <input id="simPrice" type="range" min="78" max="500" value="120" class="analysis-slider">
       <div id="simPriceLabel">現在の価格：120円</div>
-    </div>
+
+    </div> <!-- ←★ 閉じタグ 修正済み -->
 
     <div class="analysis-result-card" id="simResult">
       <p class="analysis-placeholder">価格を動かすと結果が表示されます</p>
     </div>
   </section>
 
-  <!-- ===== ページ④ 需要予測 ===== -->
+
+  <!-- ======================== ページ④ 需要予測 ======================== -->
   <section id="analysisPage-forecast" class="analysis-page">
     <h2 class="analysis-section-title">
       <i class="bi bi-graph-up-arrow section-icon"></i> 需要予測
@@ -149,5 +159,3 @@
 
 </body>
 </html>
-
-
