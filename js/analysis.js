@@ -95,6 +95,14 @@ function loadAnalysisView() {
    ▼ 初期セットアップ
 ========================================================= */
 function setupAnalysisView() {
+   console.log("=== DEBUG START ===");
+   console.log("KIKAKU_PRESETS =", KIKAKU_PRESETS);
+   console.log("allocItem =", document.getElementById("allocItem"));
+   console.log("allocSpecPreset =", document.getElementById("allocSpecPreset"));
+   console.log("revSpecPreset =", document.getElementById("revSpecPreset"));
+   console.log("simSpecPreset =", document.getElementById("simSpecPreset"));
+   console.log("analysis_view loaded =", document.querySelector(".analysis-container"));
+
   setupModeTabs();
   setupItemDropdowns();
   setupSpecPresetLogic();              // ← 規格プリセットセットアップ追加
@@ -336,4 +344,5 @@ function renderForecast(data) {
       `<p>${data.comment}</p>`;
   }
 }
+
 
