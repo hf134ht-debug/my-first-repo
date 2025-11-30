@@ -88,9 +88,12 @@
       <label>目標販売数</label>
       <input id="revTarget" type="number" class="analysis-input" placeholder="例：20">
 
-      <label>重さ（g・任意）</label>
-      <input id="revWeight" type="number" class="analysis-input" placeholder="任意">
-    </div>
+      <label>規格（プリセット or 手入力）</label>
+      <div class="spec-input-wrapper">
+        <select id="revSpecPreset" class="analysis-input spec-select"></select>
+        <input id="revSpecCustom" type="text" class="analysis-input spec-input" placeholder="自由入力">
+      </div>
+
 
     <div class="store-button-area" id="revStoreButtons"></div>
 
@@ -109,8 +112,11 @@
       <label>品目</label>
       <select id="simItem" class="analysis-input"></select>
 
-      <label>重さ（g・任意）</label>
-      <input id="simWeight" type="number" class="analysis-input" placeholder="任意">
+      <label>規格（プリセット or 手入力）</label>
+      <div class="spec-input-wrapper">
+        <select id="simSpecPreset" class="analysis-input spec-select"></select>
+        <input id="simSpecCustom" type="text" class="analysis-input spec-input" placeholder="自由入力">
+      </div>
 
       <label>価格（78〜500円）</label>
       <input id="simPrice" type="range" min="78" max="500" value="120" class="analysis-slider">
@@ -143,4 +149,5 @@
 
 </body>
 </html>
+
 
