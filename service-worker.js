@@ -2,7 +2,7 @@
    service-worker.js（完全修正版）
 ========================================================= */
 
-const CACHE_NAME = "shukka-app-v10";     // ← 必ず新しい名前にする
+const CACHE_NAME = "shukka-app-v11";     // ← 必ず新しい名前にする
 const BASE = "/my-first-repo";
 
 const ASSETS = [
@@ -47,3 +47,4 @@ self.addEventListener("fetch", e => {
     fetch(e.request).catch(() => caches.match(e.request))
   );
 });
+
