@@ -71,7 +71,12 @@
         <input id="allocSpecCustom" type="text" class="analysis-input spec-input" placeholder="自由入力">
       </div>
 
-    </div> <!-- ←★ 閉じタグ 修正済み -->
+    </div>
+
+    <!-- ★ AI実行ボタン -->
+    <button id="allocRunBtn" class="analysis-run-btn">
+      AIに店舗配分を提案させる
+    </button>
 
     <div class="store-button-area" id="allocStoreButtons"></div>
 
@@ -101,7 +106,12 @@
         <input id="revSpecCustom" type="text" class="analysis-input spec-input" placeholder="自由入力">
       </div>
 
-    </div> <!-- ←★ 閉じタグ 修正済み -->
+    </div>
+
+    <!-- ★ AI実行ボタン -->
+    <button id="revRunBtn" class="analysis-run-btn">
+      AIに最適価格を計算させる
+    </button>
 
     <div class="store-button-area" id="revStoreButtons"></div>
 
@@ -132,7 +142,7 @@
       <input id="simPrice" type="range" min="78" max="500" value="120" class="analysis-slider">
       <div id="simPriceLabel">現在の価格：120円</div>
 
-    </div> <!-- ←★ 閉じタグ 修正済み -->
+    </div>
 
     <div class="analysis-result-card" id="simResult">
       <p class="analysis-placeholder">価格を動かすと結果が表示されます</p>
@@ -145,6 +155,11 @@
     <h2 class="analysis-section-title">
       <i class="bi bi-graph-up-arrow section-icon"></i> 需要予測
     </h2>
+
+    <!-- ★ 再計算ボタン（任意） -->
+    <button id="forecastRunBtn" class="analysis-run-btn">
+      需要予測を再計算
+    </button>
 
     <div id="forecastChart" class="analysis-chart"></div>
 
@@ -161,4 +176,3 @@
 
 </body>
 </html>
-
