@@ -81,10 +81,10 @@ function loadAnalysisView() {
       const tc = document.getElementById("tabContent");
       tc.innerHTML = html;
 
-      // ▼ DOM構築が完了してから実行（最重要ポイント）
-      setTimeout(() => {
+      // ▼ DOM構築後に実行（最重要）
+      requestAnimationFrame(() => {
         setupAnalysisView();
-      }, 0);
+      });
     })
     .catch(err => {
       console.error("AI分析の読み込みエラー:", err);
@@ -92,6 +92,7 @@ function loadAnalysisView() {
         "<p>AI分析画面の読み込みに失敗しました。</p>";
     });
 }
+
 
 /* =========================================================
    ▼ 初期セットアップ
@@ -346,6 +347,7 @@ function renderForecast(data) {
       `<p>${data.comment}</p>`;
   }
 }
+
 
 
 
