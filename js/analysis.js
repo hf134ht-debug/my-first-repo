@@ -81,8 +81,10 @@ function loadAnalysisView() {
       const tc = document.getElementById("tabContent");
       tc.innerHTML = html;
 
-      // セットアップ
-      setupAnalysisView();
+      // ▼ DOM構築が完了してから実行（最重要ポイント）
+      setTimeout(() => {
+        setupAnalysisView();
+      }, 0);
     })
     .catch(err => {
       console.error("AI分析の読み込みエラー:", err);
@@ -344,5 +346,6 @@ function renderForecast(data) {
       `<p>${data.comment}</p>`;
   }
 }
+
 
 
