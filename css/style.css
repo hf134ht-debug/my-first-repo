@@ -753,9 +753,10 @@ input, select {
 .analysis-title {
   font-size: 28px;
   font-weight: bold;
-  color: #222 !important;
+  color: #3fa34d !important;
   margin: 0 0 4px;
   text-shadow: 0 1px 2px rgba(150, 120, 240, 0.3);
+  letter-spacing: 2px;
 }
 
 /* ゆめかわバッジ */
@@ -1063,6 +1064,7 @@ input, select {
   box-shadow: 0 4px 10px rgba(150, 120, 230, 0.30);
   border-radius: 20px;
 }
+
 
 
 
