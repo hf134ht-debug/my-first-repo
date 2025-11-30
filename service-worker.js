@@ -1,8 +1,8 @@
 /* =========================================================
-   service-worker.js（GitHub Pages用・sales.js対応 完全版）
+   service-worker.js（完全修正版）
 ========================================================= */
 
-const CACHE_NAME = "shukka-app-v5";
+const CACHE_NAME = "shukka-app-v6";       // ← バージョン必ず上げる！
 const BASE = "/my-first-repo";
 
 const ASSETS = [
@@ -10,11 +10,12 @@ const ASSETS = [
   `${BASE}/index.html`,
   `${BASE}/css/style.css`,
   `${BASE}/js/app.js?v=202501`,
-  `${BASE}/js/analysis.js?v=202501`,   // ←★絶対必要
+  `${BASE}/js/analysis.js?v=202501`,
   `${BASE}/js/shipment.js`,
   `${BASE}/js/history.js`,
   `${BASE}/js/sales.js`,
-  `${BASE}/js/summary.js`,            // ←★これも追加
+  `${BASE}/js/summary.js`,
+  `${BASE}/analysis_view.html`,
   `${BASE}/manifest.json`,
   `${BASE}/icons/icon-192.png`,
   `${BASE}/icons/icon-512.png`
@@ -42,16 +43,9 @@ self.addEventListener("activate", e => {
   self.clients.claim();
 });
 
-/* ===== fetch ===== */
+/* ===== Fetch（オンライン優先 + キャッシュfallback）===== */
 self.addEventListener("fetch", e => {
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))
   );
 });
-
-/* ===== fetch（オンライン優先 + オフライン fallback） ===== */
-self.addEventListener("f
-
-
-
-
