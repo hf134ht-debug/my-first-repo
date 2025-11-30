@@ -1,7 +1,7 @@
 /* =========================================================
    analysis.js
    AI分析タブ（4つのモード切替 + UI制御）
-   規格プリセット対応・ゆめかわ完全版
+   規格プリセット対応・ゆめかわ完全版（spec正規化対応）
 ========================================================= */
 
 /* =========================================================
@@ -72,84 +72,80 @@ const ANALYSIS_ITEMS = [
 ];
 
 /* =========================================================
-   ▼ ★ GAS（AI分析用）URL ★
+   ▼ GAS（AI分析用）URL
 ========================================================= */
 const ANALYSIS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
 
+/* =========================================================
+   ▼ 規格 spec 正規化（A案）
+========================================================= */
+function normalizeSpec(s) {
+  return String(s || "")
+    .trim()
+    .replace(/\s+/g, "")     // 全ての空白を削除
+    .replace(/〜/g, "~")     // 全角チルダ
+    .replace(/－/g, "-")     // 全角ハイフン
+    .replace(/ー/g, "-");    // 長音記号もハイフン扱い
+}
 
 /* =========================================================
-   ▼ メイン呼び出し（openTab('analysis') から）
+   ▼ 規格（プリセット＋手入力）をまとめる＋正規化
+========================================================= */
+function buildSpecValue(presetId, customId) {
+  const preset = document.getElementById(presetId)?.value.trim() || "";
+  const custom = document.getElementById(customId)?.value.trim() || "";
+  return normalizeSpec(custom || preset || "");
+}
+
+/* =========================================================
+   ▼ メインビュー読み込み
 ========================================================= */
 function loadAnalysisView() {
   fetch("/my-first-repo/analysis_view.html")
     .then(res => res.text())
     .then(html => {
-      const tc = document.getElementById("tabContent");
-      tc.innerHTML = html;
-
-      requestAnimationFrame(() => {
-        setupAnalysisView();
-      });
+      document.getElementById("tabContent").innerHTML = html;
+      requestAnimationFrame(() => setupAnalysisView());
     })
     .catch(err => {
-      console.error("AI分析の読み込みエラー:", err);
       document.getElementById("tabContent").innerHTML =
         "<p>AI分析画面の読み込みに失敗しました。</p>";
     });
 }
 
-
 /* =========================================================
    ▼ 初期セットアップ
 ========================================================= */
 function setupAnalysisView() {
-   console.log("=== DEBUG START ===");
-
   setupModeTabs();
   setupItemDropdowns();
   setupSpecPresetLogic();
   setupStoreButtons("allocStoreButtons");
   setupStoreButtons("revStoreButtons");
   setupSimulationSlider();
-
-  setupAnalysisActions();   // ★ AI実行ボタン紐付け
+  setupAnalysisActions();
 }
 
-
 /* =========================================================
-   ▼ 4つの大タブ
+   ▼ タブ切替
 ========================================================= */
 function setupModeTabs() {
-  const cards = document.querySelectorAll(".analysis-mode-card");
-  cards.forEach(card => {
-    card.addEventListener("click", () => {
-      showAnalysisPage(card.dataset.mode);
-    });
+  document.querySelectorAll(".analysis-mode-card").forEach(card => {
+    card.addEventListener("click", () => showAnalysisPage(card.dataset.mode));
   });
-
   showAnalysisPage("alloc");
 }
 
 function showAnalysisPage(mode) {
-  document.querySelectorAll(".analysis-page")
-    .forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".analysis-page").forEach(p => p.classList.remove("active"));
+  document.getElementById(`analysisPage-${mode}`).classList.add("active");
 
-  const page = document.getElementById(`analysisPage-${mode}`);
-  if (page) page.classList.add("active");
+  document.querySelectorAll(".analysis-mode-card").forEach(c => c.classList.remove("active"));
+  document.querySelector(`.analysis-mode-card[data-mode="${mode}"]`)?.classList.add("active");
 
-  document.querySelectorAll(".analysis-mode-card")
-    .forEach(c => c.classList.remove("active"));
-
-  const target = document.querySelector(`.analysis-mode-card[data-mode="${mode}"]`);
-  if (target) target.classList.add("active");
-
-  // ▼ 需要予測タブを開いたら自動実行
-  if (mode === "forecast") {
-    runForecast();
-  }
+  if (mode === "forecast") runForecast();
 }
-
 
 /* =========================================================
    ▼ 品目プルダウン
@@ -168,9 +164,8 @@ function setupItemDropdowns() {
   });
 }
 
-
 /* =========================================================
-   ▼ 規格プリセット ロジック
+   ▼ 規格プリセット
 ========================================================= */
 function setupSpecPresetLogic() {
   setupSpecPresetFor("allocItem", "allocSpecPreset");
@@ -178,20 +173,15 @@ function setupSpecPresetLogic() {
   setupSpecPresetFor("simItem", "simSpecPreset");
 }
 
-/* 品目の選択に応じてプリセットを更新する */
 function setupSpecPresetFor(itemId, presetId) {
   const itemSel = document.getElementById(itemId);
   const presetSel = document.getElementById(presetId);
 
-  if (!itemSel || !presetSel) return;
-
   function updatePreset() {
-    const item = itemSel.value;
-    const presets = KIKAKU_PRESETS[item] || [];
-
+    const presets = KIKAKU_PRESETS[itemSel.value] || [];
     presetSel.innerHTML = "";
     presets.forEach(p => {
-      const opt = document.createElement("option");
+      let opt = document.createElement("option");
       opt.value = p;
       opt.textContent = p;
       presetSel.appendChild(opt);
@@ -202,24 +192,11 @@ function setupSpecPresetFor(itemId, presetId) {
   itemSel.addEventListener("change", updatePreset);
 }
 
-
-/* =========================================================
-   ▼ 規格（プリセット＋手入力）を 1つにまとめる
-========================================================= */
-function buildSpecValue(presetId, customId) {
-  const preset = document.getElementById(presetId)?.value.trim() || "";
-  const custom = document.getElementById(customId)?.value.trim() || "";
-  return custom || preset || "";
-}
-
-
 /* =========================================================
    ▼ 店舗 pill ボタン
 ========================================================= */
 function setupStoreButtons(containerId) {
   const container = document.getElementById(containerId);
-  if (!container) return;
-
   container.innerHTML = "";
 
   ANALYSIS_STORES.forEach(store => {
@@ -238,46 +215,36 @@ function setupStoreButtons(containerId) {
 }
 
 function getSelectedStores(containerId) {
-  const c = document.getElementById(containerId);
-  if (!c) return [];
-  return [...c.querySelectorAll(".store-pill-on")].map(b => b.dataset.store);
+  return [...document.getElementById(containerId).querySelectorAll(".store-pill-on")]
+    .map(b => b.dataset.store);
 }
-
 
 /* =========================================================
    ▼ 価格スライダー（AI接続版）
 ========================================================= */
 function setupSimulationSlider() {
   const slider = document.getElementById("simPrice");
-  const label = document.getElementById("simPriceLabel");
+  const label  = document.getElementById("simPriceLabel");
   const result = document.getElementById("simResult");
 
-  if (!slider || !label || !result) return;
+  if (!slider) return;
 
-  const updateLabel = (value) => {
-    label.textContent = `現在の価格：${value}円`;
-  };
+  const update = (v) => label.textContent = `現在の価格：${v}円`;
 
   const runSim = async (value) => {
-    const itemSel = document.getElementById("simItem");
-    if (!itemSel) return;
-
-    const item = itemSel.value;
+    const item = document.getElementById("simItem").value;
     const spec = buildSpecValue("simSpecPreset", "simSpecCustom");
 
-    result.innerHTML =
-      `<p class="analysis-placeholder">AIが価格 ${value} 円で計算中…</p>`;
+    result.innerHTML = `<p class="analysis-placeholder">AI計算中…</p>`;
 
     try {
-      const params = new URLSearchParams({
-        ai: "price",
-        item,
-        price: String(value),
-        spec
-      });
-
-      const res = await fetch(`${ANALYSIS_SCRIPT_URL}?${params.toString()}`);
+      const res = await fetch(`${ANALYSIS_SCRIPT_URL}?ai=price&item=${item}&price=${value}&spec=${spec}`);
       const json = await res.json();
+
+      if (!json || json.price == null) {
+        result.innerHTML = `<p class="analysis-placeholder">該当データなし</p>`;
+        return;
+      }
 
       result.innerHTML = `
         <div class="rev-summary">
@@ -289,47 +256,37 @@ function setupSimulationSlider() {
         </div>
         ${json.comment ? `<p class="analysis-comment">${json.comment}</p>` : ""}
       `;
-
     } catch (e) {
-      result.innerHTML = `<p class="analysis-placeholder">AI計算エラー：${e.message}</p>`;
+      result.innerHTML = `<p class="analysis-placeholder">エラー：${e.message}</p>`;
     }
   };
 
-  updateLabel(slider.value);
-
+  update(slider.value);
   slider.addEventListener("input", () => {
-    const v = slider.value;
-    updateLabel(v);
-    runSim(v);
+    update(slider.value);
+    runSim(slider.value);
   });
 }
 
-
 /* =========================================================
-   ▼ 各モード実行ボタン紐付け ★
+   ▼ 実行ボタン紐付け
 ========================================================= */
 function setupAnalysisActions() {
-  const allocBtn = document.getElementById("allocRunBtn");
-  if (allocBtn) allocBtn.addEventListener("click", runAllocation);
-
-  const revBtn = document.getElementById("revRunBtn");
-  if (revBtn) revBtn.addEventListener("click", runReverseEngine);
-
-  const forecastBtn = document.getElementById("forecastRunBtn");
-  if (forecastBtn) forecastBtn.addEventListener("click", runForecast);
+  document.getElementById("allocRunBtn")?.addEventListener("click", runAllocation);
+  document.getElementById("revRunBtn")?.addEventListener("click", runReverseEngine);
+  document.getElementById("forecastRunBtn")?.addEventListener("click", runForecast);
 }
 
-
 /* =========================================================
-   ▼ ① 店舗配分最適化：AIへ送信
+   ▼ 店舗配分最適化
 ========================================================= */
 async function runAllocation() {
-  const item = document.getElementById("allocItem").value;
-  const qty = Number(document.getElementById("allocQuantity").value);
-  const price = Number(document.getElementById("allocPrice").value);
-  const spec = buildSpecValue("allocSpecPreset", "allocSpecCustom");
+  const item   = document.getElementById("allocItem").value;
+  const qty    = Number(document.getElementById("allocQuantity").value);
+  const price  = Number(document.getElementById("allocPrice").value);
+  const spec   = buildSpecValue("allocSpecPreset", "allocSpecCustom");
   const stores = getSelectedStores("allocStoreButtons");
-  const area = document.getElementById("allocResult");
+  const area   = document.getElementById("allocResult");
 
   area.innerHTML = `<p class="analysis-placeholder">AI計算中…</p>`;
 
@@ -343,25 +300,22 @@ async function runAllocation() {
       stores: stores.join(",")
     });
 
-    const res = await fetch(`${ANALYSIS_SCRIPT_URL}?${params.toString()}`);
+    const res = await fetch(`${ANALYSIS_SCRIPT_URL}?${params}`);
     renderAllocationResult(await res.json());
-
   } catch (e) {
-    area.innerHTML =
-      `<p class="analysis-placeholder">エラー：${e.message}</p>`;
+    area.innerHTML = `<p class="analysis-placeholder">エラー：${e.message}</p>`;
   }
 }
 
-
 /* =========================================================
-   ▼ ② 目標販売量逆算：AIへ送信
+   ▼ 逆算エンジン
 ========================================================= */
 async function runReverseEngine() {
-  const item = document.getElementById("revItem").value;
+  const item   = document.getElementById("revItem").value;
   const target = Number(document.getElementById("revTarget").value);
-  const spec = buildSpecValue("revSpecPreset", "revSpecCustom");
+  const spec   = buildSpecValue("revSpecPreset","revSpecCustom");
   const stores = getSelectedStores("revStoreButtons");
-  const area = document.getElementById("revResult");
+  const area   = document.getElementById("revResult");
 
   area.innerHTML = `<p class="analysis-placeholder">AI計算中…</p>`;
 
@@ -374,72 +328,56 @@ async function runReverseEngine() {
       stores: stores.join(",")
     });
 
-    const res = await fetch(`${ANALYSIS_SCRIPT_URL}?${params.toString()}`);
+    const res = await fetch(`${ANALYSIS_SCRIPT_URL}?${params}`);
     renderReverseEngineResult(await res.json());
-
   } catch (e) {
-    area.innerHTML =
-      `<p class="analysis-placeholder">エラー：${e.message}</p>`;
+    area.innerHTML = `<p class="analysis-placeholder">エラー：${e.message}</p>`;
   }
 }
 
-
 /* =========================================================
-   ▼ ③ 需要予測：AIへ送信（タブ切替で自動）
+   ▼ 需要予測
 ========================================================= */
 async function runForecast() {
   const area = document.getElementById("forecastComment");
-  if (area) {
-    area.innerHTML = `<p class="analysis-placeholder">AI計算中…</p>`;
-  }
+  area.innerHTML = `<p class="analysis-placeholder">AI計算中…</p>`;
 
   try {
-    const params = new URLSearchParams({ ai: "forecast" });
-
-    const res = await fetch(`${ANALYSIS_SCRIPT_URL}?${params.toString()}`);
+    const res = await fetch(`${ANALYSIS_SCRIPT_URL}?ai=forecast`);
     renderForecast(await res.json());
-
   } catch (e) {
-    if (area)
-      area.innerHTML = `<p class="analysis-placeholder">エラー：${e.message}</p>`;
+    area.innerHTML = `<p class="analysis-placeholder">エラー：${e.message}</p>`;
   }
 }
-
 
 /* =========================================================
    ▼ 結果表示（既存）
 ========================================================= */
 function renderAllocationResult(list) {
   const area = document.getElementById("allocResult");
-  if (!area) return;
 
   if (!list || list.length === 0) {
     area.innerHTML = `<p class="analysis-placeholder">結果がありません。</p>`;
     return;
   }
 
-  let html = `
-    <table class="analysis-table">
-      <tr><th>店舗</th><th>個数</th><th>販売率</th></tr>
-  `;
-  list.forEach(r => {
-    html += `
-      <tr>
-        <td>${r.store}</td>
-        <td>${r.qty}</td>
-        <td>${r.rate}%</td>
-      </tr>
-    `;
-  });
-  html += "</table>";
+  let html = `<table class="analysis-table">
+    <tr><th>店舗</th><th>個数</th><th>販売率</th></tr>`;
 
+  list.forEach(r => {
+    html += `<tr>
+      <td>${r.store}</td>
+      <td>${r.qty}</td>
+      <td>${r.rate}%</td>
+    </tr>`;
+  });
+
+  html += `</table>`;
   area.innerHTML = html;
 }
 
-
 function renderReverseEngineResult(data) {
   const area = document.getElementById("revResult");
-  if (!area) return;
 
   if (!data) {
     area.innerHTML = `<p class="analysis-placeholder">結果がありません。</p>`;
@@ -457,49 +395,44 @@ function renderReverseEngineResult(data) {
     <table class="analysis-table">
       <tr><th>店舗</th><th>個数</th><th>販売率</th></tr>
   `;
-  (data.alloc || []).forEach(r => {
-    html += `
-      <tr>
-        <td>${r.store}</td>
-        <td>${r.qty}</td>
-        <td>${r.rate}%</td>
-      </tr>
-    `;
-  });
-  html += "</table>";
 
+  (data.alloc || []).forEach(r => {
+    html += `<tr>
+      <td>${r.store}</td>
+      <td>${r.qty}</td>
+      <td>${r.rate}%</td>
+    </tr>`;
+  });
+
+  html += "</table>";
   area.innerHTML = html;
 }
-
 
 function renderForecast(data) {
   if (data.chart && document.querySelector("#forecastChart")) {
     const op = {
       chart: { type: "line", height: 220 },
       series: [{ name: "売れ行き予測", data: data.chart }],
-      xaxis: { categories: ["今日","明日","3日後","4日後","5日後","6日後","7日後"] }
+      xaxis: {
+        categories: ["今日","明日","3日後","4日後","5日後","6日後","7日後"]
+      }
     };
-    const chart = new ApexCharts(
-      document.querySelector("#forecastChart"),
-      op
-    );
+    const chart = new ApexCharts(document.querySelector("#forecastChart"), op);
     chart.render();
   }
 
   if (data.stores && document.getElementById("storeDemand")) {
-    let html = `
-      <table class="analysis-table">
-        <tr><th>店舗</th><th>需要★</th><th>コメント</th></tr>
-    `;
+    let html = `<table class="analysis-table">
+      <tr><th>店舗</th><th>需要★</th><th>コメント</th></tr>`;
+
     data.stores.forEach(r => {
-      html += `
-        <tr>
-          <td>${r.store}</td>
-          <td>${r.star}</td>
-          <td>${r.comment}</td>
-        </tr>
-      `;
+      html += `<tr>
+        <td>${r.store}</td>
+        <td>${r.star}</td>
+        <td>${r.comment}</td>
+      </tr>`;
     });
+
     html += "</table>";
     document.getElementById("storeDemand").innerHTML = html;
   }
