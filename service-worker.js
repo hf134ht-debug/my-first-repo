@@ -2,7 +2,7 @@
    service-worker.js（完全修正版）
 ========================================================= */
 
-const CACHE_NAME = "shukka-app-v6";       // ← バージョン必ず上げる！
+const CACHE_NAME = "shukka-app-v10";     // ← 必ず新しい名前にする
 const BASE = "/my-first-repo";
 
 const ASSETS = [
@@ -21,7 +21,7 @@ const ASSETS = [
   `${BASE}/icons/icon-512.png`
 ];
 
-/* ===== インストール ===== */
+/* ===== install ===== */
 self.addEventListener("install", e => {
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
@@ -29,21 +29,19 @@ self.addEventListener("install", e => {
   self.skipWaiting();
 });
 
-/* ===== アクティベート ===== */
+/* ===== activate ===== */
 self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) return caches.delete(key);
-        })
+        keys.map(key => key !== CACHE_NAME ? caches.delete(key) : null)
       )
     )
   );
   self.clients.claim();
 });
 
-/* ===== Fetch（オンライン優先 + キャッシュfallback）===== */
+/* ===== fetch（オンライン優先） ===== */
 self.addEventListener("fetch", e => {
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))
