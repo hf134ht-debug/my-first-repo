@@ -55,6 +55,19 @@ function normalizeItemName(raw) {
   return s;
 }
 
+/* ====== 店舗名統一関数（全画面共通で使用） ====== */
+function normalizeStoreName(raw) {
+  if (!raw) return "";
+  let s = String(raw).trim();
+
+  // 全角スペース等を除去（保険）
+  s = s.replace(/\s+/g, "");
+
+  // 「店」が無ければ付ける
+  if (!s.endsWith("店")) s += "店";
+
+  return s;
+}
 /* ★★★ Apps Script の exec URL ★★★ */
 const SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyxcdqsmvnLnUw7RbzDKQ2KB6dkfQBXZdQRRt8WIKwYbKgYw-byEAePi6fHPy4gI6eyZQ/exec";
@@ -176,14 +189,12 @@ function activateShipmentFeatures() {
 
       const rows = Array.from(document.querySelectorAll(".store-row"));
       const stores = rows
-        .map((r) => ({
-          name: r.querySelector(".store-name").value,
-          quantity: r.querySelector(".store-qty").value,
-        }))
-        .filter((s) => s.quantity);
-
-      if (stores.length === 0) {
-        alert("店舗の個数を1つ以上入力してください");
+         .map((r) => ({
+            name: normalizeStoreName(r.querySelector(".store-name").value),
+            quantity: r.querySelector(".store-qty").value,
+  }))
+  .filter((s) => s.quantity);
+てください");
         return;
       }
 
@@ -221,4 +232,5 @@ function activateShipmentFeatures() {
       }
     });
 }
+
 
