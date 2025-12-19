@@ -189,12 +189,14 @@ function activateShipmentFeatures() {
 
       const rows = Array.from(document.querySelectorAll(".store-row"));
       const stores = rows
-         .map((r) => ({
-            name: normalizeStoreName(r.querySelector(".store-name").value),
-            quantity: r.querySelector(".store-qty").value,
-  }))
-  .filter((s) => s.quantity);
-てください");
+        .map((r) => ({
+          name: normalizeStoreName(r.querySelector(".store-name").value),
+          quantity: r.querySelector(".store-qty").value,
+        }))
+        .filter((s) => s.quantity);
+
+      if (stores.length === 0) {
+        alert("店舗の個数を1つ以上入力してください");
         return;
       }
 
@@ -232,5 +234,4 @@ function activateShipmentFeatures() {
       }
     });
 }
-
 
