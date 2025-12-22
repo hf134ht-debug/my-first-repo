@@ -97,6 +97,26 @@ function getItemClassForSummary(name) {
   return "";
 }
 
+function normalizeStoreName(raw){
+  if (!raw) return "";
+  let s = String(raw);
+
+  // 前後空白除去（全角も含めて）
+  s = s.replace(/^[\s\u3000]+|[\s\u3000]+$/g, "");
+
+  // 中に紛れた全角スペースも半角に寄せて潰す（必要なら）
+  s = s.replace(/\u3000/g, " ");
+
+  // タブや改行など不可視を除去
+  s = s.replace(/[\t\r\n]/g, "");
+
+  // 「店」有無を統一（最終的に必ず店ありにする例）
+  s = s.replace(/店$/, "");
+  s = s + "店";
+
+  return s;
+}
+
 /* 店舗名の基底キー（最後の「店」を取る） */
 function getStoreKey(name) {
   if (!name) return "";
@@ -700,7 +720,7 @@ async function loadWeeklySummary(weekStartStr) {
         const itemName = it.item;
 
         (it.stores || []).forEach((s) => {
-          const storeName = s.name;
+          const storeName = normalizeStoreName(s.name);
           const shipped = s.shippedQty || 0;
           const sold = s.soldQty || 0;
           const loss = s.lossQty || 0;
@@ -1301,7 +1321,7 @@ async function loadMonthlySummary(ym) {
         const name = it.item;
 
         (it.stores || []).forEach((s) => {
-          const stName = s.name;
+          const stName = normalizeStoreName(s.name);
           const shipped = s.shippedQty || 0;
           const sold = s.soldQty || 0;
           const loss = s.lossQty || 0;
@@ -2579,3 +2599,4 @@ function renderMonthWeatherAI(items, weatherInfo) {
     `;
   }
 }
+
