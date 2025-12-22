@@ -121,7 +121,7 @@ function renderStoreRow() {
         <option value="総社南">総社南</option>
         <option value="円山">円山</option>
         <option value="児島">児島</option>
-        <option value="岡山築港">岡山築港</option>
+        <option value="岡南築港">岡南築港</option>
       </select>
       <input type="number" class="store-qty" min="1" placeholder="個数">
       <button type="button" class="store-remove-btn">✕</button>
@@ -234,4 +234,5 @@ function activateShipmentFeatures() {
       }
     });
 }
+
 
