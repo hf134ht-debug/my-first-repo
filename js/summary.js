@@ -101,18 +101,15 @@ function normalizeStoreName(raw){
   if (!raw) return "";
   let s = String(raw);
 
-  // 前後空白除去（全角も含めて）
+  // 前後空白（全角含む）
   s = s.replace(/^[\s\u3000]+|[\s\u3000]+$/g, "");
-
-  // 中に紛れた全角スペースも半角に寄せて潰す（必要なら）
+  // 全角スペースを半角へ
   s = s.replace(/\u3000/g, " ");
-
-  // タブや改行など不可視を除去
+  // タブ/改行除去
   s = s.replace(/[\t\r\n]/g, "");
 
-  // 「店」有無を統一（最終的に必ず店ありにする例）
+  // ★ 最終形は「店なし」
   s = s.replace(/店$/, "");
-  s = s + "店";
 
   return s;
 }
@@ -2599,4 +2596,5 @@ function renderMonthWeatherAI(items, weatherInfo) {
     `;
   }
 }
+
 
