@@ -125,6 +125,22 @@ function getItemClassForSummary(name) {
   return "";
 }
 
+function normalizeStoreName(raw) {
+  if (!raw) return "";
+  let s = String(raw);
+
+  // 前後空白（全角含む）を除去
+  s = s.replace(/^[\s\u3000]+|[\s\u3000]+$/g, "");
+
+  // 最後の「店」を除去（内部キー用）
+  s = s.replace(/店$/g, "");
+
+  // 途中に紛れた全角スペースも一旦除去（必要なら）
+  s = s.replace(/\u3000/g, "");
+
+  return s;
+}
+
 /* 店舗名の基底キー（最後の「店」を取る） */
 function getStoreKey(name) {
   if (!name) return "";
@@ -733,31 +749,32 @@ async function loadWeeklySummary(weekStartStr) {
     dailySummaries.forEach(daily => {
       if (!daily || !daily.found || !daily.items) return;
 
-      // 店舗別集計
-      daily.items.forEach(it => {
-        const itemName = it.item;
-        (it.stores || []).forEach(s => {
-          const storeName = s.name;
-          const shipped   = s.shippedQty || 0;
-          const sold      = s.soldQty    || 0;
-          const loss      = s.lossQty    || 0;
+     // 店舗別集計
+   daily.items.forEach(it => {
+      const itemName = it.item;
 
-          if (!storeItemMap[itemName]) storeItemMap[itemName] = {};
-          if (!storeItemMap[itemName][storeName]) {
-            storeItemMap[itemName][storeName] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
-          }
-          storeItemMap[itemName][storeName].shippedQty += shipped;
-          storeItemMap[itemName][storeName].soldQty    += sold;
-          storeItemMap[itemName][storeName].lossQty    += loss;
+  (it.stores || []).forEach(s => {
+    const storeKey = normalizeStoreName(s.name);
+    const shipped  = s.shippedQty || 0;
+    const sold     = s.soldQty    || 0;
+    const loss     = s.lossQty    || 0;
 
-          if (!storeTotalMap[storeName]) {
-            storeTotalMap[storeName] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
-          }
-          storeTotalMap[storeName].shippedQty += shipped;
-          storeTotalMap[storeName].soldQty    += sold;
-          storeTotalMap[storeName].lossQty    += loss;
-        });
-      });
+    if (!storeItemMap[itemName]) storeItemMap[itemName] = {};
+    if (!storeItemMap[itemName][storeKey]) {
+      storeItemMap[itemName][storeKey] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
+    }
+    storeItemMap[itemName][storeKey].shippedQty += shipped;
+    storeItemMap[itemName][storeKey].soldQty    += sold;
+    storeItemMap[itemName][storeKey].lossQty    += loss;
+
+    if (!storeTotalMap[storeKey]) {
+      storeTotalMap[storeKey] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
+    }
+    storeTotalMap[storeKey].shippedQty += shipped;
+    storeTotalMap[storeKey].soldQty    += sold;
+    storeTotalMap[storeKey].lossQty    += loss;
+  });
+});
 
       // 気象＋品目別販売率用
       const w = daily.weather || {};
@@ -1349,27 +1366,27 @@ async function loadMonthlySummary(ym) {
       d.items.forEach(it => {
         const name = it.item;
         (it.stores || []).forEach(s => {
-          const stName  = s.name;
-          const shipped = s.shippedQty || 0;
-          const sold    = s.soldQty    || 0;
-          const loss    = s.lossQty    || 0;
+  const stKey   = normalizeStoreName(s.name);
+  const shipped = s.shippedQty || 0;
+  const sold    = s.soldQty    || 0;
+  const loss    = s.lossQty    || 0;
 
-          if (!storeItemMap[name]) storeItemMap[name] = {};
-          if (!storeItemMap[name][stName])
-            storeItemMap[name][stName] = { shippedQty:0, soldQty:0, lossQty:0 };
+  if (!storeItemMap[name]) storeItemMap[name] = {};
+  if (!storeItemMap[name][stKey]) {
+    storeItemMap[name][stKey] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
+  }
+  storeItemMap[name][stKey].shippedQty += shipped;
+  storeItemMap[name][stKey].soldQty    += sold;
+  storeItemMap[name][stKey].lossQty    += loss;
 
-          storeItemMap[name][stName].shippedQty += shipped;
-          storeItemMap[name][stName].soldQty    += sold;
-          storeItemMap[name][stName].lossQty    += loss;
+  if (!storeTotalMap[stKey]) {
+    storeTotalMap[stKey] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
+  }
+  storeTotalMap[stKey].shippedQty += shipped;
+  storeTotalMap[stKey].soldQty    += sold;
+  storeTotalMap[stKey].lossQty    += loss;
+});
 
-          if (!storeTotalMap[stName])
-            storeTotalMap[stName] = { shippedQty:0, soldQty:0, lossQty:0 };
-
-          storeTotalMap[stName].shippedQty += shipped;
-          storeTotalMap[stName].soldQty    += sold;
-          storeTotalMap[stName].lossQty    += loss;
-        });
-      });
 
       // 気象データ
       const w = d.weather || {};
@@ -2523,3 +2540,4 @@ function renderMonthWeatherAI(items, weatherInfo) {
       </div>`;
   }
 }
+
