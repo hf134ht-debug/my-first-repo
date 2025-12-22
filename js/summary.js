@@ -658,18 +658,23 @@ function buildWeeksForMonth(year, month, daysWithData) {
     const end = new Date(current);
     end.setDate(start.getDate() + 6);
 
+    // この週が対象月に少しでも重なるか
     const overlapsMonth =
-      start.getMonth() === month ||
-      end.getMonth() === month;
+      start.getMonth() === month || end.getMonth() === month ||
+      (start < firstOfMonth && end >= firstOfMonth); // 念のため
 
-    if (!overlapsMonth && start.getMonth() > month && start.getFullYear() === year) break;
+    if (!overlapsMonth && start.getFullYear() === year && start.getMonth() > month) break;
 
-    // ▼ この週に1日でもデータがあるか？
+    // ▼ 対象月の日だけチェックする（重要）
     const hasData = [...Array(7).keys()].some(i => {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
-      const ds = formatDateYmd(d);
-      return daysWithData.includes(ds.slice(8));
+
+      // ★この月の分だけ判定
+      if (d.getFullYear() !== year || d.getMonth() !== month) return false;
+
+      const dd = String(d.getDate()).padStart(2, "0");
+      return daysWithData.includes(dd);
     });
 
     weeks.push({ start, end, hasData });
@@ -1329,9 +1334,13 @@ async function loadMonthlySummary(ym) {
     const dailyAll       = data.dailySummaries || []; // ★ 日別集計（GAS側で計算済）
     // ★ 品目名統一
     itemsRaw.forEach(it => it.item = normalizeItemName(it.item));
-    dailyAll.forEach(d =>
-       if (d.items) d.items.forEach(it => { it.item = normalizeItemName(it.item); });
-    );
+    dailyAll.forEach(d => {
+  if (d.items) {
+    d.items.forEach(it => {
+      it.item = normalizeItemName(it.item);
+    });
+  }
+});
 
     // 品目を固定順にソート
     const items = [...itemsRaw].sort((a, b) => {
@@ -2539,5 +2548,6 @@ function renderMonthWeatherAI(items, weatherInfo) {
       </div>`;
   }
 }
+
 
 
