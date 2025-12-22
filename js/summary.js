@@ -747,54 +747,54 @@ async function loadWeeklySummary(weekStartStr) {
     const weatherInfo   = []; // [{ date, tempMax, tempMin, weather, itemごとの shipped/sold }, ...]
 
     dailySummaries.forEach(daily => {
-      if (!daily || !daily.found || !daily.items) return;
+  if (!daily || !daily.found || !daily.items) return;
 
-     // 店舗別集計
-   daily.items.forEach(it => {
-      const itemName = it.item;
+  // 店舗別集計
+  daily.items.forEach(it => {
+    const itemName = it.item;
 
-  (it.stores || []).forEach(s => {
-    const storeKey = normalizeStoreName(s.name);
-    const shipped  = s.shippedQty || 0;
-    const sold     = s.soldQty    || 0;
-    const loss     = s.lossQty    || 0;
+    (it.stores || []).forEach(s => {
+      const storeKey = normalizeStoreName(s.name);
+      const shipped  = s.shippedQty || 0;
+      const sold     = s.soldQty    || 0;
+      const loss     = s.lossQty    || 0;
 
-    if (!storeItemMap[itemName]) storeItemMap[itemName] = {};
-    if (!storeItemMap[itemName][storeKey]) {
-      storeItemMap[itemName][storeKey] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
-    }
-    storeItemMap[itemName][storeKey].shippedQty += shipped;
-    storeItemMap[itemName][storeKey].soldQty    += sold;
-    storeItemMap[itemName][storeKey].lossQty    += loss;
+      if (!storeItemMap[itemName]) storeItemMap[itemName] = {};
+      if (!storeItemMap[itemName][storeKey]) {
+        storeItemMap[itemName][storeKey] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
+      }
+      storeItemMap[itemName][storeKey].shippedQty += shipped;
+      storeItemMap[itemName][storeKey].soldQty    += sold;
+      storeItemMap[itemName][storeKey].lossQty    += loss;
 
-    if (!storeTotalMap[storeKey]) {
-      storeTotalMap[storeKey] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
-    }
-    storeTotalMap[storeKey].shippedQty += shipped;
-    storeTotalMap[storeKey].soldQty    += sold;
-    storeTotalMap[storeKey].lossQty    += loss;
-  });
-});
-
-      // 気象＋品目別販売率用
-      const w = daily.weather || {};
-      const dayObj = {
-        date:    daily.summaryDate,
-        tempMax: w.tempMax ?? null,
-        tempMin: w.tempMin ?? null,
-        weather: w.type || "不明"
-      };
-
-      daily.items.forEach(it => {
-        const name    = it.item;
-        const shipped = it.shippedQty || 0;
-        const sold    = it.soldQty    || 0;
-        if (shipped === 0 && sold === 0) return;
-        dayObj[name] = { shipped, sold };
-      });
-
-      weatherInfo.push(dayObj);
+      if (!storeTotalMap[storeKey]) {
+        storeTotalMap[storeKey] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
+      }
+      storeTotalMap[storeKey].shippedQty += shipped;
+      storeTotalMap[storeKey].soldQty    += sold;
+      storeTotalMap[storeKey].lossQty    += loss;
     });
+  });
+
+  // 気象＋品目別販売率用（← 반드시 forEach の中）
+  const w = daily.weather || {};
+  const dayObj = {
+    date:    daily.summaryDate,
+    tempMax: w.tempMax ?? null,
+    tempMin: w.tempMin ?? null,
+    weather: w.type || "不明"
+  };
+
+  daily.items.forEach(it => {
+    const name    = it.item;
+    const shipped = it.shippedQty || 0;
+    const sold    = it.soldQty    || 0;
+    if (shipped === 0 && sold === 0) return;
+    dayObj[name] = { shipped, sold };
+  });
+
+  weatherInfo.push(dayObj);
+});
 
     // 店舗別トータルの lossRate / salesRate を付与
     Object.keys(storeTotalMap).forEach(name => {
@@ -1330,9 +1330,8 @@ async function loadMonthlySummary(ym) {
     // ★ 品目名統一
     itemsRaw.forEach(it => it.item = normalizeItemName(it.item));
     dailyAll.forEach(d =>
-     d.items?.forEach(it => it.item = normalizeItemName(it.item))
+       if (d.items) d.items.forEach(it => { it.item = normalizeItemName(it.item); });
     );
-
 
     // 品目を固定順にソート
     const items = [...itemsRaw].sort((a, b) => {
@@ -2540,4 +2539,5 @@ function renderMonthWeatherAI(items, weatherInfo) {
       </div>`;
   }
 }
+
 
