@@ -21,7 +21,7 @@ const summaryMonthDaysCache = {}; // { "2025-11": ["01","03",...] }
 /* ===== 週ビュー用 状態 ===== */
 let summaryWeekYear;
 let summaryWeekMonth;
-let summaryWeeks = [];           // [{ start:Date, end:Date, hasData:true/false }, ...]
+let summaryWeeks = []; // [{ start:Date, end:Date, hasData:true/false }, ...]
 let summarySelectedWeekIndex = 0;
 
 /* ===== 月ビュー用 状態 ===== */
@@ -29,30 +29,17 @@ let summaryMonthYear;
 let summaryMonthMonth;
 
 /* ===== 店舗順序（週ビューの店舗別ロス用） ===== */
-const STORE_ORDER = [
-  "連島", "津高", "茶屋町", "大安寺",
-  "中庄", "総社南", "円山", "児島"
-];
+const STORE_ORDER = ["連島", "津高", "茶屋町", "大安寺", "中庄", "総社南", "円山", "児島"];
 
 /* ===== 品目キー & カラー ===== */
-/* 内部はすべて
-   はくさい / はくさいカット / キャベツ / キャベツカット / とうもろこし
-   に揃える
-*/
-const ITEM_ORDER = [
-  "はくさい",
-  "はくさいカット",
-  "キャベツ",
-  "キャベツカット",
-  "とうもろこし",
-];
-
+/* 内部はすべて はくさい / はくさいカット / キャベツ / キャベツカット / とうもろこし に揃える */
+const ITEM_ORDER = ["はくさい", "はくさいカット", "キャベツ", "キャベツカット", "とうもろこし"];
 const ITEM_COLOR_MAP = {
-  "はくさい":       "#B5E48C", // 黄緑
-  "はくさいカット": "#99D98C", // やや濃い黄緑
-  "キャベツ":       "#52B788", // 緑
-  "キャベツカット": "#168AAD", // 青緑寄り
-  "とうもろこし":   "#FFE66D", // 薄黄色
+  はくさい: "#B5E48C", // 黄緑
+  はくさいカット: "#99D98C", // やや濃い黄緑
+  キャベツ: "#52B788", // 緑
+  キャベツカット: "#168AAD", // 青緑寄り
+  とうもろこし: "#FFE66D", // 薄黄色
 };
 
 /* 品目名から正規のキーを取得（グラフ・並び順用） */
@@ -72,42 +59,29 @@ function normalizeItemName(raw) {
   if (
     /[とうトﾄ][う]?も?ろ?こし/.test(s) ||
     lower.includes("corn") ||
-    s.includes("ｺｰﾝ") || s.includes("コーン")
+    s.includes("ｺｰﾝ") ||
+    s.includes("コーン")
   ) {
     return "とうもろこし";
   }
 
   // はくさいカット
-  if (
-    s.includes("白菜カット") ||
-    s.includes("はくさいカット") ||
-    s.includes("ﾊｸｻｲ ｶｯﾄ")
-  ) {
+  if (s.includes("白菜カット") || s.includes("はくさいカット") || s.includes("ﾊｸｻｲ ｶｯﾄ")) {
     return "はくさいカット";
   }
 
   // はくさい（漢字／ひらがな／半角カナ → はくさい）
-  if (
-    s.includes("白菜") ||
-    s.includes("はくさい") ||
-    s.includes("ﾊｸｻｲ")
-  ) {
+  if (s.includes("白菜") || s.includes("はくさい") || s.includes("ﾊｸｻｲ")) {
     return "はくさい";
   }
 
   // キャベツカット
-  if (
-    s.includes("キャベツカット") ||
-    s.includes("ｷｬﾍﾞﾂ ｶｯﾄ")
-  ) {
+  if (s.includes("キャベツカット") || s.includes("ｷｬﾍﾞﾂ ｶｯﾄ")) {
     return "キャベツカット";
   }
 
   // キャベツ
-  if (
-    s.includes("キャベツ") ||
-    s.includes("ｷｬﾍﾞﾂ")
-  ) {
+  if (s.includes("キャベツ") || s.includes("ｷｬﾍﾞﾂ")) {
     return "キャベツ";
   }
 
@@ -117,28 +91,10 @@ function normalizeItemName(raw) {
 /* 集計ビュー用：品目 → CSSクラス変換（ひらがな対応） */
 function getItemClassForSummary(name) {
   const n = normalizeItemName(name);
-
   if (n === "はくさい" || n === "はくさいカット") return "hakusai";
   if (n === "キャベツ" || n === "キャベツカット") return "cabbage";
   if (n === "とうもろこし") return "corn";
-
   return "";
-}
-
-function normalizeStoreName(raw) {
-  if (!raw) return "";
-  let s = String(raw);
-
-  // 前後空白（全角含む）を除去
-  s = s.replace(/^[\s\u3000]+|[\s\u3000]+$/g, "");
-
-  // 最後の「店」を除去（内部キー用）
-  s = s.replace(/店$/g, "");
-
-  // 途中に紛れた全角スペースも一旦除去（必要なら）
-  s = s.replace(/\u3000/g, "");
-
-  return s;
 }
 
 /* 店舗名の基底キー（最後の「店」を取る） */
@@ -158,17 +114,17 @@ function formatStoreLabel(name) {
 /* ロス率に応じた色（text-color 用） */
 function getLossRateColor(rate) {
   if (rate === null || typeof rate === "undefined" || isNaN(rate)) return "";
-  if (rate >= 50) return "#d32f2f";  // 赤：かなり高い
-  if (rate >= 20) return "#f57c00";  // オレンジ：要注意
-  return "#388e3c";                  // 緑：良好〜許容
+  if (rate >= 50) return "#d32f2f"; // 赤：かなり高い
+  if (rate >= 20) return "#f57c00"; // オレンジ：要注意
+  return "#388e3c"; // 緑：良好〜許容
 }
 
 /* 販売率に応じた色（販売率高いほど良） */
 function getSalesRateColor(rate) {
   if (rate === null || typeof rate === "undefined" || isNaN(rate)) return "";
-  if (rate >= 80) return "#388e3c";  // 緑：優秀
-  if (rate >= 50) return "#f57c00";  // オレンジ：改善余地
-  return "#d32f2f";                  // 赤：要改善
+  if (rate >= 80) return "#388e3c"; // 緑：優秀
+  if (rate >= 50) return "#f57c00"; // オレンジ：改善余地
+  return "#d32f2f"; // 赤：要改善
 }
 
 /* =========================================================
@@ -195,20 +151,24 @@ function renderSummaryScreen() {
 function renderSummaryTabs() {
   return `
     <div class="summary-tabs">
-      <button onclick="changeSummaryView('day')"
-        class="summary-tab ${currentSummaryView === 'day' ? 'active' : ''}">
+      <button onclick="changeSummaryView('day')" class="summary-tab ${
+        currentSummaryView === "day" ? "active" : ""
+      }">
         日
       </button>
-      <button onclick="changeSummaryView('week')"
-        class="summary-tab ${currentSummaryView === 'week' ? 'active' : ''}">
+      <button onclick="changeSummaryView('week')" class="summary-tab ${
+        currentSummaryView === "week" ? "active" : ""
+      }">
         週
       </button>
-      <button onclick="changeSummaryView('month')"
-        class="summary-tab ${currentSummaryView === 'month' ? 'active' : ''}">
+      <button onclick="changeSummaryView('month')" class="summary-tab ${
+        currentSummaryView === "month" ? "active" : ""
+      }">
         月
       </button>
-      <button onclick="changeSummaryView('year')"
-        class="summary-tab ${currentSummaryView === 'year' ? 'active' : ''}">
+      <button onclick="changeSummaryView('year')" class="summary-tab ${
+        currentSummaryView === "year" ? "active" : ""
+      }">
         年
       </button>
     </div>
@@ -218,7 +178,6 @@ function renderSummaryTabs() {
 /* タブ切替 */
 function changeSummaryView(view) {
   currentSummaryView = view;
-
   const tabArea = document.getElementById("summaryTabArea");
   if (tabArea) tabArea.innerHTML = renderSummaryTabs();
 
@@ -252,10 +211,9 @@ async function getSummaryDaysWithData(year, month) {
   const ym = `${year}-${String(month + 1).padStart(2, "0")}`;
   if (summaryMonthDaysCache[ym]) return summaryMonthDaysCache[ym];
 
-  const res  = await fetch(`${SUMMARY_SCRIPT_URL}?checkSummaryMonth=${ym}`);
+  const res = await fetch(`${SUMMARY_SCRIPT_URL}?checkSummaryMonth=${ym}`);
   const data = await res.json();
   let days = data.days || [];
-
   summaryMonthDaysCache[ym] = days;
   return days;
 }
@@ -268,38 +226,36 @@ async function setupSummaryDayView() {
   ctrl.innerHTML = `<div id="summaryCalendarArea"></div>`;
 
   const now = new Date();
-  summaryCalYear  = now.getFullYear();
+  summaryCalYear = now.getFullYear();
   summaryCalMonth = now.getMonth();
 
   const daysWithData = await getSummaryDaysWithData(summaryCalYear, summaryCalMonth);
-
-  document.getElementById("summaryCalendarArea").innerHTML =
-    drawSummaryCalendar(summaryCalYear, summaryCalMonth, null, daysWithData);
-
-  document.getElementById("summaryResult").innerHTML =
-    `<p>日付を選択してください</p>`;
+  document.getElementById("summaryCalendarArea").innerHTML = drawSummaryCalendar(
+    summaryCalYear,
+    summaryCalMonth,
+    null,
+    daysWithData
+  );
+  document.getElementById("summaryResult").innerHTML = `<p>日付を選択してください</p>`;
 }
 
 /* カレンダー描画（日ビュー用） */
 function drawSummaryCalendar(year, month, selectedDate = null, daysWithData = []) {
   const today = new Date();
   const first = new Date(year, month, 1);
-  const last  = new Date(year, month + 1, 0);
-
-  const daysOfWeek = ["日","月","火","水","木","金","土"];
+  const last = new Date(year, month + 1, 0);
+  const daysOfWeek = ["日", "月", "火", "水", "木", "金", "土"];
 
   let html = `
     <div class="calendar-wrapper">
       <div class="calendar-header">
         <button class="cal-btn" onclick="changeSummaryMonth(-1)">＜</button>
-        <div><b>${year}年 ${month+1}月</b></div>
+        <div><b>${year}年 ${month + 1}月</b></div>
         <button class="cal-btn" onclick="changeSummaryMonth(1)">＞</button>
       </div>
-
       <div class="calendar-grid">
-        ${daysOfWeek.map(d => `<div class="calendar-day">${d}</div>`).join("")}
+        ${daysOfWeek.map((d) => `<div class="calendar-day">${d}</div>`).join("")}
       </div>
-
       <div class="calendar-grid">
   `;
 
@@ -309,14 +265,12 @@ function drawSummaryCalendar(year, month, selectedDate = null, daysWithData = []
   }
 
   for (let d = 1; d <= last.getDate(); d++) {
-    const dd = String(d).padStart(2,"0");
+    const dd = String(d).padStart(2, "0");
     const day = new Date(year, month, d);
     const wd = day.getDay();
 
     const isToday =
-      today.getFullYear() === year &&
-      today.getMonth() === month &&
-      today.getDate() === d;
+      today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
 
     const isSelected =
       selectedDate &&
@@ -332,11 +286,9 @@ function drawSummaryCalendar(year, month, selectedDate = null, daysWithData = []
     if (wd === 6) style = `style="color:blue"`;
 
     html += `
-      <div
-        class="calendar-date
-          ${isToday ? "today" : ""}
-          ${isSelected ? "selected" : ""}
-          ${hasData ? "has-data" : ""}"
+      <div class="calendar-date ${isToday ? "today" : ""} ${isSelected ? "selected" : ""} ${
+      hasData ? "has-data" : ""
+    }"
         onclick="selectSummaryDate(${year},${month},${d})"
         ${style}
       >
@@ -352,6 +304,7 @@ function drawSummaryCalendar(year, month, selectedDate = null, daysWithData = []
 /* 月移動（日ビュー用） */
 async function changeSummaryMonth(offset) {
   summaryCalMonth += offset;
+
   if (summaryCalMonth < 0) {
     summaryCalMonth = 11;
     summaryCalYear--;
@@ -362,22 +315,25 @@ async function changeSummaryMonth(offset) {
   }
 
   const daysWithData = await getSummaryDaysWithData(summaryCalYear, summaryCalMonth);
-
-  document.getElementById("summaryCalendarArea").innerHTML =
-    drawSummaryCalendar(summaryCalYear, summaryCalMonth, null, daysWithData);
-
-  document.getElementById("summaryResult").innerHTML =
-    `<p>日付を選択してください</p>`;
+  document.getElementById("summaryCalendarArea").innerHTML = drawSummaryCalendar(
+    summaryCalYear,
+    summaryCalMonth,
+    null,
+    daysWithData
+  );
+  document.getElementById("summaryResult").innerHTML = `<p>日付を選択してください</p>`;
 }
 
 /* 日付クリック（日ビュー） */
 async function selectSummaryDate(y, m, d) {
-  const dateStr = `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-
+  const dateStr = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   const daysWithData = await getSummaryDaysWithData(y, m);
-  document.getElementById("summaryCalendarArea").innerHTML =
-    drawSummaryCalendar(y, m, new Date(y,m,d), daysWithData);
-
+  document.getElementById("summaryCalendarArea").innerHTML = drawSummaryCalendar(
+    y,
+    m,
+    new Date(y, m, d),
+    daysWithData
+  );
   loadDailySummary(dateStr);
 }
 
@@ -387,7 +343,7 @@ async function loadDailySummary(dateStr) {
   resultDiv.innerHTML = `<p>読み込み中…</p>`;
 
   try {
-    const res  = await fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${dateStr}`);
+    const res = await fetch(`${SUMMARY_SCRIPT_URL}?summaryDate=${dateStr}`);
     const data = await res.json();
 
     if (!data.found) {
@@ -395,17 +351,18 @@ async function loadDailySummary(dateStr) {
       return;
     }
 
-    const shipDate = data.shipDate;   // 2日前の出荷日
-    const total    = data.total || {};
-    const items    = data.items || [];
+    const shipDate = data.shipDate; // 2日前の出荷日
+    const total = data.total || {};
+    const items = data.items || [];
 
     const totalLossColor = getLossRateColor(total.lossRate);
-    const totalLossStyle = totalLossColor ? ` style="color:${totalLossColor};"` : "";
+    const totalLossStyle = totalLossColor ? `style="color:${totalLossColor};"` : "";
 
     let html = `
       <h3>${dateStr} の集計</h3>
       <p style="font-size:0.9em;color:#555;">
-        ※ 出荷日は <b>${shipDate}</b>（2日前の出荷と比較）</p>
+        ※ 出荷日は <b>${shipDate}</b>（2日前の出荷と比較）
+      </p>
     `;
 
     // ▼ 全体サマリーカード（青系）
@@ -413,10 +370,10 @@ async function loadDailySummary(dateStr) {
       <div class="history-card summary-total">
         <div class="history-title">
           <span>📊 全体ロス</span>
-          <span class="item-total-badge summary-badge"${totalLossStyle}>
+          <span class="item-total-badge summary-badge" ${totalLossStyle}>
             ${
               total.lossRate === null
-                ? 'ロス率：ー'
+                ? "ロス率：ー"
                 : `ロス率：${total.lossRate}%（${total.lossQty}個）`
             }
           </span>
@@ -427,32 +384,32 @@ async function loadDailySummary(dateStr) {
     `;
 
     // ▼ 品目別カード
-    items.forEach(it => {
-      const itemName   = normalizeItemName(it.item);
+    items.forEach((it) => {
+      const itemName = normalizeItemName(it.item);
       const shippedQty = it.shippedQty || 0;
-      const soldQty    = it.soldQty    || 0;
-      const lossQty    = it.lossQty    || 0;
-      const lossRate   = it.lossRate;
+      const soldQty = it.soldQty || 0;
+      const lossQty = it.lossQty || 0;
+      const lossRate = it.lossRate;
 
       const cls = getItemClassForSummary(itemName);
       const badgeCls =
-        cls === "hakusai" ? "item-total-hakusai" :
-        cls === "cabbage" ? "item-total-cabbage" :
-        "item-total-corn";
+        cls === "hakusai"
+          ? "item-total-hakusai"
+          : cls === "cabbage"
+          ? "item-total-cabbage"
+          : "item-total-corn";
 
       const lossColor = getLossRateColor(lossRate);
-      const lossStyle = lossColor ? ` style="color:${lossColor};"` : "";
+      const lossStyle = lossColor ? `style="color:${lossColor};"` : "";
 
       html += `
         <div class="history-card ${cls}">
           <div class="history-title">
             <span>${itemName}</span>
-            <span class="item-total-badge ${badgeCls}"${lossStyle}>
+            <span class="item-total-badge ${badgeCls}" ${lossStyle}>
               ロス率：
               ${
-                lossRate === null
-                  ? "ー"
-                  : `${lossRate}%（${lossQty}個）`
+                lossRate === null ? "ー" : `${lossRate}%（${lossQty}個）`
               }
             </span>
           </div>
@@ -461,8 +418,8 @@ async function loadDailySummary(dateStr) {
             it.stores && it.stores.length
               ? renderStoreAccordion(it.stores)
               : `<div style="font-size:0.85em;color:#555;margin-top:4px;">
-                   店舗別内訳なし
-                 </div>`
+                  店舗別内訳なし
+                </div>`
           }
         </div>
       `;
@@ -470,7 +427,6 @@ async function loadDailySummary(dateStr) {
 
     resultDiv.innerHTML = html;
     attachStoreAccordionEvents();
-
   } catch (err) {
     resultDiv.innerHTML = `
       <div class="history-card summary-total">
@@ -496,27 +452,25 @@ function renderStoreAccordion(stores) {
         店舗別内訳を表示
       </button>
       <div class="store-accordion-body">
-        ${
-          stores.map(s => {
+        ${stores
+          .map((s) => {
             const color = getLossRateColor(s.lossRate);
-            const style = color ? ` style="color:${color};"` : "";
+            const style = color ? `style="color:${color};"` : "";
             return `
-            <div class="store-accordion-row">
-              <b>${formatStoreLabel(s.name)}</b><br>
-              出荷：${s.shippedQty}個 /
-              売上：${s.soldQty}個 /
-              ロス：
-              <span${style}>
-                ${
-                  s.lossRate === null || typeof s.lossRate === "undefined"
-                    ? `${s.lossQty}個`
-                    : `${s.lossQty}個（${s.lossRate}%）`
-                }
-              </span>
-            </div>
+              <div class="store-accordion-row">
+                <b>${formatStoreLabel(s.name)}</b><br>
+                出荷：${s.shippedQty}個 / 売上：${s.soldQty}個 / ロス：
+                <span ${style}>
+                  ${
+                    s.lossRate === null || typeof s.lossRate === "undefined"
+                      ? `${s.lossQty}個`
+                      : `${s.lossQty}個（${s.lossRate}%）`
+                  }
+                </span>
+              </div>
             `;
-          }).join("")
-        }
+          })
+          .join("")}
       </div>
     </div>
   `;
@@ -525,8 +479,7 @@ function renderStoreAccordion(stores) {
 /* 店舗別アコーディオン動作 */
 function attachStoreAccordionEvents() {
   const toggles = document.querySelectorAll(".store-accordion-toggle");
-
-  toggles.forEach(btn => {
+  toggles.forEach((btn) => {
     btn.onclick = () => {
       const body = btn.nextElementSibling;
       if (!body) return;
@@ -556,7 +509,7 @@ async function setupSummaryWeekView() {
   if (!ctrl) return;
 
   const today = new Date();
-  summaryWeekYear  = today.getFullYear();
+  summaryWeekYear = today.getFullYear();
   summaryWeekMonth = today.getMonth();
   summarySelectedWeekIndex = 0;
 
@@ -577,6 +530,7 @@ async function setupSummaryWeekView() {
 /* 月移動（週ビュー） */
 async function changeSummaryWeekMonth(offset) {
   summaryWeekMonth += offset;
+
   if (summaryWeekMonth < 0) {
     summaryWeekMonth = 11;
     summaryWeekYear--;
@@ -585,9 +539,11 @@ async function changeSummaryWeekMonth(offset) {
     summaryWeekMonth = 0;
     summaryWeekYear++;
   }
+
   summarySelectedWeekIndex = 0;
   await refreshSummaryWeekChips();
 }
+
 /* 指定月の週チップを再描画 */
 async function refreshSummaryWeekChips() {
   const monthLabel = document.querySelector(".summary-week-month-label");
@@ -614,15 +570,13 @@ async function refreshSummaryWeekChips() {
   chipsDiv.innerHTML = summaryWeeks
     .map((w, idx) => {
       const startLabel = `${w.start.getMonth() + 1}/${w.start.getDate()}`;
-      const endLabel   = `${w.end.getMonth() + 1}/${w.end.getDate()}`;
+      const endLabel = `${w.end.getMonth() + 1}/${w.end.getDate()}`;
+
       const hasDataClass = w.hasData ? "has-data" : "no-data";
-      const activeClass  = idx === summarySelectedWeekIndex ? "active" : "";
+      const activeClass = idx === summarySelectedWeekIndex ? "active" : "";
 
       return `
-        <button
-          class="week-pill ${hasDataClass} ${activeClass}"
-          onclick="selectSummaryWeek(${idx})"
-        >
+        <button class="week-pill ${hasDataClass} ${activeClass}" onclick="selectSummaryWeek(${idx})">
           <div class="week-pill-title">第${idx + 1}週</div>
           <div class="week-pill-range">${startLabel}〜${endLabel}</div>
           <div class="week-pill-dot-row">
@@ -638,11 +592,9 @@ async function refreshSummaryWeekChips() {
   await loadWeeklySummary(weekStartStr);
 }
 
-/* 指定月の「月曜始まり」週を計算して配列にする */
 /* 指定月の「月曜始まり」週を計算して配列にする（データ有無対応版） */
 function buildWeeksForMonth(year, month, daysWithData) {
   const weeks = [];
-
   const firstOfMonth = new Date(year, month, 1);
   const firstDayOfWeek = firstOfMonth.getDay(); // 0=日,1=月,...
 
@@ -658,23 +610,15 @@ function buildWeeksForMonth(year, month, daysWithData) {
     const end = new Date(current);
     end.setDate(start.getDate() + 6);
 
-    // この週が対象月に少しでも重なるか
-    const overlapsMonth =
-      start.getMonth() === month || end.getMonth() === month ||
-      (start < firstOfMonth && end >= firstOfMonth); // 念のため
+    const overlapsMonth = start.getMonth() === month || end.getMonth() === month;
+    if (!overlapsMonth && start.getMonth() > month && start.getFullYear() === year) break;
 
-    if (!overlapsMonth && start.getFullYear() === year && start.getMonth() > month) break;
-
-    // ▼ 対象月の日だけチェックする（重要）
-    const hasData = [...Array(7).keys()].some(i => {
+    // ▼ この週に1日でもデータがあるか？
+    const hasData = [...Array(7).keys()].some((i) => {
       const d = new Date(start);
       d.setDate(start.getDate() + i);
-
-      // ★この月の分だけ判定
-      if (d.getFullYear() !== year || d.getMonth() !== month) return false;
-
-      const dd = String(d.getDate()).padStart(2, "0");
-      return daysWithData.includes(dd);
+      const ds = formatDateYmd(d);
+      return daysWithData.includes(ds.slice(8));
     });
 
     weeks.push({ start, end, hasData });
@@ -697,7 +641,7 @@ async function loadWeeklySummary(weekStartStr) {
 
   try {
     // ① 週集計（品目別合計 & 日別）を取得
-    const res  = await fetch(`${SUMMARY_SCRIPT_URL}?summaryWeek=${weekStartStr}`);
+    const res = await fetch(`${SUMMARY_SCRIPT_URL}?summaryWeek=${weekStartStr}`);
     const data = await res.json();
 
     if (!data.found) {
@@ -714,17 +658,14 @@ async function loadWeeklySummary(weekStartStr) {
       return;
     }
 
-    const total          = data.total || {};
-    const itemsRaw       = data.items || [];
-    let   days           = data.days  || [];
+    const total = data.total || {};
+    const itemsRaw = data.items || [];
+    let days = data.days || [];
+
     // ★ 品目名をすべて統一
     const dailySummaries = data.dailySummaries || [];
-
-    itemsRaw.forEach(it => it.item = normalizeItemName(it.item));
-    dailySummaries.forEach(d =>
-    d.items?.forEach(it => it.item = normalizeItemName(it.item))
-    );
-
+    itemsRaw.forEach((it) => (it.item = normalizeItemName(it.item)));
+    dailySummaries.forEach((d) => d.items?.forEach((it) => (it.item = normalizeItemName(it.item))));
 
     // 品目を固定順（白菜→白菜カット→キャベツ→キャベツカット→トウモロコシ）にソート
     const items = [...itemsRaw].sort((a, b) => {
@@ -737,90 +678,86 @@ async function loadWeeklySummary(weekStartStr) {
 
     // ② 日別ロス合計を dailySummaries から作成（fetch 廃止）
     const dailyLossMap = {};
-    dailySummaries.forEach(d => {
+    dailySummaries.forEach((d) => {
       if (!d || !d.found || !d.items) return;
       let dayLoss = 0;
-      d.items.forEach(it => {
-        dayLoss += (it.lossQty || 0);
+      d.items.forEach((it) => {
+        dayLoss += it.lossQty || 0;
       });
       dailyLossMap[d.summaryDate] = dayLoss;
     });
 
     // ③ 店舗別週合算（店舗×品目）と店舗別トータル＆気象データ
-    const storeItemMap  = {}; // { itemName: { storeName: { shippedQty, soldQty, lossQty } } }
+    const storeItemMap = {}; // { itemName: { storeName: { shippedQty, soldQty, lossQty } } }
     const storeTotalMap = {}; // { storeName: { shippedQty, soldQty, lossQty, lossRate, salesRate } }
-    const weatherInfo   = []; // [{ date, tempMax, tempMin, weather, itemごとの shipped/sold }, ...]
+    const weatherInfo = []; // [{ date, tempMax, tempMin, weather, itemごとの shipped/sold }, ...]
 
-    dailySummaries.forEach(daily => {
-  if (!daily || !daily.found || !daily.items) return;
+    dailySummaries.forEach((daily) => {
+      if (!daily || !daily.found || !daily.items) return;
 
-  // 店舗別集計
-  daily.items.forEach(it => {
-    const itemName = it.item;
+      // 店舗別集計
+      daily.items.forEach((it) => {
+        const itemName = it.item;
 
-    (it.stores || []).forEach(s => {
-      const storeKey = normalizeStoreName(s.name);
-      const shipped  = s.shippedQty || 0;
-      const sold     = s.soldQty    || 0;
-      const loss     = s.lossQty    || 0;
+        (it.stores || []).forEach((s) => {
+          const storeName = s.name;
+          const shipped = s.shippedQty || 0;
+          const sold = s.soldQty || 0;
+          const loss = s.lossQty || 0;
 
-      if (!storeItemMap[itemName]) storeItemMap[itemName] = {};
-      if (!storeItemMap[itemName][storeKey]) {
-        storeItemMap[itemName][storeKey] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
-      }
-      storeItemMap[itemName][storeKey].shippedQty += shipped;
-      storeItemMap[itemName][storeKey].soldQty    += sold;
-      storeItemMap[itemName][storeKey].lossQty    += loss;
+          if (!storeItemMap[itemName]) storeItemMap[itemName] = {};
+          if (!storeItemMap[itemName][storeName]) {
+            storeItemMap[itemName][storeName] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
+          }
+          storeItemMap[itemName][storeName].shippedQty += shipped;
+          storeItemMap[itemName][storeName].soldQty += sold;
+          storeItemMap[itemName][storeName].lossQty += loss;
 
-      if (!storeTotalMap[storeKey]) {
-        storeTotalMap[storeKey] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
-      }
-      storeTotalMap[storeKey].shippedQty += shipped;
-      storeTotalMap[storeKey].soldQty    += sold;
-      storeTotalMap[storeKey].lossQty    += loss;
+          if (!storeTotalMap[storeName]) {
+            storeTotalMap[storeName] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
+          }
+          storeTotalMap[storeName].shippedQty += shipped;
+          storeTotalMap[storeName].soldQty += sold;
+          storeTotalMap[storeName].lossQty += loss;
+        });
+      });
+
+      // 気象＋品目別販売率用
+      const w = daily.weather || {};
+      const dayObj = {
+        date: daily.summaryDate,
+        tempMax: w.tempMax ?? null,
+        tempMin: w.tempMin ?? null,
+        weather: w.type || "不明",
+      };
+
+      daily.items.forEach((it) => {
+        const name = it.item;
+        const shipped = it.shippedQty || 0;
+        const sold = it.soldQty || 0;
+        if (shipped === 0 && sold === 0) return;
+        dayObj[name] = { shipped, sold };
+      });
+
+      weatherInfo.push(dayObj);
     });
-  });
-
-  // 気象＋品目別販売率用（← 반드시 forEach の中）
-  const w = daily.weather || {};
-  const dayObj = {
-    date:    daily.summaryDate,
-    tempMax: w.tempMax ?? null,
-    tempMin: w.tempMin ?? null,
-    weather: w.type || "不明"
-  };
-
-  daily.items.forEach(it => {
-    const name    = it.item;
-    const shipped = it.shippedQty || 0;
-    const sold    = it.soldQty    || 0;
-    if (shipped === 0 && sold === 0) return;
-    dayObj[name] = { shipped, sold };
-  });
-
-  weatherInfo.push(dayObj);
-});
 
     // 店舗別トータルの lossRate / salesRate を付与
-    Object.keys(storeTotalMap).forEach(name => {
+    Object.keys(storeTotalMap).forEach((name) => {
       const st = storeTotalMap[name];
-      st.lossRate = st.shippedQty > 0
-        ? Math.round((st.lossQty / st.shippedQty) * 100)
-        : null;
-      st.salesRate = st.shippedQty > 0
-        ? Math.round((st.soldQty / st.shippedQty) * 100)
-        : null;
+      st.lossRate = st.shippedQty > 0 ? Math.round((st.lossQty / st.shippedQty) * 100) : null;
+      st.salesRate = st.shippedQty > 0 ? Math.round((st.soldQty / st.shippedQty) * 100) : null;
     });
 
     // ④ AIコメント（ロス観点）
     const aiCommentHtml = buildWeeklyAiComment(total, items, storeTotalMap);
 
     const totalLossColor = getLossRateColor(total.lossRate);
-    const totalLossStyle = totalLossColor ? ` style="color:${totalLossColor};"` : "";
+    const totalLossStyle = totalLossColor ? `style="color:${totalLossColor};"` : "";
 
     // ⑤ HTML構築
     const weekStart = days[0];
-    const weekEnd   = days[days.length - 1];
+    const weekEnd = days[days.length - 1];
 
     let html = `
       <h3>${weekStart}〜${weekEnd} の週集計</h3>
@@ -832,10 +769,10 @@ async function loadWeeklySummary(weekStartStr) {
       <div class="history-card summary-total">
         <div class="history-title">
           <span>📅 週合計ロス</span>
-          <span class="item-total-badge summary-badge"${totalLossStyle}>
+          <span class="item-total-badge summary-badge" ${totalLossStyle}>
             ${
               total.lossRate === null
-                ? 'ロス率：ー'
+                ? "ロス率：ー"
                 : `ロス率：${total.lossRate}%（${total.lossQty}個）`
             }
           </span>
@@ -846,37 +783,35 @@ async function loadWeeklySummary(weekStartStr) {
     `;
 
     // ▼ 品目別カード（店舗別アコーディオン付き）
-    items.forEach(it => {
-      const itemName   = it.item; // すでに normalize 済み
+    items.forEach((it) => {
+      const itemName = it.item; // すでに normalize 済み
       const shippedQty = it.shippedQty || 0;
-      const soldQty    = it.soldQty    || 0;
-      const lossQty    = it.lossQty    || 0;
-      const lossRate   = shippedQty > 0
-        ? Math.round((lossQty / shippedQty) * 100)
-        : null;
+      const soldQty = it.soldQty || 0;
+      const lossQty = it.lossQty || 0;
+      const lossRate = shippedQty > 0 ? Math.round((lossQty / shippedQty) * 100) : null;
 
       const cls = getItemClassForSummary(itemName);
       const badgeCls =
-        cls === "hakusai" ? "item-total-hakusai" :
-        cls === "cabbage" ? "item-total-cabbage" :
-        "item-total-corn";
+        cls === "hakusai"
+          ? "item-total-hakusai"
+          : cls === "cabbage"
+          ? "item-total-cabbage"
+          : "item-total-corn";
 
       const lossColor = getLossRateColor(lossRate);
-      const lossStyle = lossColor ? ` style="color:${lossColor};"` : "";
+      const lossStyle = lossColor ? `style="color:${lossColor};"` : "";
 
       // 店舗別週合算（この品目のみ）
       const perStoreMap = storeItemMap[itemName] || {};
-      let storeRows = Object.keys(perStoreMap).map(name => {
+      let storeRows = Object.keys(perStoreMap).map((name) => {
         const st = perStoreMap[name];
-        const rate = st.shippedQty > 0
-          ? Math.round((st.lossQty / st.shippedQty) * 100)
-          : null;
+        const rate = st.shippedQty > 0 ? Math.round((st.lossQty / st.shippedQty) * 100) : null;
         return {
           name,
           shippedQty: st.shippedQty,
-          soldQty:    st.soldQty,
-          lossQty:    st.lossQty,
-          lossRate:   rate
+          soldQty: st.soldQty,
+          lossQty: st.lossQty,
+          lossRate: rate,
         };
       });
 
@@ -891,26 +826,19 @@ async function loadWeeklySummary(weekStartStr) {
         <div class="history-card ${cls}">
           <div class="history-title">
             <span>${itemName}</span>
-            <span class="item-total-badge ${badgeCls}"${lossStyle}>
-              ${
-                lossRate === null
-                  ? `ロス：${lossQty}個`
-                  : `ロス：${lossQty}個（${lossRate}%）`
-              }
+            <span class="item-total-badge ${badgeCls}" ${lossStyle}>
+              ${lossRate === null ? `ロス：${lossQty}個` : `ロス：${lossQty}個（${lossRate}%）`}
             </span>
           </div>
           <div>出荷合計：${shippedQty}個 / 売上合計：${soldQty}個</div>
           ${
             storeRows.length
               ? renderStoreAccordion(storeRows)
-              : `<div style="font-size:0.85em;color:#555;margin-top:4px;">
-                   店舗別内訳なし
-                 </div>`
+              : `<div style="font-size:0.85em;color:#555;margin-top:4px;">店舗別内訳なし</div>`
           }
         </div>
       `;
     });
-
 
     // ▼ 店舗別ロス情報（週合計）
     html += renderWeeklyStoreTotalSection(storeTotalMap);
@@ -918,32 +846,26 @@ async function loadWeeklySummary(weekStartStr) {
     // ▼ 既存の分析3種 + 気象分析 + 販売予測
     html += `
       <div class="analysis-wrapper">
-
         <div class="analysis-card">
           <h4>🏆 店舗別販売率ランキング（上位5店舗）</h4>
           <div id="weekStoreSalesRate"></div>
         </div>
-
         <div class="analysis-card">
           <h4>📉 日別ロス推移（週）</h4>
           <div id="weekDailyLossTrend"></div>
         </div>
-
         <div class="analysis-card">
           <h4>🔥 品目×店舗 ロス率ランキング（上位5件）</h4>
           <div id="weekItemStoreLossRanking"></div>
         </div>
-
         <div class="analysis-card">
           <h4>☀ 気温 × 売上 効果</h4>
           <div id="weekWeatherCorrelation"></div>
         </div>
-
         <div class="analysis-card">
           <h4>🤖 販売予測（AI提案）</h4>
           <div id="weekSalesForecast"></div>
         </div>
-
       </div>
     `;
 
@@ -959,7 +881,6 @@ async function loadWeeklySummary(weekStartStr) {
     renderWeekWeatherHeatmap(items, weatherInfo);
     renderWeekWeatherCrossTable(items, weatherInfo);
     renderWeekWeatherAI(items, weatherInfo);
-
   } catch (err) {
     resultDiv.innerHTML = `
       <div class="history-card summary-total">
@@ -981,7 +902,7 @@ function renderWeeklyStoreTotalSection(storeTotalMap) {
   const names = Object.keys(storeTotalMap);
   if (!names.length) return "";
 
-  const rows = names.map(name => {
+  const rows = names.map((name) => {
     const st = storeTotalMap[name];
     return {
       name,
@@ -989,7 +910,7 @@ function renderWeeklyStoreTotalSection(storeTotalMap) {
       shippedQty: st.shippedQty,
       soldQty: st.soldQty,
       lossQty: st.lossQty,
-      lossRate: st.lossRate
+      lossRate: st.lossRate,
     };
   });
 
@@ -1007,23 +928,18 @@ function renderWeeklyStoreTotalSection(storeTotalMap) {
       <div class="store-week-total-list">
   `;
 
-  rows.forEach(r => {
+  rows.forEach((r) => {
     const label = formatStoreLabel(r.name);
     const color = getLossRateColor(r.lossRate);
-    const style = color ? ` style="color:${color};"` : "";
+    const style = color ? `style="color:${color};"` : "";
+
     html += `
       <div class="store-week-total-row">
         <div class="store-week-total-name">${label}</div>
         <div class="store-week-total-body">
-          出荷：${r.shippedQty}個 /
-          売上：${r.soldQty}個 /
-          ロス：
-          <span${style}>
-          ${
-            r.lossRate === null
-              ? `${r.lossQty}個`
-              : `${r.lossQty}個（${r.lossRate}%）`
-          }
+          出荷：${r.shippedQty}個 / 売上：${r.soldQty}個 / ロス：
+          <span ${style}>
+            ${r.lossRate === null ? `${r.lossQty}個` : `${r.lossQty}個（${r.lossRate}%）`}
           </span>
         </div>
       </div>
@@ -1037,11 +953,11 @@ function renderWeeklyStoreTotalSection(storeTotalMap) {
 /* 週ビュー：AIコメント生成（既存ロジック） */
 function buildWeeklyAiComment(total, items, storeTotalMap) {
   const lossRate = total.lossRate;
-  const lossQty  = total.lossQty || 0;
+  const lossQty = total.lossQty || 0;
 
   // 一番ロスが大きい品目
   let maxItem = null;
-  items.forEach(it => {
+  items.forEach((it) => {
     if (!maxItem || (it.lossQty || 0) > (maxItem.lossQty || 0)) {
       maxItem = it;
     }
@@ -1049,7 +965,7 @@ function buildWeeklyAiComment(total, items, storeTotalMap) {
 
   // 一番ロス率が高い店舗
   let maxStore = null;
-  Object.keys(storeTotalMap).forEach(name => {
+  Object.keys(storeTotalMap).forEach((name) => {
     const st = storeTotalMap[name];
     if (typeof st.lossRate !== "number") return;
     if (!maxStore || st.lossRate > maxStore.lossRate) {
@@ -1061,34 +977,48 @@ function buildWeeklyAiComment(total, items, storeTotalMap) {
 
   // 全体所感
   if (lossRate === null) {
-    lines.push("今週は、出荷と売上を比較できる十分なデータが揃っていない日が含まれています。今後、出荷登録と売上データの両方が揃っている日を継続的に増やすことで、より安定した分析が可能になります。");
+    lines.push(
+      "今週は、出荷と売上を比較できる十分なデータが揃っていない日が含まれています。今後、出荷登録と売上データの両方が揃っている日を継続的に増やすことで、より安定した分析が可能になります。"
+    );
   } else if (lossRate <= 10) {
-    lines.push(`今週の全体ロス率は約${lossRate}%（${lossQty}個）で、比較的良好な水準です。この調子で「出荷量の精度」を維持できると、ロスはさらに安定して抑えられそうです。`);
+    lines.push(
+      `今週の全体ロス率は約${lossRate}%（${lossQty}個）で、比較的良好な水準です。この調子で「出荷量の精度」を維持できると、ロスはさらに安定して抑えられそうです。`
+    );
   } else if (lossRate <= 20) {
-    lines.push(`今週の全体ロス率は約${lossRate}%（${lossQty}個）で、ややロスが目立つ週でした。出荷量の微調整や、曜日ごとの売れ行きパターンを意識した出荷が有効になりそうです。`);
+    lines.push(
+      `今週の全体ロス率は約${lossRate}%（${lossQty}個）で、ややロスが目立つ週でした。出荷量の微調整や、曜日ごとの売れ行きパターンを意識した出荷が有効になりそうです。`
+    );
   } else {
-    lines.push(`今週の全体ロス率は約${lossRate}%（${lossQty}個）と高めです。特に出荷量の見直しや、店舗別の売れ方に合わせた配分調整を検討する価値がありそうです。`);
+    lines.push(
+      `今週の全体ロス率は約${lossRate}%（${lossQty}個）と高めです。特に出荷量の見直しや、店舗別の売れ方に合わせた配分調整を検討する価値がありそうです。`
+    );
   }
 
   // 品目のポイント
   if (maxItem && (maxItem.lossQty || 0) > 0) {
     const key = getItemKey(maxItem.item);
-    lines.push(`品目別では「${key}」のロスが最も大きくなっています。出荷量を少しだけ絞る、もしくは他の動きが良い店舗へ振り分けるなど、週単位での配分調整を検討してみてください。`);
+    lines.push(
+      `品目別では「${key}」のロスが最も大きくなっています。出荷量を少しだけ絞る、もしくは他の動きが良い店舗へ振り分けるなど、週単位での配分調整を検討してみてください。`
+    );
   }
 
   // 店舗のポイント
   if (maxStore && typeof maxStore.lossRate === "number") {
     const label = formatStoreLabel(maxStore.name);
-    lines.push(`店舗別では「${label}」のロス率が相対的に高めです。出荷する品目や数量を1〜2割ほど抑えて様子を見る、他店舗との売れ行きの違いを確認する、といった対応が有効かもしれません。`);
+    lines.push(
+      `店舗別では「${label}」のロス率が相対的に高めです。出荷する品目や数量を1〜2割ほど抑えて様子を見る、他店舗との売れ行きの違いを確認する、といった対応が有効かもしれません。`
+    );
   }
 
   // アクション提案（本社視点）
-  lines.push("本社側で調整できるのは「いつ・どの店舗に・どれだけ出荷するか」です。特にロスが目立つ品目については、①売れ行きが安定している店舗へ寄せる、②曜日ごとの売上傾向を意識して出荷日をずらす、といった工夫が効果的です。");
+  lines.push(
+    "本社側で調整できるのは「いつ・どの店舗に・どれだけ出荷するか」です。特にロスが目立つ品目については、①売れ行きが安定している店舗へ寄せる、②曜日ごとの売上傾向を意識して出荷日をずらす、といった工夫が効果的です。"
+  );
 
   return `
     <div class="ai-comment-card">
       <div class="ai-comment-title">🤖 今週のAIコメント</div>
-      ${lines.map(t => `<p>${t}</p>`).join("")}
+      ${lines.map((t) => `<p>${t}</p>`).join("")}
     </div>
   `;
 }
@@ -1096,55 +1026,55 @@ function buildWeeklyAiComment(total, items, storeTotalMap) {
 /* 週ビュー：分析3種（販売率ランキング／日別ロス／ロス率ランキング） */
 function renderWeekAnalysisCharts(items, days, dailyLossMap, storeTotalMap, storeItemMap) {
   // ApexCharts がなければ諦める（テキスト分析だけでもOK）
-  const hasApex = (typeof ApexCharts !== "undefined");
+  const hasApex = typeof ApexCharts !== "undefined";
 
   /* ▼ 1) 店舗別販売率ランキング（上位5） */
   const elRate = document.getElementById("weekStoreSalesRate");
   if (elRate) {
-    const storeEntries = Object.keys(storeTotalMap).map(name => {
-      const st = storeTotalMap[name];
-      return {
-        name,
-        label: formatStoreLabel(name),
-        shipped: st.shippedQty || 0,
-        sold: st.soldQty || 0,
-        rate: st.salesRate
-      };
-    }).filter(e => e.shipped > 0 && e.rate !== null);
+    const storeEntries = Object.keys(storeTotalMap)
+      .map((name) => {
+        const st = storeTotalMap[name];
+        return {
+          name,
+          label: formatStoreLabel(name),
+          shipped: st.shippedQty || 0,
+          sold: st.soldQty || 0,
+          rate: st.salesRate,
+        };
+      })
+      .filter((e) => e.shipped > 0 && e.rate !== null);
 
-    storeEntries.sort((a,b) => (b.rate || 0) - (a.rate || 0));
-    const top5 = storeEntries.slice(0,5);
+    storeEntries.sort((a, b) => (b.rate || 0) - (a.rate || 0));
+    const top5 = storeEntries.slice(0, 5);
 
     if (top5.length === 0) {
       elRate.innerHTML = `<p style="font-size:0.85em;color:#666;">販売率を計算できる店舗がありません。</p>`;
     } else if (hasApex) {
-      const labels = top5.map(e => e.label);
-      const data   = top5.map(e => e.rate);
+      const labels = top5.map((e) => e.label);
+      const data = top5.map((e) => e.rate);
 
       const options = {
         chart: { type: "bar", height: 260 },
         series: [{ name: "販売率(%)", data }],
         xaxis: { categories: labels },
-        dataLabels: {
-          enabled: true,
-          formatter: v => `${v}%`
-        },
-        plotOptions: {
-          bar: { horizontal: true }
-        },
-        tooltip: { y: { formatter: v => `${v}%` } }
+        dataLabels: { enabled: true, formatter: (v) => `${v}%` },
+        plotOptions: { bar: { horizontal: true } },
+        tooltip: { y: { formatter: (v) => `${v}%` } },
       };
+
       const chart = new ApexCharts(elRate, options);
       chart.render();
     } else {
       // テキスト版
       elRate.innerHTML = `
         <ol style="font-size:0.9em;padding-left:1.2em;">
-          ${top5.map(e => {
-            const color = getSalesRateColor(e.rate);
-            const style = color ? ` style="color:${color};"` : "";
-            return `<li${style}>${e.label}：${e.rate}%（出荷${e.shipped}／売上${e.sold}）</li>`;
-          }).join("")}
+          ${top5
+            .map((e) => {
+              const color = getSalesRateColor(e.rate);
+              const style = color ? `style="color:${color};"` : "";
+              return `<li ${style}>${e.label}：${e.rate}%（出荷${e.shipped}／売上${e.sold}）</li>`;
+            })
+            .join("")}
         </ol>
       `;
     }
@@ -1153,7 +1083,7 @@ function renderWeekAnalysisCharts(items, days, dailyLossMap, storeTotalMap, stor
   /* ▼ 2) 日別ロス推移（週） */
   const elDaily = document.getElementById("weekDailyLossTrend");
   if (elDaily) {
-    const xCats = days.map(ds => {
+    const xCats = days.map((ds) => {
       const d = new Date(ds);
       const wd = d.getDay();
       const dd = d.getDate();
@@ -1161,7 +1091,8 @@ function renderWeekAnalysisCharts(items, days, dailyLossMap, storeTotalMap, stor
       if (wd === 6) return `${dd}(土)`;
       return `${dd}`;
     });
-    const yData = days.map(ds => dailyLossMap[ds] || 0);
+
+    const yData = days.map((ds) => dailyLossMap[ds] || 0);
 
     if (hasApex) {
       const options = {
@@ -1172,32 +1103,30 @@ function renderWeekAnalysisCharts(items, days, dailyLossMap, storeTotalMap, stor
         stroke: { width: 3, curve: "smooth" },
         markers: {
           size: 6,
-          colors: days.map(ds => {
+          colors: days.map((ds) => {
             const wd = new Date(ds).getDay();
             if (wd === 0) return "#d32f2f"; // 日曜 赤
             if (wd === 6) return "#1976d2"; // 土曜 青
-            return "#555555";               // 平日 グレー
+            return "#555555"; // 平日 グレー
           }),
           strokeColors: "#ffffff",
         },
-        tooltip: {
-          y: { formatter: v => `${v}個` }
-        }
+        tooltip: { y: { formatter: (v) => `${v}個` } },
       };
+
       const chart = new ApexCharts(elDaily, options);
       chart.render();
-    }
-     else {
+    } else {
       elDaily.innerHTML = `
         <table class="simple-table">
           <tr><th>日付</th><th>ロス個数</th></tr>
-          ${
-            days.map(ds => {
+          ${days
+            .map((ds) => {
               const d = new Date(ds);
-              const label = `${ds} (${["日","月","火","水","木","金","土"][d.getDay()]})`;
+              const label = `${ds} (${["日", "月", "火", "水", "木", "金", "土"][d.getDay()]})`;
               return `<tr><td>${label}</td><td>${dailyLossMap[ds] || 0}</td></tr>`;
-            }).join("")
-          }
+            })
+            .join("")}
         </table>
       `;
     }
@@ -1208,9 +1137,9 @@ function renderWeekAnalysisCharts(items, days, dailyLossMap, storeTotalMap, stor
   if (elLossRank) {
     const rows = [];
 
-    Object.keys(storeItemMap || {}).forEach(itemName => {
+    Object.keys(storeItemMap || {}).forEach((itemName) => {
       const perStore = storeItemMap[itemName];
-      Object.keys(perStore || {}).forEach(storeName => {
+      Object.keys(perStore || {}).forEach((storeName) => {
         const st = perStore[storeName];
         if (!st || !st.shippedQty) return;
         const rate = Math.round((st.lossQty / st.shippedQty) * 100);
@@ -1219,7 +1148,7 @@ function renderWeekAnalysisCharts(items, days, dailyLossMap, storeTotalMap, stor
           store: formatStoreLabel(storeName),
           shipped: st.shippedQty,
           lossQty: st.lossQty,
-          rate
+          rate,
         });
       });
     });
@@ -1227,8 +1156,8 @@ function renderWeekAnalysisCharts(items, days, dailyLossMap, storeTotalMap, stor
     if (!rows.length) {
       elLossRank.innerHTML = `<p style="font-size:0.85em;color:#666;">ロス率を計算できる組み合わせがありません。</p>`;
     } else {
-      rows.sort((a,b) => b.rate - a.rate);
-      const top5 = rows.slice(0,5);
+      rows.sort((a, b) => b.rate - a.rate);
+      const top5 = rows.slice(0, 5);
 
       elLossRank.innerHTML = `
         <table class="simple-table">
@@ -1239,20 +1168,21 @@ function renderWeekAnalysisCharts(items, days, dailyLossMap, storeTotalMap, stor
             <th>ロス個数</th>
             <th>ロス率</th>
           </tr>
-          ${
-            top5.map((r,idx) => {
+          ${top5
+            .map((r, idx) => {
               const color = getLossRateColor(r.rate);
-              const style = color ? ` style="color:${color};font-weight:bold;"` : "";
+              const style = color ? `style="color:${color};font-weight:bold;"` : "";
               return `
                 <tr>
-                  <td>${idx+1}</td>
+                  <td>${idx + 1}</td>
                   <td>${r.store}</td>
                   <td>${r.item}</td>
                   <td>${r.lossQty}</td>
-                  <td${style}>${r.rate}%</td>
-                </tr>`;
-            }).join("")
-          }
+                  <td ${style}>${r.rate}%</td>
+                </tr>
+              `;
+            })
+            .join("")}
         </table>
       `;
     }
@@ -1269,7 +1199,7 @@ async function setupSummaryMonthView() {
   if (!ctrl) return;
 
   const today = new Date();
-  summaryMonthYear  = today.getFullYear();
+  summaryMonthYear = today.getFullYear();
   summaryMonthMonth = today.getMonth(); // 0-11
 
   ctrl.innerHTML = `
@@ -1288,6 +1218,7 @@ async function setupSummaryMonthView() {
 /* 月ビュー：月移動 */
 async function changeSummaryMonthView(offset) {
   summaryMonthMonth += offset;
+
   if (summaryMonthMonth < 0) {
     summaryMonthMonth = 11;
     summaryMonthYear--;
@@ -1296,6 +1227,7 @@ async function changeSummaryMonthView(offset) {
     summaryMonthMonth = 0;
     summaryMonthYear++;
   }
+
   await refreshSummaryMonthView();
 }
 
@@ -1305,6 +1237,7 @@ async function refreshSummaryMonthView() {
   if (labelEl) {
     labelEl.textContent = `${summaryMonthYear}年 ${summaryMonthMonth + 1}月`;
   }
+
   const ym = `${summaryMonthYear}-${String(summaryMonthMonth + 1).padStart(2, "0")}`;
   await loadMonthlySummary(ym);
 }
@@ -1328,19 +1261,15 @@ async function loadMonthlySummary(ym) {
       return;
     }
 
-    const total          = data.total || {};
-    const itemsRaw       = data.items || [];
-    let   days           = data.days  || [];
-    const dailyAll       = data.dailySummaries || []; // ★ 日別集計（GAS側で計算済）
+    const total = data.total || {};
+    const itemsRaw = data.items || [];
+    let days = data.days || [];
+    const dailyAll = data.dailySummaries || [];
+
+    // ★ 日別集計（GAS側で計算済）
     // ★ 品目名統一
-    itemsRaw.forEach(it => it.item = normalizeItemName(it.item));
-    dailyAll.forEach(d => {
-  if (d.items) {
-    d.items.forEach(it => {
-      it.item = normalizeItemName(it.item);
-    });
-  }
-});
+    itemsRaw.forEach((it) => (it.item = normalizeItemName(it.item)));
+    dailyAll.forEach((d) => d.items?.forEach((it) => (it.item = normalizeItemName(it.item))));
 
     // 品目を固定順にソート
     const items = [...itemsRaw].sort((a, b) => {
@@ -1351,74 +1280,69 @@ async function loadMonthlySummary(ym) {
 
     // 未来日は除外（念のため）
     const todayStr = formatDateYmd(new Date());
-    days = days.filter(ds => ds <= todayStr);
+    days = days.filter((ds) => ds <= todayStr);
 
     // ① 日別ロス合計（dailyAll から作成）
     const dailyLossMap = {};
-    dailyAll.forEach(d => {
+    dailyAll.forEach((d) => {
       if (!d || !d.items) return;
-      dailyLossMap[d.summaryDate] = d.items.reduce(
-        (sum, it) => sum + (it.lossQty || 0),
-        0
-      );
+      dailyLossMap[d.summaryDate] = d.items.reduce((sum, it) => sum + (it.lossQty || 0), 0);
     });
 
     // ② 店舗×品目と気象データ集約
-    const storeItemMap  = {};
+    const storeItemMap = {};
     const storeTotalMap = {};
-    const weatherInfo   = [];
+    const weatherInfo = [];
 
-    dailyAll.forEach(d => {
+    dailyAll.forEach((d) => {
       if (!d || !d.items) return;
 
-      d.items.forEach(it => {
+      d.items.forEach((it) => {
         const name = it.item;
-        (it.stores || []).forEach(s => {
-  const stKey   = normalizeStoreName(s.name);
-  const shipped = s.shippedQty || 0;
-  const sold    = s.soldQty    || 0;
-  const loss    = s.lossQty    || 0;
 
-  if (!storeItemMap[name]) storeItemMap[name] = {};
-  if (!storeItemMap[name][stKey]) {
-    storeItemMap[name][stKey] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
-  }
-  storeItemMap[name][stKey].shippedQty += shipped;
-  storeItemMap[name][stKey].soldQty    += sold;
-  storeItemMap[name][stKey].lossQty    += loss;
+        (it.stores || []).forEach((s) => {
+          const stName = s.name;
+          const shipped = s.shippedQty || 0;
+          const sold = s.soldQty || 0;
+          const loss = s.lossQty || 0;
 
-  if (!storeTotalMap[stKey]) {
-    storeTotalMap[stKey] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
-  }
-  storeTotalMap[stKey].shippedQty += shipped;
-  storeTotalMap[stKey].soldQty    += sold;
-  storeTotalMap[stKey].lossQty    += loss;
-});
+          if (!storeItemMap[name]) storeItemMap[name] = {};
+          if (!storeItemMap[name][stName]) storeItemMap[name][stName] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
 
+          storeItemMap[name][stName].shippedQty += shipped;
+          storeItemMap[name][stName].soldQty += sold;
+          storeItemMap[name][stName].lossQty += loss;
+
+          if (!storeTotalMap[stName]) storeTotalMap[stName] = { shippedQty: 0, soldQty: 0, lossQty: 0 };
+
+          storeTotalMap[stName].shippedQty += shipped;
+          storeTotalMap[stName].soldQty += sold;
+          storeTotalMap[stName].lossQty += loss;
+        });
+      });
 
       // 気象データ
       const w = d.weather || {};
       const obj = {
-        date:    d.summaryDate,
+        date: d.summaryDate,
         tempMax: w.tempMax ?? null,
         tempMin: w.tempMin ?? null,
-        weather: w.type || "不明"
+        weather: w.type || "不明",
       };
-      d.items.forEach(it => {
-        if ((it.shippedQty||0) + (it.soldQty||0) === 0) return;
-        obj[it.item] = {
-          shipped: it.shippedQty || 0,
-          sold:    it.soldQty    || 0
-        };
+
+      d.items.forEach((it) => {
+        if ((it.shippedQty || 0) + (it.soldQty || 0) === 0) return;
+        obj[it.item] = { shipped: it.shippedQty || 0, sold: it.soldQty || 0 };
       });
+
       weatherInfo.push(obj);
     });
 
     // 店舗別率
-    Object.keys(storeTotalMap).forEach(k => {
+    Object.keys(storeTotalMap).forEach((k) => {
       const s = storeTotalMap[k];
-      s.lossRate  = s.shippedQty>0 ? Math.round((s.lossQty/s.shippedQty)*100) : null;
-      s.salesRate = s.shippedQty>0 ? Math.round((s.soldQty/s.shippedQty)*100) : null;
+      s.lossRate = s.shippedQty > 0 ? Math.round((s.lossQty / s.shippedQty) * 100) : null;
+      s.salesRate = s.shippedQty > 0 ? Math.round((s.soldQty / s.shippedQty) * 100) : null;
     });
 
     // UI 描画
@@ -1435,41 +1359,42 @@ async function loadMonthlySummary(ym) {
         <div class="history-title">
           <span>🗓 月合計ロス</span>
           <span class="item-total-badge summary-badge" style="color:${tlColor};">
-            ロス率：${total.lossRate ?? "ー"}%（${total.lossQty||0}個）
+            ロス率：${total.lossRate ?? "ー"}%（${total.lossQty || 0}個）
           </span>
         </div>
-        <div>出荷：<b>${total.shippedQty||0}個</b></div>
-        <div>売上：<b>${total.soldQty||0}個</b></div>
+        <div>出荷：<b>${total.shippedQty || 0}個</b></div>
+        <div>売上：<b>${total.soldQty || 0}個</b></div>
       </div>
     `;
 
-        // 品目別カード（週ビューと同じ）
-    items.forEach(it => {
+    // 品目別カード（週ビューと同じ）
+    items.forEach((it) => {
       const itemName = it.item;
-      const shipped  = it.shippedQty || 0;
-      const sold     = it.soldQty    || 0;
-      const loss     = it.lossQty    || 0;
+      const shipped = it.shippedQty || 0;
+      const sold = it.soldQty || 0;
+      const loss = it.lossQty || 0;
       const lossRate = shipped > 0 ? Math.round((loss / shipped) * 100) : null;
 
       const cls = getItemClassForSummary(itemName);
       const badge =
-        cls === "hakusai" ? "item-total-hakusai" :
-        cls === "cabbage" ? "item-total-cabbage" :
-        "item-total-corn";
+        cls === "hakusai"
+          ? "item-total-hakusai"
+          : cls === "cabbage"
+          ? "item-total-cabbage"
+          : "item-total-corn";
 
       const per = storeItemMap[itemName] || {};
-      const rows = Object.keys(per).map(st => ({
-        name:       st,
-        shippedQty: per[st].shippedQty,
-        soldQty:    per[st].soldQty,
-        lossQty:    per[st].lossQty,
-        lossRate:   per[st].shippedQty > 0
-          ? Math.round((per[st].lossQty / per[st].shippedQty) * 100)
-          : null
-      })).sort((a,b) => {
-        return STORE_ORDER.indexOf(getStoreKey(a.name)) -
-               STORE_ORDER.indexOf(getStoreKey(b.name));
-      });
+      const rows = Object.keys(per)
+        .map((st) => ({
+          name: st,
+          shippedQty: per[st].shippedQty,
+          soldQty: per[st].soldQty,
+          lossQty: per[st].lossQty,
+          lossRate: per[st].shippedQty > 0 ? Math.round((per[st].lossQty / per[st].shippedQty) * 100) : null,
+        }))
+        .sort((a, b) => {
+          return STORE_ORDER.indexOf(getStoreKey(a.name)) - STORE_ORDER.indexOf(getStoreKey(b.name));
+        });
 
       html += `
         <div class="history-card ${cls}">
@@ -1498,32 +1423,26 @@ async function loadMonthlySummary(ym) {
           <h4>🏆 店舗別販売率ランキング（上位5店舗）</h4>
           <div id="monthStoreSalesRate"></div>
         </div>
-
         <div class="analysis-card">
           <h4>📉 日別ロス推移（月）</h4>
           <div id="monthDailyLossTrend"></div>
         </div>
-
         <div class="analysis-card">
           <h4>🔥 品目×店舗 ロス率ランキング（上位5件）</h4>
           <div id="monthItemStoreLossRanking"></div>
         </div>
-
         <div class="analysis-card">
           <h4>☀ 気温 × 売上 効果（ヒートマップ）</h4>
           <div id="monthWeatherHeatmap"></div>
         </div>
-        
         <div class="analysis-card">
           <h4>🌡 シーン別（寒い/普通/暑い）売上傾向</h4>
           <div id="monthWeatherCrossTable"></div>
         </div>
-        
         <div class="analysis-card">
           <h4>🧠 気象分析コメント</h4>
           <div id="monthWeatherAI"></div>
         </div>
-
         <div class="analysis-card">
           <h4>🤖 販売予測（AI提案）</h4>
           <div id="monthSalesForecast"></div>
@@ -1537,16 +1456,12 @@ async function loadMonthlySummary(ym) {
     // （旧）月分析グラフ描画
     setTimeout(() => {
       renderMonthAnalysisCharts(items, days, dailyLossMap, storeTotalMap, storeItemMap);
-
       renderMonthWeatherHeatmap(items, weatherInfo);
       renderMonthWeatherCrossTable(items, weatherInfo);
       renderMonthWeatherAI(items, weatherInfo);
     }, 100);
-
   } catch (err) {
-    resultDiv.innerHTML = `
-      <p>月ビュー取得エラー：${err}</p>
-    `;
+    resultDiv.innerHTML = `<p>月ビュー取得エラー：${err}</p>`;
   }
 }
 
@@ -1555,7 +1470,7 @@ function renderMonthlyStoreTotalSection(storeTotalMap) {
   const names = Object.keys(storeTotalMap);
   if (!names.length) return "";
 
-  const rows = names.map(name => {
+  const rows = names.map((name) => {
     const st = storeTotalMap[name];
     return {
       name,
@@ -1563,7 +1478,7 @@ function renderMonthlyStoreTotalSection(storeTotalMap) {
       shippedQty: st.shippedQty,
       soldQty: st.soldQty,
       lossQty: st.lossQty,
-      lossRate: st.lossRate
+      lossRate: st.lossRate,
     };
   });
 
@@ -1581,23 +1496,18 @@ function renderMonthlyStoreTotalSection(storeTotalMap) {
       <div class="store-week-total-list">
   `;
 
-  rows.forEach(r => {
+  rows.forEach((r) => {
     const label = formatStoreLabel(r.name);
     const color = getLossRateColor(r.lossRate);
-    const style = color ? ` style="color:${color};"` : "";
+    const style = color ? `style="color:${color};"` : "";
+
     html += `
       <div class="store-week-total-row">
         <div class="store-week-total-name">${label}</div>
         <div class="store-week-total-body">
-          出荷：${r.shippedQty}個 /
-          売上：${r.soldQty}個 /
-          ロス：
-          <span${style}>
-          ${
-            r.lossRate === null
-              ? `${r.lossQty}個`
-              : `${r.lossQty}個（${r.lossRate}%）`
-          }
+          出荷：${r.shippedQty}個 / 売上：${r.soldQty}個 / ロス：
+          <span ${style}>
+            ${r.lossRate === null ? `${r.lossQty}個` : `${r.lossQty}個（${r.lossRate}%）`}
           </span>
         </div>
       </div>
@@ -1611,7 +1521,7 @@ function renderMonthlyStoreTotalSection(storeTotalMap) {
 /* 月ビュー：AIコメント生成（月全体の振り返り） */
 function buildMonthlyAiComment(total, items, storeTotalMap, ym) {
   const lossRate = total.lossRate;
-  const lossQty  = total.lossQty || 0;
+  const lossQty = total.lossQty || 0;
 
   // 表示用の「YYYY年MM月」
   let monthLabel = ym;
@@ -1622,7 +1532,7 @@ function buildMonthlyAiComment(total, items, storeTotalMap, ym) {
 
   // 一番ロスが大きい品目
   let maxItem = null;
-  items.forEach(it => {
+  items.forEach((it) => {
     if (!maxItem || (it.lossQty || 0) > (maxItem.lossQty || 0)) {
       maxItem = it;
     }
@@ -1630,7 +1540,7 @@ function buildMonthlyAiComment(total, items, storeTotalMap, ym) {
 
   // 一番ロス率が高い店舗
   let maxStore = null;
-  Object.keys(storeTotalMap).forEach(name => {
+  Object.keys(storeTotalMap).forEach((name) => {
     const st = storeTotalMap[name];
     if (typeof st.lossRate !== "number") return;
     if (!maxStore || st.lossRate > maxStore.lossRate) {
@@ -1642,88 +1552,102 @@ function buildMonthlyAiComment(total, items, storeTotalMap, ym) {
 
   // 全体所感（月版）
   if (lossRate === null) {
-    lines.push(`${monthLabel}は、出荷と売上を比較できる日が十分に揃っていないため、ロス状況を厳密に評価するのが難しい月でした。今後、毎日の出荷登録と売上データを安定して蓄積することで、月ごとの傾向がよりはっきり見えてきます。`);
+    lines.push(
+      `${monthLabel}は、出荷と売上を比較できる日が十分に揃っていないため、ロス状況を厳密に評価するのが難しい月でした。今後、毎日の出荷登録と売上データを安定して蓄積することで、月ごとの傾向がよりはっきり見えてきます。`
+    );
   } else if (lossRate <= 10) {
-    lines.push(`${monthLabel}の全体ロス率は約${lossRate}%（${lossQty}個）で、月単位としてはかなり良好な水準です。この水準を維持できれば、年間を通してもロスをしっかりコントロールできていると言えそうです。`);
+    lines.push(
+      `${monthLabel}の全体ロス率は約${lossRate}%（${lossQty}個）で、月単位としてはかなり良好な水準です。この水準を維持できれば、年間を通してもロスをしっかりコントロールできていると言えそうです。`
+    );
   } else if (lossRate <= 20) {
-    lines.push(`${monthLabel}の全体ロス率は約${lossRate}%（${lossQty}個）で、ややロスが気になる水準です。特に売れ行きが読みにくい曜日や店舗では、出荷量を少し絞る・他店舗に振り分けるといった工夫が有効になりそうです。`);
+    lines.push(
+      `${monthLabel}の全体ロス率は約${lossRate}%（${lossQty}個）で、ややロスが気になる水準です。特に売れ行きが読みにくい曜日や店舗では、出荷量を少し絞る・他店舗に振り分けるといった工夫が有効になりそうです。`
+    );
   } else {
-    lines.push(`${monthLabel}の全体ロス率は約${lossRate}%（${lossQty}個）と高めでした。週ごとの動きを振り返り、「どの週・どの店舗・どの品目」でロスが膨らみやすかったかを確認し、出荷量や配分のルールを見直すタイミングかもしれません。`);
+    lines.push(
+      `${monthLabel}の全体ロス率は約${lossRate}%（${lossQty}個）と高めでした。週ごとの動きを振り返り、「どの週・どの店舗・どの品目」でロスが膨らみやすかったかを確認し、出荷量や配分のルールを見直すタイミングかもしれません。`
+    );
   }
 
   // 品目のポイント
   if (maxItem && (maxItem.lossQty || 0) > 0) {
     const key = getItemKey(maxItem.item);
-    lines.push(`品目別では「${key}」のロスが最も大きくなっています。月単位で見ると、特定の週にロスが集中している場合もあるため、その週だけ出荷量を抑える・販促を強めるなど、ピンポイントの対策が効果的です。`);
+    lines.push(
+      `品目別では「${key}」のロスが最も大きくなっています。月単位で見ると、特定の週にロスが集中している場合もあるため、その週だけ出荷量を抑える・販促を強めるなど、ピンポイントの対策が効果的です。`
+    );
   }
 
   // 店舗のポイント
   if (maxStore && typeof maxStore.lossRate === "number") {
     const label = formatStoreLabel(maxStore.name);
-    lines.push(`店舗別では「${label}」のロス率が相対的に高めです。この店舗は「売れ行きが弱い曜日」や「動きが鈍い品目」が偏っていないかを確認し、出荷量の見直しや他店舗との分担調整を検討してみてください。`);
+    lines.push(
+      `店舗別では「${label}」のロス率が相対的に高めです。この店舗は「売れ行きが弱い曜日」や「動きが鈍い品目」が偏っていないかを確認し、出荷量の見直しや他店舗との分担調整を検討してみてください。`
+    );
   }
 
   // アクション提案（年間運用を意識したコメント）
-  lines.push("月単位で見ると、出荷量の微調整だけでなく「どの月にどの品目をどれだけ強化するか」といった年間の出荷戦略も立てやすくなります。ロスが目立つ品目については、出荷ピークを作りすぎないように分散する・売れ行きの良い店舗へ重点的に回す、などの工夫が有効です。");
+  lines.push(
+    "月単位で見ると、出荷量の微調整だけでなく「どの月にどの品目をどれだけ強化するか」といった年間の出荷戦略も立てやすくなります。ロスが目立つ品目については、出荷ピークを作りすぎないように分散する・売れ行きの良い店舗へ重点的に回す、などの工夫が有効です。"
+  );
 
   return `
     <div class="ai-comment-card">
       <div class="ai-comment-title">🤖 今月のAIコメント</div>
-      ${lines.map(t => `<p>${t}</p>`).join("")}
+      ${lines.map((t) => `<p>${t}</p>`).join("")}
     </div>
   `;
 }
 
 /* 月ビュー：分析3種（月版） */
 function renderMonthAnalysisCharts(items, days, dailyLossMap, storeTotalMap, storeItemMap) {
-  const hasApex = (typeof ApexCharts !== "undefined");
+  const hasApex = typeof ApexCharts !== "undefined";
 
   /* ▼ 1) 店舗別販売率ランキング（上位5） */
   const elRate = document.getElementById("monthStoreSalesRate");
   if (elRate) {
-    const storeEntries = Object.keys(storeTotalMap).map(name => {
-      const st = storeTotalMap[name];
-      return {
-        name,
-        label: formatStoreLabel(name),
-        shipped: st.shippedQty || 0,
-        sold: st.soldQty || 0,
-        rate: st.salesRate
-      };
-    }).filter(e => e.shipped > 0 && e.rate !== null);
+    const storeEntries = Object.keys(storeTotalMap)
+      .map((name) => {
+        const st = storeTotalMap[name];
+        return {
+          name,
+          label: formatStoreLabel(name),
+          shipped: st.shippedQty || 0,
+          sold: st.soldQty || 0,
+          rate: st.salesRate,
+        };
+      })
+      .filter((e) => e.shipped > 0 && e.rate !== null);
 
-    storeEntries.sort((a,b) => (b.rate || 0) - (a.rate || 0));
-    const top5 = storeEntries.slice(0,5);
+    storeEntries.sort((a, b) => (b.rate || 0) - (a.rate || 0));
+    const top5 = storeEntries.slice(0, 5);
 
     if (top5.length === 0) {
       elRate.innerHTML = `<p style="font-size:0.85em;color:#666;">販売率を計算できる店舗がありません。</p>`;
     } else if (hasApex) {
-      const labels = top5.map(e => e.label);
-      const data   = top5.map(e => e.rate);
+      const labels = top5.map((e) => e.label);
+      const data = top5.map((e) => e.rate);
 
       const options = {
         chart: { type: "bar", height: 260 },
         series: [{ name: "販売率(%)", data }],
         xaxis: { categories: labels },
-        dataLabels: {
-          enabled: true,
-          formatter: v => `${v}%`
-        },
-        plotOptions: {
-          bar: { horizontal: true }
-        },
-        tooltip: { y: { formatter: v => `${v}%` } }
+        dataLabels: { enabled: true, formatter: (v) => `${v}%` },
+        plotOptions: { bar: { horizontal: true } },
+        tooltip: { y: { formatter: (v) => `${v}%` } },
       };
+
       const chart = new ApexCharts(elRate, options);
       chart.render();
     } else {
       elRate.innerHTML = `
         <ol style="font-size:0.9em;padding-left:1.2em;">
-          ${top5.map(e => {
-            const color = getSalesRateColor(e.rate);
-            const style = color ? ` style="color:${color};"` : "";
-            return `<li${style}>${e.label}：${e.rate}%（出荷${e.shipped}／売上${e.sold}）</li>`;
-          }).join("")}
+          ${top5
+            .map((e) => {
+              const color = getSalesRateColor(e.rate);
+              const style = color ? `style="color:${color};"` : "";
+              return `<li ${style}>${e.label}：${e.rate}%（出荷${e.shipped}／売上${e.sold}）</li>`;
+            })
+            .join("")}
         </ol>
       `;
     }
@@ -1732,45 +1656,44 @@ function renderMonthAnalysisCharts(items, days, dailyLossMap, storeTotalMap, sto
   /* ▼ 2) 日別ロス推移（月） */
   const elDaily = document.getElementById("monthDailyLossTrend");
   if (elDaily) {
-    const xCats = days.map(ds => {
-  const d = new Date(ds);
-  const wd = d.getDay();
-  const dd = ds.slice(5); // "MM-DD"
-  if (wd === 0) return `${dd}(日)`;
-  if (wd === 6) return `${dd}(土)`;
-  return dd;
-});
-const yData = days.map(ds => dailyLossMap[ds] || 0);
+    const xCats = days.map((ds) => {
+      const d = new Date(ds);
+      const wd = d.getDay();
+      const dd = ds.slice(5); // "MM-DD"
+      if (wd === 0) return `${dd}(日)`;
+      if (wd === 6) return `${dd}(土)`;
+      return dd;
+    });
 
-if (hasApex) {
-  const options = {
-    chart: { type: "line", height: 260 },
-    series: [{ name: "ロス個数", data: yData }],
-    xaxis: { categories: xCats },
-    dataLabels: { enabled: true },
-    stroke: { width: 3, curve: "smooth" },
-    markers: {
-      size: 6,
-      colors: days.map(ds => {
-        const wd = new Date(ds).getDay();
-        if (wd === 0) return "#d32f2f"; // 日曜 赤
-        if (wd === 6) return "#1976d2"; // 土曜 青
-        return "#555555";               // 平日
-      }),
-      strokeColors: "#ffffff",
-    },
-    tooltip: { y: { formatter: v => `${v}個` } }
-  };
-  const chart = new ApexCharts(elDaily, options);
-  chart.render();
-} 
-    else {
+    const yData = days.map((ds) => dailyLossMap[ds] || 0);
+
+    if (hasApex) {
+      const options = {
+        chart: { type: "line", height: 260 },
+        series: [{ name: "ロス個数", data: yData }],
+        xaxis: { categories: xCats },
+        dataLabels: { enabled: true },
+        stroke: { width: 3, curve: "smooth" },
+        markers: {
+          size: 6,
+          colors: days.map((ds) => {
+            const wd = new Date(ds).getDay();
+            if (wd === 0) return "#d32f2f"; // 日曜 赤
+            if (wd === 6) return "#1976d2"; // 土曜 青
+            return "#555555"; // 平日
+          }),
+          strokeColors: "#ffffff",
+        },
+        tooltip: { y: { formatter: (v) => `${v}個` } },
+      };
+
+      const chart = new ApexCharts(elDaily, options);
+      chart.render();
+    } else {
       elDaily.innerHTML = `
         <table class="simple-table">
           <tr><th>日付</th><th>ロス個数</th></tr>
-          ${
-            days.map(ds => `<tr><td>${ds}</td><td>${dailyLossMap[ds] || 0}</td></tr>`).join("")
-          }
+          ${days.map((ds) => `<tr><td>${ds}</td><td>${dailyLossMap[ds] || 0}</td></tr>`).join("")}
         </table>
       `;
     }
@@ -1781,9 +1704,9 @@ if (hasApex) {
   if (elLossRank) {
     const rows = [];
 
-    Object.keys(storeItemMap || {}).forEach(itemName => {
+    Object.keys(storeItemMap || {}).forEach((itemName) => {
       const perStore = storeItemMap[itemName];
-      Object.keys(perStore || {}).forEach(storeName => {
+      Object.keys(perStore || {}).forEach((storeName) => {
         const st = perStore[storeName];
         if (!st || !st.shippedQty) return;
         const rate = Math.round((st.lossQty / st.shippedQty) * 100);
@@ -1792,7 +1715,7 @@ if (hasApex) {
           store: formatStoreLabel(storeName),
           shipped: st.shippedQty,
           lossQty: st.lossQty,
-          rate
+          rate,
         });
       });
     });
@@ -1800,8 +1723,8 @@ if (hasApex) {
     if (!rows.length) {
       elLossRank.innerHTML = `<p style="font-size:0.85em;color:#666;">ロス率を計算できる組み合わせがありません。</p>`;
     } else {
-      rows.sort((a,b) => b.rate - a.rate);
-      const top5 = rows.slice(0,5);
+      rows.sort((a, b) => b.rate - a.rate);
+      const top5 = rows.slice(0, 5);
 
       elLossRank.innerHTML = `
         <table class="simple-table">
@@ -1812,20 +1735,21 @@ if (hasApex) {
             <th>ロス個数</th>
             <th>ロス率</th>
           </tr>
-          ${
-            top5.map((r,idx) => {
+          ${top5
+            .map((r, idx) => {
               const color = getLossRateColor(r.rate);
-              const style = color ? ` style="color:${color};font-weight:bold;"` : "";
+              const style = color ? `style="color:${color};font-weight:bold;"` : "";
               return `
                 <tr>
-                  <td>${idx+1}</td>
+                  <td>${idx + 1}</td>
                   <td>${r.store}</td>
                   <td>${r.item}</td>
                   <td>${r.lossQty}</td>
-                  <td${style}>${r.rate}%</td>
-                </tr>`;
-            }).join("")
-          }
+                  <td ${style}>${r.rate}%</td>
+                </tr>
+              `;
+            })
+            .join("")}
         </table>
       `;
     }
@@ -1835,22 +1759,21 @@ if (hasApex) {
 /* =========================================================
    Util
 ========================================================= */
+
 /* =========================================================
    ▼ 気象データ処理共通
 ========================================================= */
 function classifyTemp(temp, cold, hot) {
   if (temp <= cold) return "cold"; // 寒い
-  if (temp >= hot) return "hot";  // 暑い
+  if (temp >= hot) return "hot"; // 暑い
   return "mid"; // 普通
 }
-
-function calcEffectArrow(v){
+function calcEffectArrow(v) {
   if (v > 5) return "↑";
   if (v < -5) return "↓";
   return "→";
 }
-
-function calcEffectColor(v){
+function calcEffectColor(v) {
   if (v > 5) return "#2e7d32"; // 緑（売れる）
   if (v < -5) return "#c62828"; // 赤（売れない）
   return "#616161"; // グレー（中立）
@@ -1859,55 +1782,61 @@ function calcEffectColor(v){
 /* =========================================================
    ▼ 週ビュー：気温ヒートマップ + クロス表 + AIコメント
 ========================================================= */
-async function renderWeekWeatherAnalysis(days, items){
+async function renderWeekWeatherAnalysis(days, items) {
   const area = document.getElementById("weekWeatherCorrelation");
-  if(!area) return;
+  if (!area) return;
 
   const weatherRes = await fetch(`${SUMMARY_SCRIPT_URL}?weather=${days.join(",")}`);
   const weather = await weatherRes.json();
-  if(!weather.success || !weather.data.length){
+
+  if (!weather.success || !weather.data.length) {
     area.innerHTML = `<p>※気象データがありません</p>`;
     return;
   }
 
-  const temps = weather.data.map(w=>w.tempMax).filter(v=>v!=null).sort((a,b)=>a-b);
-  const cold = temps[Math.floor(temps.length*0.33)];
-  const hot  = temps[Math.floor(temps.length*0.66)];
+  const temps = weather.data
+    .map((w) => w.tempMax)
+    .filter((v) => v != null)
+    .sort((a, b) => a - b);
+
+  const cold = temps[Math.floor(temps.length * 0.33)];
+  const hot = temps[Math.floor(temps.length * 0.66)];
 
   area.innerHTML = `
     <h5>🌡 気温帯別ヒートマップ</h5>
     <table class="simple-table">
       <tr><th>品目</th><th>寒い</th><th>普通</th><th>暑い</th></tr>
-      ${
-        items.map(it=>{
+      ${items
+        .map((it) => {
           const key = getItemKey(it.item);
+          const eff = { cold: [], mid: [], hot: [] };
 
-          const eff = {cold:[],mid:[],hot:[]};
-
-          weather.data.forEach(w=>{
+          weather.data.forEach((w) => {
             const v = w.sales[key];
-            if(!v || v.shipped===0) return;
-            const r = Math.round((v.sold/v.shipped - it.soldQty/it.shippedQty)*100);
-
-            const c = classifyTemp(w.tempMax,cold,hot);
+            if (!v || v.shipped === 0) return;
+            const r = Math.round((v.sold / v.shipped - it.soldQty / it.shippedQty) * 100);
+            const c = classifyTemp(w.tempMax, cold, hot);
             eff[c].push(r);
           });
 
-          function avg(a){ return a.length ? Math.round(a.reduce((x,y)=>x+y,0)/a.length) : 0;}
+          function avg(a) {
+            return a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : 0;
+          }
 
           const C = avg(eff.cold);
           const M = avg(eff.mid);
           const H = avg(eff.hot);
 
           return `
-          <tr>
-            <td>${key}</td>
-            <td style="color:${calcEffectColor(C)};">${calcEffectArrow(C)} ${C}%</td>
-            <td style="color:${calcEffectColor(M)};">${calcEffectArrow(M)} ${M}%</td>
-            <td style="color:${calcEffectColor(H)};">${calcEffectArrow(H)} ${H}%</td>
-          </tr>`;
-        }).join("")
-      }
+            <tr>
+              <td>${key}</td>
+              <td style="color:${calcEffectColor(C)};">${calcEffectArrow(C)} ${C}%</td>
+              <td style="color:${calcEffectColor(M)};">${calcEffectArrow(M)} ${M}%</td>
+              <td style="color:${calcEffectColor(H)};">${calcEffectArrow(H)} ${H}%</td>
+            </tr>
+          `;
+        })
+        .join("")}
     </table>
   `;
 
@@ -1916,45 +1845,52 @@ async function renderWeekWeatherAnalysis(days, items){
     <h5 style="margin-top:12px;">⛅ 天候 × 気温帯 効果量比較</h5>
     <table class="simple-table">
       <tr><th>天候</th><th>寒い</th><th>普通</th><th>暑い</th></tr>
-      ${
-        Object.entries(weather.group).map(([w,g])=>{
-          function fmt(x){ return x.count?`${Math.round(x.sum/x.count*100)}%`:"ー"; }
+      ${Object.entries(weather.group)
+        .map(([w, g]) => {
+          function fmt(x) {
+            return x.count ? `${Math.round((x.sum / x.count) * 100)}%` : "ー";
+          }
           return `
-          <tr>
-            <td>${w}</td>
-            <td>${fmt(g.cold)}</td>
-            <td>${fmt(g.mid)}</td>
-            <td>${fmt(g.hot)}</td>
-          </tr>`;
-        }).join("")
-      }
+            <tr>
+              <td>${w}</td>
+              <td>${fmt(g.cold)}</td>
+              <td>${fmt(g.mid)}</td>
+              <td>${fmt(g.hot)}</td>
+            </tr>
+          `;
+        })
+        .join("")}
     </table>
   `;
 
   // AIコメント
   const msg = [];
-  items.forEach(it=>{
+  items.forEach((it) => {
     const key = getItemKey(it.item);
     const diff = weather.effect[key] || 0;
-    if(diff > 8) msg.push(`${key}は暖かいと売れやすい傾向です🔥`);
-    if(diff < -8) msg.push(`${key}は冷えると売れやすい傾向です❄`);
+    if (diff > 8) msg.push(`${key}は暖かいと売れやすい傾向です🔥`);
+    if (diff < -8) msg.push(`${key}は冷えると売れやすい傾向です❄`);
   });
-  if(!msg.length) msg.push("気温との明確な傾向はまだ少ないです。");
+  if (!msg.length) msg.push("気温との明確な傾向はまだ少ないです。");
 
-  document.getElementById("weekSalesForecast").innerHTML =
-    `<div class="ai-comment-card">${msg.map(m=>`<p>${m}</p>`).join("")}</div>`;
+  document.getElementById("weekSalesForecast").innerHTML = `
+    <div class="ai-comment-card">
+      ${msg.map((m) => `<p>${m}</p>`).join("")}
+    </div>
+  `;
 }
 
 /* =========================================================
    ▼ 月ビュー：同じ仕様
 ========================================================= */
-async function renderMonthWeatherAnalysis(days, items){
+async function renderMonthWeatherAnalysis(days, items) {
   const area = document.getElementById("monthWeatherCorrelation");
-  if(!area) return;
+  if (!area) return;
 
   const weatherRes = await fetch(`${SUMMARY_SCRIPT_URL}?weather=${days.join(",")}`);
   const weather = await weatherRes.json();
-  if(!weather.success || !weather.data.length){
+
+  if (!weather.success || !weather.data.length) {
     area.innerHTML = `<p>※気象データがありません</p>`;
     return;
   }
@@ -1965,8 +1901,8 @@ async function renderMonthWeatherAnalysis(days, items){
 
 function formatDateYmd(d) {
   const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2,"0");
-  const day = String(d.getDate()).padStart(2,"0");
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 
@@ -1982,79 +1918,87 @@ function renderWeekWeatherHeatmap(items, weatherInfo) {
     return;
   }
 
-  const temps = weatherInfo.map(w => w.tempMax).filter(v => v !== null);
+  const temps = weatherInfo.map((w) => w.tempMax).filter((v) => v !== null);
   if (!temps.length) return;
 
   // 中央値で３分割（冷/普/暑）
-  temps.sort((a,b) => a-b);
+  temps.sort((a, b) => a - b);
   const n = temps.length;
-  const tCold = temps[Math.floor(n*0.33)];
-  const tHot  = temps[Math.floor(n*0.66)];
+  const tCold = temps[Math.floor(n * 0.33)];
+  const tHot = temps[Math.floor(n * 0.66)];
 
   // 商品ごとの差（販売率差）
-  const rows = items.map(it => {
+  const rows = items.map((it) => {
     const item = it.item;
-    const baseRate = it.shippedQty>0
-      ? it.soldQty/it.shippedQty : 0;
+    const baseRate = it.shippedQty > 0 ? it.soldQty / it.shippedQty : 0;
 
-    const effect = { cold:0, mid:0, hot:0, cN:0, mN:0, hN:0 };
-    weatherInfo.forEach(w => {
+    const effect = { cold: 0, mid: 0, hot: 0, cN: 0, mN: 0, hN: 0 };
+
+    weatherInfo.forEach((w) => {
       const daily = w[item] || null;
       if (!daily) return;
       if (!daily.shipped) return;
-      const r = daily.sold/daily.shipped - baseRate;
+
+      const r = daily.sold / daily.shipped - baseRate;
 
       if (w.tempMax <= tCold) {
-        effect.cold += r; effect.cN++;
+        effect.cold += r;
+        effect.cN++;
       } else if (w.tempMax >= tHot) {
-        effect.hot  += r; effect.hN++;
+        effect.hot += r;
+        effect.hN++;
       } else {
-        effect.mid  += r; effect.mN++;
+        effect.mid += r;
+        effect.mN++;
       }
     });
 
-    function avg(v,c){ return c>0?Math.round(v/c*100):0; }
+    function avg(v, c) {
+      return c > 0 ? Math.round((v / c) * 100) : 0;
+    }
 
     return {
       item,
-      cold: avg(effect.cold,effect.cN),
-      mid : avg(effect.mid,effect.mN),
-      hot : avg(effect.hot,effect.hN)
+      cold: avg(effect.cold, effect.cN),
+      mid: avg(effect.mid, effect.mN),
+      hot: avg(effect.hot, effect.hN),
     };
   });
 
   const cell = (v) => {
-    let arrow = '→';
-    if (v>5) arrow='↑';
-    if (v<-5) arrow='↓';
+    let arrow = "→";
+    if (v > 5) arrow = "↑";
+    if (v < -5) arrow = "↓";
 
-    const perc = v>0?`+${v}%`:`${v}%`;
+    const perc = v > 0 ? `+${v}%` : `${v}%`;
 
-    const red   = Math.min(255, Math.max(0, 128+v*3));
-    const blue  = Math.min(255, Math.max(0, 128-v*3));
-    const bg = `rgb(${red},${Math.max(200-blue,0)},${blue})`;
+    const red = Math.min(255, Math.max(0, 128 + v * 3));
+    const blue = Math.min(255, Math.max(0, 128 - v * 3));
+    const bg = `rgb(${red},${Math.max(200 - blue, 0)},${blue})`;
 
-    return `<td style="background:${bg};color:#000;font-weight:600">
-      ${arrow} ${perc}
-    </td>`;
+    return `
+      <td style="background:${bg};color:#000;font-weight:600">
+        ${arrow} ${perc}
+      </td>
+    `;
   };
 
   el.innerHTML += `
     <h5 style="margin-top:12px;">🌡 気温帯別 効果量ヒートマップ</h5>
     <table class="simple-table">
       <tr><th>品目</th><th>寒い</th><th>普通</th><th>暑い</th></tr>
-      ${
-        rows.map(r=>{
+      ${rows
+        .map((r) => {
           return `
-          <tr>
-            <td>${r.item}</td>
-            ${cell(r.cold)}
-            ${cell(r.mid)}
-            ${cell(r.hot)}
-          </tr>
+            <tr>
+              <td>${r.item}</td>
+              ${cell(r.cold)}
+              ${cell(r.mid)}
+              ${cell(r.hot)}
+            </tr>
           `;
-        }).join("")
-      }
+        })
+        .join("")}
     </table>
   `;
 }
@@ -2067,32 +2011,38 @@ function renderWeekWeatherCrossTable(items, weatherInfo) {
   if (!el) return;
   if (!weatherInfo || !weatherInfo.length) return;
 
-  const temps = weatherInfo.map(w=>w.tempMax).filter(v=>v!==null);
-  temps.sort((a,b)=>a-b);
+  const temps = weatherInfo.map((w) => w.tempMax).filter((v) => v !== null);
+  temps.sort((a, b) => a - b);
   const n = temps.length;
-  const tCold = temps[Math.floor(n*0.33)];
-  const tHot  = temps[Math.floor(n*0.66)];
+  const tCold = temps[Math.floor(n * 0.33)];
+  const tHot = temps[Math.floor(n * 0.66)];
 
   const groups = {}; // {weather:{cold:{sum,cnt},mid:{},hot:{}}}
-  weatherInfo.forEach(w=>{
-    const wt = w.weather;
-    if (!groups[wt]) groups[wt] = {cold:{sum:0,cnt:0},mid:{sum:0,cnt:0},hot:{sum:0,cnt:0}};
 
-    items.forEach(it=>{
+  weatherInfo.forEach((w) => {
+    const wt = w.weather;
+    if (!groups[wt]) groups[wt] = { cold: { sum: 0, cnt: 0 }, mid: { sum: 0, cnt: 0 }, hot: { sum: 0, cnt: 0 } };
+
+    items.forEach((it) => {
       const v = w[it.item];
       if (!v || !v.shipped) return;
-      const r = v.sold/v.shipped;
+
+      const r = v.sold / v.shipped;
+
       if (w.tempMax <= tCold) {
-        groups[wt].cold.sum+=r;groups[wt].cold.cnt++;
+        groups[wt].cold.sum += r;
+        groups[wt].cold.cnt++;
       } else if (w.tempMax >= tHot) {
-        groups[wt].hot.sum+=r;groups[wt].hot.cnt++;
+        groups[wt].hot.sum += r;
+        groups[wt].hot.cnt++;
       } else {
-        groups[wt].mid.sum+=r;groups[wt].mid.cnt++;
+        groups[wt].mid.sum += r;
+        groups[wt].mid.cnt++;
       }
     });
   });
 
-  const avg = (x)=> x.cnt?Math.round(x.sum/x.cnt*100):0;
+  const avg = (x) => (x.cnt ? Math.round((x.sum / x.cnt) * 100) : 0);
   const wKeys = Object.keys(groups);
 
   let html = `
@@ -2101,7 +2051,7 @@ function renderWeekWeatherCrossTable(items, weatherInfo) {
       <tr><th>天候</th><th>寒い</th><th>普通</th><th>暑い</th></tr>
   `;
 
-  wKeys.forEach(wt=>{
+  wKeys.forEach((wt) => {
     const g = groups[wt];
     html += `
       <tr>
@@ -2122,66 +2072,78 @@ function renderWeekWeatherCrossTable(items, weatherInfo) {
 ============================================= */
 function renderWeekWeatherAI(items, weatherInfo, overrideEl) {
   console.log("🔥週AI呼ばれた", items, weatherInfo);
+
   const area = overrideEl || document.getElementById("weekSalesForecast");
   if (!area) return;
+
   if (!weatherInfo || !weatherInfo.length) {
     area.innerHTML = `
       <div class="ai-comment-card">
         <p>気象データが不足しているため、この週の気象分析と販売予測は作成できません。</p>
-      </div>`;
+      </div>
+    `;
     return;
   }
 
   // ---- 直近10日分に絞り込む ----
   const parsed = weatherInfo
-    .filter(w => w.date && w.tempMax != null)
-    .map(w => ({ ...w, _d: new Date(w.date) }));
+    .filter((w) => w.date && w.tempMax != null)
+    .map((w) => ({ ...w, _d: new Date(w.date) }));
+
   if (!parsed.length) {
     area.innerHTML = `
       <div class="ai-comment-card">
         <p>気象データが不足しているため、この週の気象分析と販売予測は作成できません。</p>
-      </div>`;
+      </div>
+    `;
     return;
   }
 
-  const maxTime = Math.max(...parsed.map(w => w._d.getTime()));
+  const maxTime = Math.max(...parsed.map((w) => w._d.getTime()));
   const endDate = new Date(maxTime);
   const startDate = new Date(endDate);
   startDate.setDate(startDate.getDate() - 9); // 直近10日間（end を含めて10日）
 
-  const target = parsed.filter(w => w._d >= startDate && w._d <= endDate);
+  const target = parsed.filter((w) => w._d >= startDate && w._d <= endDate);
+
   if (!target.length) {
     area.innerHTML = `
       <div class="ai-comment-card">
         <p>直近10日間に気象データがほとんどないため、この週の分析は行えません。</p>
-      </div>`;
+      </div>
+    `;
     return;
   }
 
-  const temps = target.map(w => w.tempMax).filter(v => v != null);
+  const temps = target.map((w) => w.tempMax).filter((v) => v != null);
   if (!temps.length) {
     area.innerHTML = `
       <div class="ai-comment-card">
         <p>最高気温データが取得できなかったため、この週の気象分析と販売予測は作成できません。</p>
-      </div>`;
+      </div>
+    `;
     return;
   }
-  const tAvg = temps.reduce((a,b)=>a+b,0) / temps.length;
+
+  const tAvg = temps.reduce((a, b) => a + b, 0) / temps.length;
 
   const analysisLines = [];
   const forecastLines = [];
 
-  items.forEach(it => {
+  items.forEach((it) => {
     const itemName = it.item;
-    // 対象期間内の販売率を「暑い日」「寒い日」に分けて集計
-    let hotSum = 0, hotN = 0;
-    let coldSum = 0, coldN = 0;
 
-    target.forEach(w => {
+    // 対象期間内の販売率を「暑い日」「寒い日」に分けて集計
+    let hotSum = 0,
+      hotN = 0;
+    let coldSum = 0,
+      coldN = 0;
+
+    target.forEach((w) => {
       const rec = w[itemName];
       if (!rec || !rec.shipped) return;
-      const rate = (rec.sold / rec.shipped) * 100; // 販売率[%]
 
+      const rate = (rec.sold / rec.shipped) * 100; // 販売率[%]
       if (w.tempMax >= tAvg) {
         hotSum += rate;
         hotN++;
@@ -2198,6 +2160,7 @@ function renderWeekWeatherAI(items, weatherInfo, overrideEl) {
 
     const hotAvg = hotN ? Math.round(hotSum / hotN) : null;
     const coldAvg = coldN ? Math.round(coldSum / coldN) : null;
+
     if (hotAvg == null || coldAvg == null) return;
 
     const diff = hotAvg - coldAvg; // 正なら「暑い日＞寒い日」
@@ -2206,16 +2169,26 @@ function renderWeekWeatherAI(items, weatherInfo, overrideEl) {
     if (Math.abs(diff) >= 5) {
       const dir = diff > 0 ? "気温が高い日" : "気温が低い日";
       const sign = diff > 0 ? `+${diff}` : `${diff}`;
+
       analysisLines.push(
         `・${itemName}は直近10日間では、${dir}における販売率が平均より約${sign}% 高い傾向があります（高温日${hotN}日／低温日${coldN}日ベース）。`
       );
 
       // 販売予測（出荷量調整提案）
       const absDiff = Math.abs(diff);
-      let up = 0, down = 0;
-      if (absDiff >= 20) { up = 15; down = 10; }
-      else if (absDiff >= 12) { up = 10; down = 5; }
-      else { up = 5; down = 3; }
+      let up = 0,
+        down = 0;
+
+      if (absDiff >= 20) {
+        up = 15;
+        down = 10;
+      } else if (absDiff >= 12) {
+        up = 10;
+        down = 5;
+      } else {
+        up = 5;
+        down = 3;
+      }
 
       if (diff > 0) {
         // 暑い日に強い
@@ -2236,6 +2209,7 @@ function renderWeekWeatherAI(items, weatherInfo, overrideEl) {
       "直近10日間のデータでは、気温高低による明確な販売率の差はまだ大きくありません。今後もデータを蓄積しながら、寒暖差が大きい週に改めて確認するのがおすすめです。"
     );
   }
+
   if (!forecastLines.length) {
     forecastLines.push(
       "現時点では、気温を理由に出荷量を大きく振るよりも、曜日別・店舗別の売れ行きパターンを優先して調整する段階と考えられます。極端に暑い／寒い日のみ、1〜2割の微調整から試すと安全です。"
@@ -2245,10 +2219,10 @@ function renderWeekWeatherAI(items, weatherInfo, overrideEl) {
   area.innerHTML = `
     <div class="ai-comment-card">
       <p style="font-weight:bold;">【気象分析（直近10日間）】</p>
-      ${analysisLines.map(t => `<p>${t}</p>`).join("")}
+      ${analysisLines.map((t) => `<p>${t}</p>`).join("")}
       <hr style="border:none;border-top:1px solid #ddd;margin:8px 0;">
       <p style="font-weight:bold;">【販売予測（直近10日間）】</p>
-      ${forecastLines.map(t => `<p>${t}</p>`).join("")}
+      ${forecastLines.map((t) => `<p>${t}</p>`).join("")}
     </div>
   `;
 }
@@ -2258,6 +2232,7 @@ function renderWeekWeatherAI(items, weatherInfo, overrideEl) {
 ============================================= */
 function renderMonthWeatherHeatmap(items, weatherInfo) {
   console.log("🔥月ヒート呼ばれた", items, weatherInfo);
+
   const el = document.getElementById("monthWeatherHeatmap");
   if (!el) return;
 
@@ -2267,66 +2242,75 @@ function renderMonthWeatherHeatmap(items, weatherInfo) {
       <tr><th>品目</th><th>寒い</th><th>普通</th><th>暑い</th></tr>
   `;
 
-  const temps = weatherInfo.map(w => w.tempMax).filter(v => v !== null);
-  temps.sort((a,b)=>a-b);
+  const temps = weatherInfo.map((w) => w.tempMax).filter((v) => v !== null);
+  temps.sort((a, b) => a - b);
   const n = temps.length;
-  const tCold = temps[Math.floor(n*0.33)];
-  const tHot  = temps[Math.floor(n*0.66)];
+  const tCold = temps[Math.floor(n * 0.33)];
+  const tHot = temps[Math.floor(n * 0.66)];
 
   /** 週ビューと同じ背景色ロジック */
   const cell = (v) => {
-    let arrow = '→';
-    if (v > 5) arrow = '↑';
-    if (v < -5) arrow = '↓';
+    let arrow = "→";
+    if (v > 5) arrow = "↑";
+    if (v < -5) arrow = "↓";
 
     const perc = v > 0 ? `+${v}%` : `${v}%`;
 
     /* 背景グラデーション：青(売れにくい)〜赤(売れやすい) */
-    const red   = Math.min(255, Math.max(0, 128 + v * 3));
-    const blue  = Math.min(255, Math.max(0, 128 - v * 3));
+    const red = Math.min(255, Math.max(0, 128 + v * 3));
+    const blue = Math.min(255, Math.max(0, 128 - v * 3));
     const green = Math.max(180 - Math.abs(v * 2), 0);
-
     const bg = `rgb(${red},${green},${blue})`;
 
     return `
-      <td style="
-        background:${bg};
-        color:#000;
-        font-weight:600;
-      ">
+      <td style="background:${bg};color:#000;font-weight:600;">
         ${arrow} ${perc}
-      </td>`;
+      </td>
+    `;
   };
 
-  items.forEach(it => {
+  items.forEach((it) => {
     const item = it.item;
-    const baseRate = it.shippedQty>0 ? it.soldQty/it.shippedQty : 0;
+    const baseRate = it.shippedQty > 0 ? it.soldQty / it.shippedQty : 0;
 
-    let cold=0,mid=0,hot=0,cN=0,mN=0,hN=0;
+    let cold = 0,
+      mid = 0,
+      hot = 0,
+      cN = 0,
+      mN = 0,
+      hN = 0;
 
-    weatherInfo.forEach(w=>{
-      const daily=w[item];
-      if(!daily||!daily.shipped) return;
-      const r=daily.sold/daily.shipped-baseRate;
+    weatherInfo.forEach((w) => {
+      const daily = w[item];
+      if (!daily || !daily.shipped) return;
 
-      if(w.tempMax<=tCold){cold+=r*100;cN++;}
-      else if(w.tempMax>=tHot){hot+=r*100;hN++;}
-      else{mid+=r*100;mN++;}
+      const r = daily.sold / daily.shipped - baseRate;
+
+      if (w.tempMax <= tCold) {
+        cold += r * 100;
+        cN++;
+      } else if (w.tempMax >= tHot) {
+        hot += r * 100;
+        hN++;
+      } else {
+        mid += r * 100;
+        mN++;
+      }
     });
 
-    const avg=(v,c)=>c>0?Math.round(v/c):0;
+    const avg = (v, c) => (c > 0 ? Math.round(v / c) : 0);
 
-    html+=`
+    html += `
       <tr>
         <td>${item}</td>
-        ${cell(avg(cold,cN))}
-        ${cell(avg(mid,mN))}
-        ${cell(avg(hot,hN))}
+        ${cell(avg(cold, cN))}
+        ${cell(avg(mid, mN))}
+        ${cell(avg(hot, hN))}
       </tr>
     `;
   });
 
-  html+=`</table>`;
+  html += `</table>`;
   el.innerHTML = html;
 }
 
@@ -2335,39 +2319,51 @@ function renderMonthWeatherHeatmap(items, weatherInfo) {
 ============================================= */
 function renderMonthWeatherCrossTable(items, weatherInfo) {
   console.log("🔥月クロステーブル", items, weatherInfo);
+
   const el = document.getElementById("monthWeatherCrossTable");
   if (!el) return;
 
-  const temps = weatherInfo.map(w => w.tempMax).filter(v => v !== null);
-  temps.sort((a,b)=>a-b);
+  const temps = weatherInfo.map((w) => w.tempMax).filter((v) => v !== null);
+  temps.sort((a, b) => a - b);
   const n = temps.length;
-  const tCold = temps[Math.floor(n*0.33)];
-  const tHot  = temps[Math.floor(n*0.66)];
+  const tCold = temps[Math.floor(n * 0.33)];
+  const tHot = temps[Math.floor(n * 0.66)];
 
   const groups = {}; // {weather:{cold:{sum,cnt},mid:{},hot:{}}}
-  weatherInfo.forEach(w=>{
-    const wt = w.weather;
-    if (!groups[wt]) groups[wt] = {cold:{sum:0,cnt:0},mid:{sum:0,cnt:0},hot:{sum:0,cnt:0}};
 
-    items.forEach(it=>{
+  weatherInfo.forEach((w) => {
+    const wt = w.weather;
+    if (!groups[wt]) groups[wt] = { cold: { sum: 0, cnt: 0 }, mid: { sum: 0, cnt: 0 }, hot: { sum: 0, cnt: 0 } };
+
+    items.forEach((it) => {
       const v = w[it.item];
       if (!v || !v.shipped) return;
-      const r = v.sold/v.shipped;
-      if (w.tempMax <= tCold) { groups[wt].cold.sum+=r; groups[wt].cold.cnt++; }
-      else if (w.tempMax >= tHot) { groups[wt].hot.sum+=r; groups[wt].hot.cnt++; }
-      else { groups[wt].mid.sum+=r; groups[wt].mid.cnt++; }
+
+      const r = v.sold / v.shipped;
+
+      if (w.tempMax <= tCold) {
+        groups[wt].cold.sum += r;
+        groups[wt].cold.cnt++;
+      } else if (w.tempMax >= tHot) {
+        groups[wt].hot.sum += r;
+        groups[wt].hot.cnt++;
+      } else {
+        groups[wt].mid.sum += r;
+        groups[wt].mid.cnt++;
+      }
     });
   });
 
-  const avg=(x)=> x.cnt?Math.round(x.sum/x.cnt*100):0;
-  const wKeys=Object.keys(groups);
+  const avg = (x) => (x.cnt ? Math.round((x.sum / x.cnt) * 100) : 0);
+  const wKeys = Object.keys(groups);
 
   let html = `
     <h5 style="margin-top:12px;">⛅ 天候 × 気温帯 効果量</h5>
     <table class="simple-table">
       <tr><th>天候</th><th>寒い</th><th>普通</th><th>暑い</th></tr>
   `;
-  wKeys.forEach(wt=>{
+
+  wKeys.forEach((wt) => {
     const g = groups[wt];
     html += `
       <tr>
@@ -2375,9 +2371,11 @@ function renderMonthWeatherCrossTable(items, weatherInfo) {
         <td>${avg(g.cold)}%</td>
         <td>${avg(g.mid)}%</td>
         <td>${avg(g.hot)}%</td>
-      </tr>`;
+      </tr>
+    `;
   });
-  html+=`</table>`;
+
+  html += `</table>`;
   el.innerHTML += html;
 }
 
@@ -2386,96 +2384,113 @@ function renderMonthWeatherCrossTable(items, weatherInfo) {
 ============================================= */
 function renderMonthWeatherAI(items, weatherInfo) {
   console.log("🔥月AI呼ばれた", items, weatherInfo);
+
   const analysisEl = document.getElementById("monthWeatherAI");
   const forecastEl = document.getElementById("monthSalesForecast");
   if (!analysisEl && !forecastEl) return;
+
   if (!weatherInfo || !weatherInfo.length) {
     if (analysisEl) {
       analysisEl.innerHTML = `
         <div class="ai-comment-card">
           <p>気象データが不足しているため、この月の気象分析コメントは作成できません。</p>
-        </div>`;
+        </div>
+      `;
     }
     if (forecastEl) {
       forecastEl.innerHTML = `
         <div class="ai-comment-card">
           <p>販売予測を行うだけの気象データが揃っていません。</p>
-        </div>`;
+        </div>
+      `;
     }
     return;
   }
 
   // ---- 直近30日分に絞り込む ----
   const parsed = weatherInfo
-    .filter(w => w.date && w.tempMax != null)
-    .map(w => ({ ...w, _d: new Date(w.date) }));
+    .filter((w) => w.date && w.tempMax != null)
+    .map((w) => ({ ...w, _d: new Date(w.date) }));
+
   if (!parsed.length) {
     if (analysisEl) {
       analysisEl.innerHTML = `
         <div class="ai-comment-card">
           <p>気象データが不足しているため、この月の気象分析コメントは作成できません。</p>
-        </div>`;
+        </div>
+      `;
     }
     if (forecastEl) {
       forecastEl.innerHTML = `
         <div class="ai-comment-card">
           <p>販売予測を行うだけの気象データが揃っていません。</p>
-        </div>`;
+        </div>
+      `;
     }
     return;
   }
 
-  const maxTime = Math.max(...parsed.map(w => w._d.getTime()));
+  const maxTime = Math.max(...parsed.map((w) => w._d.getTime()));
   const endDate = new Date(maxTime);
   const startDate = new Date(endDate);
   startDate.setDate(startDate.getDate() - 29); // 直近30日
 
-  const target = parsed.filter(w => w._d >= startDate && w._d <= endDate);
+  const target = parsed.filter((w) => w._d >= startDate && w._d <= endDate);
+
   if (!target.length) {
     if (analysisEl) {
       analysisEl.innerHTML = `
         <div class="ai-comment-card">
           <p>直近30日間に気象データがほとんどないため、この月の分析は行えません。</p>
-        </div>`;
+        </div>
+      `;
     }
     if (forecastEl) {
       forecastEl.innerHTML = `
         <div class="ai-comment-card">
           <p>販売予測を行うだけのデータが不足しています。</p>
-        </div>`;
+        </div>
+      `;
     }
     return;
   }
 
-  const temps = target.map(w => w.tempMax).filter(v => v != null);
+  const temps = target.map((w) => w.tempMax).filter((v) => v != null);
   if (!temps.length) {
     if (analysisEl) {
       analysisEl.innerHTML = `
         <div class="ai-comment-card">
           <p>最高気温データが取得できなかったため、この月の気象分析コメントは作成できません。</p>
-        </div>`;
+        </div>
+      `;
     }
     if (forecastEl) {
       forecastEl.innerHTML = `
         <div class="ai-comment-card">
           <p>販売予測を行うだけの気象データが揃っていません。</p>
-        </div>`;
+        </div>
+      `;
     }
     return;
   }
-  const tAvg = temps.reduce((a,b)=>a+b,0) / temps.length;
+
+  const tAvg = temps.reduce((a, b) => a + b, 0) / temps.length;
 
   const analysisLines = [];
   const forecastLines = [];
 
-  items.forEach(it => {
+  items.forEach((it) => {
     const itemName = it.item;
-    let hotSum = 0, hotN = 0;
-    let coldSum = 0, coldN = 0;
 
-    target.forEach(w => {
+    let hotSum = 0,
+      hotN = 0;
+    let coldSum = 0,
+      coldN = 0;
+
+    target.forEach((w) => {
       const rec = w[itemName];
       if (!rec || !rec.shipped) return;
+
       const rate = (rec.sold / rec.shipped) * 100;
 
       if (w.tempMax >= tAvg) {
@@ -2494,21 +2509,33 @@ function renderMonthWeatherAI(items, weatherInfo) {
 
     const hotAvg = hotN ? Math.round(hotSum / hotN) : null;
     const coldAvg = coldN ? Math.round(coldSum / coldN) : null;
+
     if (hotAvg == null || coldAvg == null) return;
 
     const diff = hotAvg - coldAvg;
+
     if (Math.abs(diff) >= 5) {
       const dir = diff > 0 ? "気温が高い日" : "気温が低い日";
       const sign = diff > 0 ? `+${diff}` : `${diff}`;
+
       analysisLines.push(
         `・${itemName}は直近30日間の集計では、${dir}における販売率が平均より約${sign}% 高い傾向があります（高温日${hotN}日／低温日${coldN}日ベース）。`
       );
 
       const absDiff = Math.abs(diff);
-      let up = 0, down = 0;
-      if (absDiff >= 20) { up = 15; down = 10; }
-      else if (absDiff >= 12) { up = 10; down = 5; }
-      else { up = 5; down = 3; }
+      let up = 0,
+        down = 0;
+
+      if (absDiff >= 20) {
+        up = 15;
+        down = 10;
+      } else if (absDiff >= 12) {
+        up = 10;
+        down = 5;
+      } else {
+        up = 5;
+        down = 3;
+      }
 
       if (diff > 0) {
         forecastLines.push(
@@ -2527,12 +2554,14 @@ function renderMonthWeatherAI(items, weatherInfo) {
       analysisEl.innerHTML = `
         <div class="ai-comment-card">
           <p>直近30日間のデータでは、気温高低による販売率の差はまだ大きくありません。月単位では、まずは曜日別・店舗別の動きを基準にしつつ、極端に暑い／寒い日の傾向を少しずつ確認していく段階と考えられます。</p>
-        </div>`;
+        </div>
+      `;
     } else {
       analysisEl.innerHTML = `
         <div class="ai-comment-card">
-          ${analysisLines.map(t => `<p>${t}</p>`).join("")}
-        </div>`;
+          ${analysisLines.map((t) => `<p>${t}</p>`).join("")}
+        </div>
+      `;
     }
   }
 
@@ -2542,12 +2571,11 @@ function renderMonthWeatherAI(items, weatherInfo) {
         "現時点の30日集計では、気温要因だけで大きな出荷変更を行うほどの明確な差は見られていません。通常は曜日・店舗の実績を優先しつつ、特に気温が大きく振れた月に限って1〜2割の微調整から試すのがおすすめです。"
       );
     }
+
     forecastEl.innerHTML = `
       <div class="ai-comment-card">
-        ${forecastLines.map(t => `<p>${t}</p>`).join("")}
-      </div>`;
+        ${forecastLines.map((t) => `<p>${t}</p>`).join("")}
+      </div>
+    `;
   }
 }
-
-
-
